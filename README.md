@@ -14,7 +14,7 @@ Deposits can be staked (subject to the staking and proxy precompiles becoming ac
 
 ### [Oracle](contracts/Oracle.sol)
 Oracle contains logic to provide actual relaychain staking ledgers state to ledger contracts.
-Contract uses consensus mechanism for protecting from malicious members. Pushing the data to InactivityCover requires that a particular quorum from oracle members report and agree on the new state. This is forked from the Lido contract.
+Contract uses consensus mechanism for protecting from malicious members. Pushing the data to InactivityCover requires that a particular quorum from oracle members report and agree on the new state. This is forked from the [Lido contract](https://github.com/mixbytes/lido-dot-ksm).
 
 ### [OracleMaster](contracts/OracleMaster.sol)
 The hub for all oracles, which receives all reports from oracles members and simply sends them to oracles. This is forked from the Lido contract.
