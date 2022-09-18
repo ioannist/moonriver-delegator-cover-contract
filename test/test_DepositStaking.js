@@ -19,7 +19,7 @@ chai.use(chaiAlmost(0.1));
 
 const expect = chai.expect;
 
-contract('InactivityCover', accounts => {
+contract('DepositStaking', accounts => {
 
     // test ging under MIN_DEPOSIT and going inactive
     // check getErasCovered returns the right number
@@ -102,6 +102,7 @@ contract('InactivityCover', accounts => {
         );
 
     });
+
 
     it("manager cannot delegate if a delegator was not paid", async () => {
         const candidate = member1;

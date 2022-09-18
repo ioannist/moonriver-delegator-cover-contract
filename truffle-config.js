@@ -4,7 +4,12 @@ const HDWalletProvider = require('@truffle/hdwallet-provider');
 // Moonbase Alpha Private Key --> Please change this to your own Private Key with funds
 // NOTE: Do not store your private key in plaintext files
 //       this is only for demostration purposes only
-const privateKeyMoonbase = process.env.MOONBASE_KEY;
+const privateKeysMoonbase = [
+   process.env.MOONBASE_KEY,
+   process.env.MOONBASE_MANAGER,
+   process.env.MOONBASE_ORACLE_MEMBERS_MANAGER,
+   process.env.MOONBASE_ORACLE_MEMBER
+];
 
 const privateKeys = [
    process.env.SUPERIOR_KEY,
@@ -16,6 +21,8 @@ const privateKeys = [
    process.env.DELEGATOR2_KEY,
    process.env.ORACLE_MANAGER_KEY
 ];
+
+
 
 module.exports = {
    networks: {
@@ -34,17 +41,14 @@ module.exports = {
       // Moonbase Alpha TestNet
       moonbase: {
          provider: () => {
-            if (!privateKeyMoonbase.trim()) {
-               throw new Error(
-                  'Please enter a private key with funds to send transactions to TestNet'
-               );
-            }
-            return new HDWalletProvider(
-               privateKeyMoonbase,
-               'https://rpc.api.moonbase.moonbeam.network'
-            );
+            return new HDWalletProvider({
+               privateKeys: privateKeysMoonbase,
+               providerOrUrl: 'http://45.82.64.32:9933'
+            });
          },
          network_id: 1287,
+         networkCheckTimeout: 60000,
+         timeoutBlocks: 200
       },
    },
    // Solidity 0.8.0 Compiler

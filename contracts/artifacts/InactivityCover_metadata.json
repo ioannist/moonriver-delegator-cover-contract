@@ -1,0 +1,1197 @@
+{
+	"compiler": {
+		"version": "0.8.7+commit.e28d00a7"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "member",
+						"type": "address"
+					}
+				],
+				"name": "CancelDecreaseCoverEvent",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "member",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "DecreaseCoverEvent",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "member",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "DecreaseCoverScheduledEvent",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "member",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "DepositEvent",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "member",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint128",
+						"name": "eraId",
+						"type": "uint128"
+					}
+				],
+				"name": "MemberHasZeroPoints",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "member",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint128",
+						"name": "eraId",
+						"type": "uint128"
+					}
+				],
+				"name": "MemberNotActive",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "delegator",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "PayoutEvent",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint128",
+						"name": "eraId",
+						"type": "uint128"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "coverClaims",
+						"type": "uint256"
+					}
+				],
+				"name": "ReportPushedEvent",
+				"type": "event"
+			},
+			{
+				"inputs": [],
+				"name": "AUTH_MANAGER",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "DEPOSIT_STAKING",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "ERAS_BETWEEN_FORCED_UNDELEGATION",
+				"outputs": [
+					{
+						"internalType": "uint128",
+						"name": "",
+						"type": "uint128"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "MAX_DEPOSIT_TOTAL",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "MIN_DEPOSIT",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "MIN_PAYOUT",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "ORACLE_MASTER",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "STAKE_UNIT_COVER",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "cancelDecreaseCover",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "coverOwedTotal",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "candidate",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "candidateDelegationCount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "delegatorDelegationCount",
+						"type": "uint256"
+					}
+				],
+				"name": "delegate",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "delegatorNotPaid",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "candidate",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "more",
+						"type": "uint256"
+					}
+				],
+				"name": "delegator_bond_more",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "collator",
+						"type": "address"
+					}
+				],
+				"name": "depositCover",
+				"outputs": [],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "eraId",
+				"outputs": [
+					{
+						"internalType": "uint64",
+						"name": "",
+						"type": "uint64"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "erasCovered",
+				"outputs": [
+					{
+						"internalType": "uint128",
+						"name": "",
+						"type": "uint128"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address payable",
+						"name": "collator",
+						"type": "address"
+					}
+				],
+				"name": "executeScheduled",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "member",
+						"type": "address"
+					}
+				],
+				"name": "getErasCovered",
+				"outputs": [
+					{
+						"internalType": "uint128",
+						"name": "",
+						"type": "uint128"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "member",
+						"type": "address"
+					}
+				],
+				"name": "getMember",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "delegator",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "collator",
+						"type": "address"
+					}
+				],
+				"name": "getPayoutAmount",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "member",
+						"type": "address"
+					}
+				],
+				"name": "getScheduledDecrease",
+				"outputs": [
+					{
+						"internalType": "uint128",
+						"name": "",
+						"type": "uint128"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_auth_manager",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "_oracle_master",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "_deposit_staking",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_min_deposit",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_max_deposit_total",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_stake_unit_cover",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_min_payout",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint128",
+						"name": "_eras_between_forced_undelegation",
+						"type": "uint128"
+					}
+				],
+				"name": "initialize",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "memberAddresses",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "memberNotPaid",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_max_covered",
+						"type": "uint256"
+					}
+				],
+				"name": "memberSetMaxCoveredDelegation",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "members",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "isMember",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "active",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deposit",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "maxDefaulted",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "maxCoveredDelegation",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "membersDepositTotal",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address payable[]",
+						"name": "delegators",
+						"type": "address[]"
+					},
+					{
+						"internalType": "address[]",
+						"name": "collators",
+						"type": "address[]"
+					}
+				],
+				"name": "payOutCover",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint64",
+						"name": "_eraId",
+						"type": "uint64"
+					},
+					{
+						"components": [
+							{
+								"internalType": "uint256",
+								"name": "totalStaked",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint128",
+								"name": "totalSelected",
+								"type": "uint128"
+							},
+							{
+								"internalType": "uint128",
+								"name": "orbitersCount",
+								"type": "uint128"
+							},
+							{
+								"internalType": "uint128",
+								"name": "round",
+								"type": "uint128"
+							},
+							{
+								"internalType": "bytes32",
+								"name": "blockHash",
+								"type": "bytes32"
+							},
+							{
+								"internalType": "uint128",
+								"name": "blockNumber",
+								"type": "uint128"
+							},
+							{
+								"internalType": "uint128",
+								"name": "awarded",
+								"type": "uint128"
+							},
+							{
+								"components": [
+									{
+										"internalType": "address",
+										"name": "collatorAccount",
+										"type": "address"
+									},
+									{
+										"internalType": "uint128",
+										"name": "points",
+										"type": "uint128"
+									},
+									{
+										"internalType": "bool",
+										"name": "active",
+										"type": "bool"
+									},
+									{
+										"internalType": "uint256",
+										"name": "bond",
+										"type": "uint256"
+									},
+									{
+										"internalType": "uint256",
+										"name": "delegationsTotal",
+										"type": "uint256"
+									},
+									{
+										"components": [
+											{
+												"internalType": "address",
+												"name": "ownerAccount",
+												"type": "address"
+											},
+											{
+												"internalType": "uint256",
+												"name": "amount",
+												"type": "uint256"
+											}
+										],
+										"internalType": "struct Types.DelegationsData[]",
+										"name": "topActiveDelegations",
+										"type": "tuple[]"
+									}
+								],
+								"internalType": "struct Types.CollatorData[]",
+								"name": "collators",
+								"type": "tuple[]"
+							}
+						],
+						"internalType": "struct Types.OracleData",
+						"name": "_report",
+						"type": "tuple"
+					}
+				],
+				"name": "pushData",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "scheduleDecreaseCover",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "member",
+						"type": "address"
+					}
+				],
+				"name": "scheduleDecreaseCoverManager",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "candidate",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "less",
+						"type": "uint256"
+					}
+				],
+				"name": "schedule_delegator_bond_less",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "scheduledDecreasesMap",
+				"outputs": [
+					{
+						"internalType": "uint128",
+						"name": "era",
+						"type": "uint128"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint128",
+						"name": "_eras_between_forced_undelegation",
+						"type": "uint128"
+					}
+				],
+				"name": "setErasBetweenForcedUndelegations",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint128",
+						"name": "_execute_delay",
+						"type": "uint128"
+					},
+					{
+						"internalType": "address",
+						"name": "member",
+						"type": "address"
+					}
+				],
+				"name": "setExecuteDelay",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_max_deposit_total",
+						"type": "uint256"
+					}
+				],
+				"name": "setMaxDepositTotal",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_min_deposit",
+						"type": "uint256"
+					}
+				],
+				"name": "setMinDeposit",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_min_payout",
+						"type": "uint256"
+					}
+				],
+				"name": "setMinPayout",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_stake_unit_cover",
+						"type": "uint256"
+					}
+				],
+				"name": "setStakeUnitCover",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "staking",
+				"outputs": [
+					{
+						"internalType": "contract ParachainStaking",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "newMember",
+						"type": "address"
+					},
+					{
+						"internalType": "bool",
+						"name": "status",
+						"type": "bool"
+					}
+				],
+				"name": "whitelist",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "whitelisted",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address payable",
+						"name": "receiver",
+						"type": "address"
+					}
+				],
+				"name": "withdrawRewards",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"stateMutability": "payable",
+				"type": "receive"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {
+				"cancelDecreaseCover()": {
+					"details": "Cancel a scheduled cover decrease (withdrawal)"
+				},
+				"depositCover(address)": {
+					"details": "Deposit cover funds for a member collator. Anybody can deposit funds for a collator, but only the collator can withdraw. The collator must be whitelisted. If the collator is at default (out of funds and not recording missed rounds), this method will cause the collator to resume cover.",
+					"params": {
+						"collator": "The collator address the deposit is for."
+					}
+				},
+				"executeScheduled(address)": {
+					"details": "Execute a scheduled cover decrease (withdrawal) by a member",
+					"params": {
+						"collator": "The collator member whose scheduled withdrawal we are executing (anybody can execute it)"
+					}
+				},
+				"payOutCover(address[],address[])": {
+					"details": "Anybody can execute this method to pay out cover claims to any delegator",
+					"params": {
+						"collators": "The corresponding collators that the delegators are caliming from",
+						"delegators": "The delegators to pay cover claims to. These are accumulated claims and could even be from multiple collators that missed rounds."
+					}
+				},
+				"pushData(uint64,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[]))": {
+					"details": "The method is used by the oracle to push data into the contract and calculate potential cover claims.",
+					"params": {
+						"_eraId": "The round number",
+						"_report": "The collator data, including authored block counts, delegators, etc."
+					}
+				},
+				"scheduleDecreaseCover(uint256)": {
+					"details": "A member can request to withdraw its cover funds. The member has to wait for a number of rounds until they can withdraw. During this waiting time, their funds continue to cover their delegators.",
+					"params": {
+						"amount": "How much to decrease the cover by."
+					}
+				},
+				"scheduleDecreaseCoverManager(uint256,address)": {
+					"details": "Allows the manager to schedule a refund of the deposit back to a member that is no longer whitelisted",
+					"params": {
+						"amount": "How much to refund back.",
+						"member": "The member to refund their deposit to."
+					}
+				},
+				"setExecuteDelay(uint128,address)": {
+					"details": "Manager can override execute delay (this is temporary and will be overwritten in next pushData)",
+					"params": {
+						"_execute_delay": "The decrease execution delay"
+					}
+				},
+				"setMaxDepositTotal(uint256)": {
+					"details": "Set the maximum total deposit. Member collators cannot deposit more than this total amount.",
+					"params": {
+						"_max_deposit_total": "The max deposit allowed"
+					}
+				},
+				"setMinDeposit(uint256)": {
+					"details": "Set the minimum member deposit allowed",
+					"params": {
+						"_min_deposit": "The min deposit"
+					}
+				},
+				"withdrawRewards(uint256,address)": {
+					"details": "Allows the manager to withdraw any contract balance that is above the total deposits balance. This includes staking rewards or other funds that were sent tot he contract.",
+					"params": {
+						"amount": "How much to withdraw",
+						"receiver": "Who to send the withdrawal to"
+					}
+				}
+			},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {
+				"initialize(address,address,address,uint256,uint256,uint256,uint256,uint128)": {
+					"notice": "Initialize contract."
+				},
+				"staking()": {
+					"notice": "The ParachainStaking wrapper at the known pre-compile address. This will be used to make all calls to the underlying staking solution"
+				}
+			},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/InactivityCover.sol": "InactivityCover"
+		},
+		"evmVersion": "london",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"@openzeppelin/contracts/proxy/utils/Initializable.sol": {
+			"keccak256": "0x2a21b14ff90012878752f230d3ffd5c3405e5938d06c97a7d89c0a64561d0d66",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://3313a8f9bb1f9476857c9050067b31982bf2140b83d84f3bc0cec1f62bbe947f",
+				"dweb:/ipfs/Qma17Pk8NRe7aB4UD3jjVxk7nSFaov3eQyv86hcyqkwJRV"
+			]
+		},
+		"@openzeppelin/contracts/token/ERC20/IERC20.sol": {
+			"keccak256": "0x9750c6b834f7b43000631af5cc30001c5f547b3ceb3635488f140f60e897ea6b",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://5a7d5b1ef5d8d5889ad2ed89d8619c09383b80b72ab226e0fe7bde1636481e34",
+				"dweb:/ipfs/QmebXWgtEfumQGBdVeM6c71McLixYXQP5Bk6kKXuoY4Bmr"
+			]
+		},
+		"@openzeppelin/contracts/utils/Address.sol": {
+			"keccak256": "0xd6153ce99bcdcce22b124f755e72553295be6abcd63804cfdffceb188b8bef10",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://35c47bece3c03caaa07fab37dd2bb3413bfbca20db7bd9895024390e0a469487",
+				"dweb:/ipfs/QmPGWT2x3QHcKxqe6gRmAkdakhbaRgx3DLzcakHz5M4eXG"
+			]
+		},
+		"@openzeppelin/contracts/utils/math/SafeCast.sol": {
+			"keccak256": "0x02686c31ccb9ee77a299fa5f47327af5271f251a707a0e24f321957166ff0434",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://cb562d8ae1da31249ca0d8553df9f89ef4c3c110a018c4449dde68ae30e51ec1",
+				"dweb:/ipfs/QmUwxjtTUYB89ymeV46TZPmTsGnYrKNcgTHk7MQA1MG3hj"
+			]
+		},
+		"contracts/DepositStaking.sol": {
+			"keccak256": "0x3a34f2a3f0404df68a6a01b10d9a187652278c3ed3c2f680e43d1479032411b7",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://f9fbc3e15258ca741e391d511f2715bc2a7b868622592f593360091dd9b66204",
+				"dweb:/ipfs/QmThgejjL9DPKNNuzRP5XrDcHY1rKVMsEWsF8Jnk4gSmRK"
+			]
+		},
+		"contracts/InactivityCover.sol": {
+			"keccak256": "0xe0204556c8cb3c2f5d7dd829bad6f30a519f9b57ec2dd62878f620c5ee5bc57e",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://99ada82786bf9abe8b1a4ecf2acb53c65310028e25893f083b7a4ea2845ddb89",
+				"dweb:/ipfs/QmbWbwyNCS9vZdfcy3UrK5DLX24tr4GwxGeaL8nVw27ng5"
+			]
+		},
+		"interfaces/IAuthManager.sol": {
+			"keccak256": "0x95722b6d0df37e9fbce00e8538bd2da05644d8e788dd78b62e81a0a6eec716a1",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://01b539de480568d974445a5bdc0922b257d769e6b792f9dfada391e37c5476de",
+				"dweb:/ipfs/QmZdwP554mD4mE22eWgKGpoYxtfknhhL7jufbsKFse1YFu"
+			]
+		},
+		"interfaces/IDepositStaking.sol": {
+			"keccak256": "0x900bfd326094cc4183041d5602d23fb40195f6eeb7cdfaa286ed9862da519b02",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://5a7d5ba40aace2e5cab786b741ad9a6a7725e7d12cbbc0b4d55b43581ca083b2",
+				"dweb:/ipfs/QmUEThT7jjKqNym6GfwFxLgwXi1J2xmJ1uCiQo4CGdGb7e"
+			]
+		},
+		"interfaces/IInactivityCover.sol": {
+			"keccak256": "0x98d29a784dbc6225b59df3a1d908a8fc80609b20bcd2566c876ffba0fe4807b2",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://b05e3128a4f06ee586c4736f2db91acef0c4af0264b62e8d71ccdc3887c1cc90",
+				"dweb:/ipfs/QmPH1Gw3jGshvxErMcbuno1fMv2cHKqgCgvrHFWhnjoY6v"
+			]
+		},
+		"interfaces/IOracleMaster.sol": {
+			"keccak256": "0x9661c17609b27a8d2db6dff19b2c266235a1b3f7b37151c2a49350cfb9b2b976",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://097d9e73df9c6edad8bfa174fc462c7be25f4620cf3dc39ee10f5d4dcd997156",
+				"dweb:/ipfs/QmPB9vD6NfqSzjkx1hn4f3s6P1J8i9ECTeBwNqKvTUXhjG"
+			]
+		},
+		"interfaces/StakingInterface.sol": {
+			"keccak256": "0xe3dadc1045be8bf5c80b9ef0fd1611cd1116629b22ff25dd504a74b5b94e292d",
+			"license": "GPL-3.0-only",
+			"urls": [
+				"bzz-raw://879adefec5eb9dfb3dd7d130744343a711200f25572c953a513bcd696f83067c",
+				"dweb:/ipfs/QmXMVgQ6SbM21KtzHYcGXcj5mvQcWCYVZuYoeUCEtrx1To"
+			]
+		},
+		"interfaces/Types.sol": {
+			"keccak256": "0x89d262fb9bdea0c2008960caa7d7a473b7165e091c96351d2d9f27ec57f8e963",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://30149cfcb2a9761c1fa6b99fdb03cead874738bec8b2a1ba3df03c9bfca9e399",
+				"dweb:/ipfs/QmRg8FiQMxrAQ8i6wf3oSqd8GEk4F7v5fxPD1JnD2cqDtT"
+			]
+		}
+	},
+	"version": 1
+}

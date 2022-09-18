@@ -29,14 +29,11 @@ contract OracleMaster is Pausable, Initializable {
     // oracle master contract
     address public ORACLE;
 
-    // address of oracle clone template contract
-    address public ORACLE_CLONE;
-
     // Quorum threshold
     uint8 public QUORUM;
 
     /// Maximum number of oracle committee members
-    uint256 public constant MAX_MEMBERS = 255;
+    uint256 public constant MAX_MEMBERS = 100;
 
     // Missing member index
     uint256 internal constant MEMBER_N_FOUND = type(uint256).max;
@@ -62,10 +59,7 @@ contract OracleMaster is Pausable, Initializable {
 
     // Allows function calls only from member with specific role
     modifier auth(bytes32 role) {
-        require(
-            IAuthManager(AUTH_MANAGER).has(role, msg.sender),
-            "OM: UNAUTH"
-        );
+        require(IAuthManager(AUTH_MANAGER).has(role, msg.sender), "OM: UNAUTH");
         _;
     }
 
@@ -88,8 +82,8 @@ contract OracleMaster is Pausable, Initializable {
         address payable _inactivity_cover,
         uint8 _quorum
     ) external initializer {
-        require(ORACLE_CLONE == address(0), "OM: ALREADY_INITIALIZED");
-        require(_quorum > 0 && _quorum < MAX_MEMBERS, "OM: INCORRECT_QUORUM");
+        require(ORACLE == address(0), "OM: ALREADY_INITIALIZED");
+        require(_quorum > 0 && _quorum <= MAX_MEMBERS, "OM: INCORRECT_QUORUM");
         AUTH_MANAGER = _auth_manager;
         ORACLE = _oracle;
         INACTIVITY_COVER = _inactivity_cover;
@@ -204,8 +198,7 @@ contract OracleMaster is Pausable, Initializable {
         external
         whenNotPaused
     {
-        // require(_report.isConsistent(), "OM: INCORRECT_REPORT");
-
+        require(_isConsistent(_report), "OM: INCORRECT_REPORT");
         uint256 memberIndex = _getMemberId(msg.sender);
         require(memberIndex != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
         require(ORACLE != address(0), "OM: ORACLE_N_FOUND");
@@ -218,6 +211,35 @@ contract OracleMaster is Pausable, Initializable {
         }
 
         IOracle(ORACLE).reportRelay(memberIndex, QUORUM, _eraId, _report);
+    }
+
+    function addRemovePushable(address payable _pushable, bool _toAdd)
+        external
+        auth(ROLE_ORACLE_MEMBERS_MANAGER)
+    {
+        IOracle(ORACLE).addRemovePushable(_pushable, _toAdd);
+    }
+
+    /// @notice Return true if report is consistent
+    function _isConsistent(Types.OracleData memory report)
+        internal
+        pure
+        returns (bool)
+    {
+        uint256 collatorsWithZeroPoints = 0;
+        for (uint256 i = 0; i < report.collators.length; i++) {
+            if (report.collators[i].points == 0) {
+                collatorsWithZeroPoints++;
+            }
+        }
+        return
+            (report.collators.length < 5 || collatorsWithZeroPoints < (report.collators.length * 2) / 3) &&
+            report.round > 0 &&
+            report.totalStaked > 0 &&
+            report.totalSelected > 0 &&
+            report.awarded > 0 &&
+            report.blockNumber > 0 &&
+            report.collators.length > 0;
     }
 
     /**
@@ -241,5 +263,4 @@ contract OracleMaster is Pausable, Initializable {
     function _clearReporting() internal {
         IOracle(ORACLE).clearReporting();
     }
-
 }

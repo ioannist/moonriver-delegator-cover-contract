@@ -15,4 +15,6 @@ interface IOracle {
     function isReported(uint256 index) external view returns (bool);
 
     function setInactivityCover(address _inactivity_cover) external;
+
+    function addRemovePushable(address payable _pushable, bool _toAdd) external;
 }

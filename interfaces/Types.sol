@@ -27,7 +27,7 @@ interface Types {
     }
 
     struct UnlockingChunk {
-        uint128 balance;
+        uint256 balance;
         uint64 era;
     }
 
@@ -46,7 +46,7 @@ interface Types {
         address ownerAccount;
         // delegation amount
         // for topActiveDelegations, amount excludes decreases
-        uint128 amount;
+        uint256 amount;
     }
 
     struct CollatorData {
@@ -57,9 +57,9 @@ interface Types {
         // true if this is an active collator, false if it is waiting
         bool active;
         // self-bond amount
-        uint128 bond;
+        uint256 bond;
         // total of counted delegations
-        uint128 delegationsTotal;
+        uint256 delegationsTotal;
         // delegator data for this collator
         DelegationsData[] topActiveDelegations; // excludes decreases and revokes
         // DelegationsData[] bottomDelegations;
@@ -69,7 +69,7 @@ interface Types {
 
     struct OracleData {
         // the total amount of MOVR staked
-        uint128 totalStaked;
+        uint256 totalStaked;
         // the total count of desired collators, excluding orbiters
         uint128 totalSelected;
         // the target count of collators with orbiters

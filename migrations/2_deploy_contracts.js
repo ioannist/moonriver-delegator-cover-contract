@@ -14,42 +14,75 @@ module.exports = async (deployer, network, accounts) => {
   const _min_payout = web3.utils.toWei(process.env.MIN_PAYOUT, "ether");
   const _eras_between_forced_undelegation = process.env.ERAS_BETWEEN_FORCED_UNDELEGATION;
   const _quorum = process.env.QUORUM;
-  
+
   const superior = accounts[0];
   const manager = accounts[1];
+  const oracleMembersManager = accounts[2]
+  const oracleMember = accounts[3]
   console.log(`Superior is ${superior}`);
 
   console.log(`Deploying AuthManager`);
-  await deployer.deploy(AuthManager);
-  let AM = await AuthManager.deployed();
-  const _auth_manager = AM.address;
+  let _auth_manager, AM;
+  while (true) {
+    try {
+      await deployer.deploy(AuthManager);
+      AM = await AuthManager.deployed();
+      _auth_manager = AM.address;
+      break;
+    } catch { }
+  }
 
   console.log(`Initializing AuthManager`);
   await AM.initialize(superior);
 
   console.log(`Adding manager role ${manager}`)
-  const managerHash = web3.utils.sha3('ROLE_MANAGER', { encoding: 'hex' })
-  await AM.add(managerHash, manager);
+  //const managerHash = web3.utils.sha3('ROLE_MANAGER', { encoding: 'hex' })
+  await AM.addByString('ROLE_MANAGER', manager);
+  await AM.addByString('ROLE_ORACLE_MEMBERS_MANAGER', oracleMembersManager);
 
   console.log(`Deploying OracleMaster`);
-  await deployer.deploy(OracleMaster);
-  let OM = await OracleMaster.deployed();
-  const _oracle_master = OM.address;
+  let _oracle_master, OM;
+  while (true) {
+    try {
+      await deployer.deploy(OracleMaster);
+      OM = await OracleMaster.deployed();
+      _oracle_master = OM.address;
+      break
+    } catch { }
+  }
 
   console.log(`Deploying Oracle`);
-  await deployer.deploy(Oracle);
-  let OR = await Oracle.deployed();
-  const _oracle = OR.address;
+  let _oracle, OR;
+  while (true) {
+    try {
+      await deployer.deploy(Oracle);
+      OR = await Oracle.deployed();
+      _oracle = OR.address;
+      break;
+    } catch { }
+  }
 
   console.log(`Deploying DepositStaking`)
-  await deployer.deploy(DepositStaking);
-  const DS = await DepositStaking.deployed()
-  const _deposit_staking = DS.address;
+  let _deposit_staking, DS;
+  while (true) {
+    try {
+      await deployer.deploy(DepositStaking);
+      DS = await DepositStaking.deployed()
+      _deposit_staking = DS.address;
+      break;
+    } catch { }
+  }
 
   console.log(`Deploying InactivityCover`);
-  await deployer.deploy(InactivityCover);
-  const IC = await InactivityCover.deployed();
-  const _inactivity_cover = IC.address;
+  let _inactivity_cover, IC;
+  while (true) {
+    try {
+      await deployer.deploy(InactivityCover);
+      IC = await InactivityCover.deployed();
+      _inactivity_cover = IC.address;
+      break;
+    } catch { }
+  }
 
   console.log(`Initializing OracleMaster`);
   await OM.initialize(
@@ -58,10 +91,11 @@ module.exports = async (deployer, network, accounts) => {
     _inactivity_cover,
     _quorum,
   );
+  await OM.addOracleMember(oracleMember, { from: oracleMembersManager });
 
   console.log(`Initializing Oracle`);
   await OR.initialize(_oracle_master, _inactivity_cover);
-
+  
   console.log(`Initializing DepositStaking`);
   await DS.initialize(_auth_manager, _inactivity_cover);
 
@@ -82,9 +116,10 @@ module.exports = async (deployer, network, accounts) => {
     _auth_manager,
     _oracle,
     _oracle_master,
-    _inactivity_cover
+    _inactivity_cover,
+    _deposit_staking
   })
 
-  console.log({accounts})
+  console.log({ accounts })
 
 };

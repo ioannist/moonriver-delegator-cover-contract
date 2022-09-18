@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/Types.sol";
 import "../interfaces/IOracleMaster.sol";
-import "../interfaces/IInactivityCover.sol";
+import "../interfaces/IPushable.sol";
 import "./utils/ReportUtils.sol";
 
 contract Oracle is Initializable {
@@ -25,7 +25,7 @@ contract Oracle is Initializable {
     uint256 internal currentReportBitmask;
 
     // inactivity cover contract address
-    address payable public INACTIVITY_COVER;
+    address payable[] public PUSHABLES;
     // oracle master contract address
     address public ORACLE_MASTER;
 
@@ -39,12 +39,13 @@ contract Oracle is Initializable {
      * @notice Initialize oracle contract
      * @param _oracleMaster oracle master address
      */
-    function initialize(address _oracleMaster, address payable _inactivity_cover)
-        external initializer
+    function initialize(address _oracleMaster, address payable _pushable)
+        external
+        initializer
     {
         require(ORACLE_MASTER == address(0), "ORACLE: ALREADY_INITIALIZED");
         ORACLE_MASTER = _oracleMaster;
-        INACTIVITY_COVER = _inactivity_cover;
+        PUSHABLES.push(_pushable);
     }
 
     /**
@@ -131,6 +132,21 @@ contract Oracle is Initializable {
         _clearReporting();
     }
 
+    function addRemovePushable(address payable _pushable, bool _toAdd)
+        external
+        onlyOracleMaster
+    {
+        if (_toAdd) {
+            PUSHABLES.push(_pushable);
+        } else {
+            for (uint256 i = 0; i < PUSHABLES.length; i++) {
+                if (PUSHABLES[i] == _pushable) {
+                    delete PUSHABLES[i];
+                }
+            }
+        }
+    }
+
     /**
      * @notice Returns report by given index
      * @param _index oracle member index
@@ -157,10 +173,15 @@ contract Oracle is Initializable {
     }
 
     /**
-     * @notice Push data to ledger
+     * @notice Push data to all pushable contracts
      */
     function _push(uint64 _eraId, Types.OracleData memory report) internal {
-        IInactivityCover(INACTIVITY_COVER).pushData(_eraId, report);
+        for (uint256 i = 0; i < PUSHABLES.length; i++) {
+            if (PUSHABLES[i] == address(0)) {
+                continue;
+            }
+            IPushable(PUSHABLES[i]).pushData(_eraId, report);
+        }
         isPushed = true;
     }
 
@@ -199,5 +220,4 @@ contract Oracle is Initializable {
         }
         return (maxval >= _quorum && repeat == 0, maxind);
     }
-
 }

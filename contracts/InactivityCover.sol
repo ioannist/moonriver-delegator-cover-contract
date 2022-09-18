@@ -9,11 +9,10 @@ import "../interfaces/StakingInterface.sol";
 import "../interfaces/IOracleMaster.sol";
 import "../interfaces/Types.sol";
 import "../interfaces/IAuthManager.sol";
-import "../interfaces/IInactivityCover.sol";
+import "../interfaces/IPushable.sol";
 import "./DepositStaking.sol";
 
-contract InactivityCover {
-    //using SafeCast for uint256;
+contract InactivityCover is IPushable {
 
     struct ScheduledDecrease {
         uint128 era; // the era when the scheduled decrease was created
@@ -23,8 +22,9 @@ contract InactivityCover {
     struct Member {
         bool isMember; // once a member, always a member
         bool active; // starts active, can go inactive by reducing deposit to less than minimum deposit
-        uint256 amount; // deposit
-        uint256 maxDefaulted; // the max cover payment was has defaulted and is pending
+        uint256 deposit; // deposit
+        uint256 maxDefaulted; // the max cover payment that has defaulted and is pending
+        uint256 maxCoveredDelegation; // any amount of this limit is not covered (used to incentivize splitting large delegations among multiple collators)
     }
 
     event DepositEvent(address member, uint256 amount);
@@ -125,10 +125,10 @@ contract InactivityCover {
         uint128 _eras_between_forced_undelegation
     ) external {
         require(
-            AUTH_MANAGER == address(0) && _auth_manager != address(0),
+            AUTH_MANAGER == address(0) && _auth_manager != address(0), // guarantees that init will only be called once
             "NOT_ALLOWED"
         );
-        staking = ParachainStaking(0x0000000000000000000000000000000000000100);
+        staking = ParachainStaking(0x0000000000000000000000000000000000000800);
         AUTH_MANAGER = _auth_manager;
         ORACLE_MASTER = _oracle_master;
         DEPOSIT_STAKING = _deposit_staking;
@@ -145,16 +145,16 @@ contract InactivityCover {
      @param collator The collator address the deposit is for.
     */
     function depositCover(address collator) external payable {
-        require(whitelisted[collator], "");
+        require(whitelisted[collator], "NOT_WLISTED");
         require(msg.value >= MIN_DEPOSIT, "BEL_MIN_DEP"); // avoid spam deposits
         require(
             msg.value >= members[collator].maxDefaulted,
-            "BELOW_MAX_DEFAULT"
+            "BEL_MAX_DEFAULT"
         );
         require(collator != address(0), "ZERO_ADDR");
         require(
-            members[collator].amount + msg.value <= MAX_DEPOSIT_TOTAL,
-            "EXCEEDS_MAX_DEPOSIT_TOTAL"
+            members[collator].deposit + msg.value <= MAX_DEPOSIT_TOTAL,
+            "EXC_MAX_DEP"
         );
 
         if (!members[collator].isMember) {
@@ -162,7 +162,7 @@ contract InactivityCover {
             members[collator].isMember = true;
         }
         members[collator].active = true;
-        members[collator].amount += msg.value;
+        members[collator].deposit += msg.value;
         delete members[collator].maxDefaulted;
         membersDepositTotal += msg.value;
         emit DepositEvent(collator, msg.value);
@@ -219,7 +219,7 @@ contract InactivityCover {
             // The manager can change the EXECUTE_DELAY after the decrease was scheduled by the memver, so the "scheduled date" is not fixed
             scheduledDecreasesMap[collator].era + erasCovered[collator] <=
                 eraId,
-            "NOT_EXECUTABLE"
+            "NOT_EXEC"
         );
 
         uint256 amount = scheduledDecreasesMap[collator].amount;
@@ -237,8 +237,8 @@ contract InactivityCover {
             memberNotPaid = address(0);
         }
 
-        members[collator].amount -= amount;
-        if (members[collator].amount < MIN_DEPOSIT) {
+        members[collator].deposit -= amount;
+        if (members[collator].deposit < MIN_DEPOSIT) {
             members[collator].active = false;
         }
         membersDepositTotal -= amount;
@@ -251,7 +251,7 @@ contract InactivityCover {
 
     /// @dev Cancel a scheduled cover decrease (withdrawal)
     function cancelDecreaseCover() external {
-        require(members[msg.sender].amount > 0, "NO_DEP");
+        require(members[msg.sender].deposit > 0, "NO_DEP");
         require(scheduledDecreasesMap[msg.sender].amount > 0, "DECR_N_EXIST");
         delete scheduledDecreasesMap[msg.sender];
         emit CancelDecreaseCoverEvent(msg.sender);
@@ -281,7 +281,7 @@ contract InactivityCover {
             uint256 refundPerEra = (collatorData.delegationsTotal *
                 STAKE_UNIT_COVER) / 1 ether;
             uint128 erasCov = uint128(
-                members[collatorData.collatorAccount].amount / refundPerEra
+                members[collatorData.collatorAccount].deposit / refundPerEra
             );
             erasCovered[collatorData.collatorAccount] = erasCov <= 1080
                 ? erasCov
@@ -317,12 +317,21 @@ contract InactivityCover {
                     continue;
                 }
 
-                uint256 toPay = STAKE_UNIT_COVER * (delegation / 1 ether);
+                uint256 delegationEffective;
+                if(members[collatorData.collatorAccount].maxCoveredDelegation == 0) {
+                    delegationEffective = delegation;
+                } else if (delegation > members[collatorData.collatorAccount].maxCoveredDelegation) {
+                    delegationEffective = members[collatorData.collatorAccount].maxCoveredDelegation;
+                } else {
+                    delegationEffective = delegation;
+                }
+                
+                uint256 toPay = STAKE_UNIT_COVER * (delegationEffective / 1 ether);
                 if (membersDepositTotal < toPay) {
                     // should never happen; guard against overflow error
                     continue;
                 }
-                if (members[collator].amount < toPay) {
+                if (members[collator].deposit < toPay) {
                     members[collator].maxDefaulted = toPay >
                         members[collator].maxDefaulted
                         ? toPay
@@ -332,7 +341,7 @@ contract InactivityCover {
                 }
 
                 payoutAmounts[delegator][collator] += toPay; // credit the delegator
-                members[collator].amount -= toPay; // debit the collator deposit
+                members[collator].deposit -= toPay; // debit the collator deposit
                 membersDepositTotal -= toPay; // decrease the total members deposit
                 coverOwedTotal += toPay; // current total (not paid out)
                 coverClaims += toPay; // for this round (oracle push)
@@ -351,7 +360,7 @@ contract InactivityCover {
         address[] calldata collators
     ) external {
         require(delegators.length == collators.length, "INVALID");
-
+        
         for (uint256 i = 0; i < delegators.length; i++) {
             address delegator = delegators[i];
             address collator = collators[i];
@@ -392,20 +401,24 @@ contract InactivityCover {
         }
     }
 
-    function getDeposit(address member) external view returns (uint256) {
-        return members[member].amount;
-    }
-
-    function getIsMember(address member) external view returns (bool) {
-        return members[member].isMember;
-    }
-
-    function getIsActive(address member) external view returns (bool) {
-        return members[member].active;
-    }
-
-    function getMaxDefault(address member) external view returns (uint256) {
-        return members[member].maxDefaulted;
+    function getMember(address member)
+        external
+        view
+        returns (
+            bool,
+            bool,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return (
+            members[member].isMember,
+            members[member].active,
+            members[member].deposit,
+            members[member].maxDefaulted,
+            members[member].maxCoveredDelegation
+        );
     }
 
     function getScheduledDecrease(address member)
@@ -453,7 +466,7 @@ contract InactivityCover {
         auth(ROLE_MANAGER)
     {
         // Cannot set delay to longer than 3 months (12 rounds per day * 30 * 3)
-        require(_execute_delay <= 1080, "HIGH_DELAY");
+        require(_execute_delay <= 1080, "HIGH");
         erasCovered[member] = _execute_delay;
     }
 
@@ -466,7 +479,7 @@ contract InactivityCover {
 
     function setMinPayout(uint256 _min_payout) external auth(ROLE_MANAGER) {
         // Protect delegators from having to wait forever to get paid due to an unresonable min payment
-        require(_min_payout <= 10 ether, "HIGH_MIN_PAYM");
+        require(_min_payout <= 10 ether, "HIGH");
         MIN_PAYOUT = _min_payout;
     }
 
@@ -476,9 +489,15 @@ contract InactivityCover {
         // Protect contract from multiple undelegations without allowing time to unbond
         require(
             _eras_between_forced_undelegation <= 300,
-            "TOO_HIGH_ERAS_BETWEEN_FORCED_UNDELEGATION"
+            "HIGH"
         );
         ERAS_BETWEEN_FORCED_UNDELEGATION = _eras_between_forced_undelegation;
+    }
+
+    function memberSetMaxCoveredDelegation(uint256 _max_covered) external {
+        require(members[msg.sender].active, "NOT_ACTIVE");
+        require(_max_covered == 0 || _max_covered >= 500 ether, "INVALID");
+        members[msg.sender].maxCoveredDelegation = _max_covered;
     }
 
     function whitelist(address newMember, bool status)
@@ -519,17 +538,17 @@ contract InactivityCover {
     }
 
     /** @dev Private method for scheduling a withdrawal of cover funds by a member. Can only be called by the
-    collator itself. Only one scheduled decrease can exist per member at a time. Members might have to call
-    this method a number of time to withdraw all funds due to the MAX_COVER_DECREASE limit. This is to protect
-    delegators. For exaple, if a member provides a cover for 3 months, delegators should be able to assume
-    that even if that member schedules a decrease tomorrow, they would still be protected for 3 months.
+    collator itself. Only one scheduled decrease can exist per member at a time. The waiting time to withdraw is
+    proportional to the deposit. This is to protect delegators. For exaple, if a member's deposit provides cover
+    for 3 months, delegators should be able to assume that even if that member schedules a decrease tomorrow,
+    they would still be protected for enother 3 months.
      @param amount The amount to decrease the cover deposit by.
      @param member The member to refund their deposit to.
     */
     function _scheduleDecreaseCover(uint256 amount, address member) private {
-        require(amount > 0, "ZERO_DECREASE");
-        require(members[member].amount > 0, "NO_DEP");
-        require(members[member].amount >= amount, "EXCEED_DEP");
+        require(amount > 0, "ZERO_DECR");
+        require(members[member].deposit > 0, "NO_DEP");
+        require(members[member].deposit >= amount, "EXC_DEP");
         require(scheduledDecreasesMap[msg.sender].amount == 0, "DECR_EXIST");
         scheduledDecreasesMap[member] = ScheduledDecrease(eraId, amount);
         emit DecreaseCoverScheduledEvent(member, amount);

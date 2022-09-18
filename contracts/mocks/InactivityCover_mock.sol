@@ -12,7 +12,7 @@ contract InactivityCover_mock is InactivityCover {
     }
 
     function removeDeposit_mock(address member, uint256 amount) external {
-        members[member].amount -= amount;
+        members[member].deposit -= amount;
     }
 
     function setDelegatorNotPaid_mock(address delegator) external {

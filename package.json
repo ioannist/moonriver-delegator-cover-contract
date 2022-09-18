@@ -11,6 +11,7 @@
       "dotenv": "^16.0.2",
       "moonbeam-truffle-plugin": ">=1.4.0",
       "openzeppelin-solidity": "4.6.0",
+      "solc": "^0.8.17",
       "truffle": "^5.5.13",
       "truffle-plugin-verify": "^0.5.25"
    },
