@@ -69,7 +69,7 @@ module.exports = {
          timeoutBlocks: 200
       },
    },
-   // Solidity 0.8.0 Compiler
+   // Solidity 0.8.2 Compiler
    compilers: {
       solc: {
          version: '^0.8.2',
