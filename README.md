@@ -1,6 +1,6 @@
 # Delegator Rewards Cover Contract for Moonbeam Collators
 
-This contract allows Moonbeam (Moonriver) collators to guarantee staking rewards to their delegators. Collators (members) deposit an amount to the contract to cover any missed rounds from being down or out. The contract receives information about the state of the collators from an oracle, and credits the accounts of delegators if a member collator does not sign any blocks on a specific round. The oracle operates as a quorum of oracle members that run a docker instance to periodically query the chain and report back the staking state.
+This contract allows Moonbeam (Moonriver) collators to guarantee staking rewards to their delegators. Collators (members) deposit an amount to the contract to cover any missed rounds from being down or out. The contract receives information about the state of the collators from an [oracle](https://github.com/ioannist/moonriver-delegator-cover-oracle), and credits the accounts of delegators if a member collator does not sign any blocks on a specific round. The oracle operates as a quorum of oracle members that run a docker instance to periodically query the chain and report back the staking state.
 
 ## Contracts
 Most of the protocol is implemented as a set of smart contracts.
