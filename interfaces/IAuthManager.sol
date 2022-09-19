@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.2;
 
 interface IAuthManager {
     function has(bytes32 role, address member) external view returns (bool);

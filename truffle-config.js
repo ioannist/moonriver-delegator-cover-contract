@@ -11,6 +11,13 @@ const privateKeysMoonbase = [
    process.env.MOONBASE_ORACLE_MEMBER
 ];
 
+const privateKeysMoonriver = [
+   process.env.MOONRIVER_KEY,
+   process.env.MOONRIVER_MANAGER,
+   process.env.MOONRIVER_ORACLE_MEMBERS_MANAGER,
+   process.env.MOONRIVER_ORACLE_MEMBER
+];
+
 const privateKeys = [
    process.env.SUPERIOR_KEY,
    process.env.DEV_KEY,
@@ -50,11 +57,22 @@ module.exports = {
          networkCheckTimeout: 60000,
          timeoutBlocks: 200
       },
+      moonriver: {
+         provider: () => {
+            return new HDWalletProvider({
+               privateKeys: privateKeysMoonriver,
+               providerOrUrl: 'https://moonriver.api.onfinality.io/rpc?apikey=fc1131dc-6bfe-4830-8a07-149251b284bd'
+            });
+         },
+         network_id: 1285,
+         networkCheckTimeout: 60000,
+         timeoutBlocks: 200
+      },
    },
    // Solidity 0.8.0 Compiler
    compilers: {
       solc: {
-         version: '^0.8.0',
+         version: '^0.8.2',
       },
    },
    // Moonbeam Truffle Plugin & Truffle Plugin for Verifying Smart Contracts

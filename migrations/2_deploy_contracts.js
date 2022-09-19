@@ -39,6 +39,8 @@ module.exports = async (deployer, network, accounts) => {
   //const managerHash = web3.utils.sha3('ROLE_MANAGER', { encoding: 'hex' })
   await AM.addByString('ROLE_MANAGER', manager);
   await AM.addByString('ROLE_ORACLE_MEMBERS_MANAGER', oracleMembersManager);
+  await AM.addByString('ROLE_PAUSE_MANAGER', oracleMembersManager);
+  await AM.addByString('ROLE_ORACLE_QUORUM_MANAGER', oracleMembersManager);
 
   console.log(`Deploying OracleMaster`);
   let _oracle_master, OM;
@@ -110,8 +112,16 @@ module.exports = async (deployer, network, accounts) => {
     _min_payout,
     _eras_between_forced_undelegation
   );
-
   console.log('Finished deploying and intializing contracts')
+
+  console.log('Whitelist the first collator to join')
+  const _collator = process.env.FIRST_COLLATOR_MEMBER
+  await IC.whitelist(_collator, true, { from: manager });
+  console.log("Make deposit for the first collator member")
+  const _collator_deposit = web3.utils.toWei(process.env.FIRST_COLLATOR_DEPOSIT, "ether");
+  await IC.depositCover(_collator, { from: manager, value: _collator_deposit });
+
+  console.log("Contracts created:")
   console.log({
     _auth_manager,
     _oracle,
@@ -119,7 +129,7 @@ module.exports = async (deployer, network, accounts) => {
     _inactivity_cover,
     _deposit_staking
   })
-
+  console.log("Accounts used:")
   console.log({ accounts })
 
 };

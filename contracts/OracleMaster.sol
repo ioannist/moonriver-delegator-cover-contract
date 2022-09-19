@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.2;
 pragma abicoder v2;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
@@ -33,14 +33,10 @@ contract OracleMaster is Pausable, Initializable {
     uint8 public QUORUM;
 
     /// Maximum number of oracle committee members
-    uint256 public constant MAX_MEMBERS = 100;
+    uint256 public constant MAX_MEMBERS = 200;
 
     // Missing member index
     uint256 internal constant MEMBER_N_FOUND = type(uint256).max;
-
-    // Spec manager role
-    bytes32 internal constant ROLE_SPEC_MANAGER =
-        keccak256("ROLE_SPEC_MANAGER");
 
     // General oracle manager role
     bytes32 internal constant ROLE_PAUSE_MANAGER =
