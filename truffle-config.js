@@ -50,7 +50,7 @@ module.exports = {
          provider: () => {
             return new HDWalletProvider({
                privateKeys: privateKeysMoonbase,
-               providerOrUrl: 'http://45.82.64.32:9933'
+               providerOrUrl: 'https://moonbeam-alpha.api.onfinality.io/public'
             });
          },
          network_id: 1287,
@@ -61,7 +61,7 @@ module.exports = {
          provider: () => {
             return new HDWalletProvider({
                privateKeys: privateKeysMoonriver,
-               providerOrUrl: 'https://moonriver.api.onfinality.io/rpc?apikey=fc1131dc-6bfe-4830-8a07-149251b284bd'
+               providerOrUrl: 'https://moonriver.api.onfinality.io/public'
             });
          },
          network_id: 1285,
