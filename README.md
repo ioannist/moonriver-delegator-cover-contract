@@ -53,16 +53,16 @@ truffle migrate --network dev
 ### Deployed Contracts on Moonriver
 
 AuthManager
-0xdDBEa1588fB4738639E1d8d63cf10E30d7f2dc95
+[0xdDBEa1588fB4738639E1d8d63cf10E30d7f2dc95](https://moonriver.moonscan.io/address/0xdDBEa1588fB4738639E1d8d63cf10E30d7f2dc95)
 
 Oracle
-0xcd22F21a87690E8d96e14AB7040FFFc7C02eBdDF
+[0xcd22F21a87690E8d96e14AB7040FFFc7C02eBdDF](https://moonriver.moonscan.io/address/0xcd22F21a87690E8d96e14AB7040FFFc7C02eBdDF)
 
 OracleMaster
-0x09b3941c7c75928770a10FbabAd706cBddf559Ee
+[0x09b3941c7c75928770a10FbabAd706cBddf559Ee](https://moonriver.moonscan.io/address/0x09b3941c7c75928770a10FbabAd706cBddf559Ee)
 
 InactivityCover
-0xb88FDd5aF81442EA480AFc6eED071B1A8a8641b5
+[0xb88FDd5aF81442EA480AFc6eED071B1A8a8641b5](https://moonriver.moonscan.io/address/0xb88FDd5aF81442EA480AFc6eED071B1A8a8641b5)
 
 DepositStaking
-0xc29005f0c84ee47eD4b91B6c9549306AE4a839b4
+[0xc29005f0c84ee47eD4b91B6c9549306AE4a839b4](https://moonriver.moonscan.io/address/0xc29005f0c84ee47eD4b91B6c9549306AE4a839b4)
