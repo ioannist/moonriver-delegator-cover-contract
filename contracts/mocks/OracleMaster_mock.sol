@@ -4,4 +4,5 @@ import "../OracleMaster.sol";
 
 contract OracleMaster_mock is OracleMaster {
 
+
 }

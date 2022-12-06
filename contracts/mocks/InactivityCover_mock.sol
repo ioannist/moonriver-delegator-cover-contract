@@ -7,6 +7,10 @@ contract InactivityCover_mock is InactivityCover {
         eraId += eras;
     }
 
+    function setEra(uint64 _era) external {
+        eraId = _era;
+    }
+
     function transfer_mock(address target, uint256 amount) external {
         target.call{value: amount}("");
     }

@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "../interfaces/IOracle.sol";
 import "../interfaces/IAuthManager.sol";
+import "../interfaces/ProxyInterface.sol";
+import "../interfaces/StakingInterface.sol";
 
 contract OracleMaster is Pausable, Initializable {
     using Clones for address;
@@ -16,8 +18,11 @@ contract OracleMaster is Pausable, Initializable {
     event MemberRemoved(address member);
     event QuorumChanged(uint8 QUORUM);
 
+    ParachainStaking public staking;
+    Proxy public proxy;
+
     // current era id
-    uint64 public eraId;
+    uint128 public eraId;
 
     // Oracle members
     address[] public members;
@@ -53,6 +58,9 @@ contract OracleMaster is Pausable, Initializable {
     // Manager role
     bytes32 internal constant ROLE_MANAGER = keccak256("ROLE_MANAGER");
 
+    // Collators to oracle representatives (each collator can have one oracle rep)
+    mapping(address => address) public oreps;
+    
     // Allows function calls only from member with specific role
     modifier auth(bytes32 role) {
         require(IAuthManager(AUTH_MANAGER).has(role, msg.sender), "OM: UNAUTH");
@@ -80,6 +88,8 @@ contract OracleMaster is Pausable, Initializable {
     ) external initializer {
         require(ORACLE == address(0), "OM: ALREADY_INITIALIZED");
         require(_quorum > 0 && _quorum <= MAX_MEMBERS, "OM: INCORRECT_QUORUM");
+        staking = ParachainStaking(0x0000000000000000000000000000000000000800);
+        proxy = Proxy(0x000000000000000000000000000000000000080b);
         AUTH_MANAGER = _auth_manager;
         ORACLE = _oracle;
         INACTIVITY_COVER = _inactivity_cover;
@@ -122,19 +132,20 @@ contract OracleMaster is Pausable, Initializable {
      * @notice Return last reported era and oracle is already reported indicator
      * @param _oracleMember - oracle member address
      * @return lastEra - last reported era
+     * @return lastPart - last reported era part
      * @return isReported - true if oracle member already reported for given stash, else false
      */
     function isReportedLastEra(address _oracleMember)
         external
         view
-        returns (uint64 lastEra, bool isReported)
+        returns (uint128 lastEra, uint128 lastPart, bool isReported)
     {
         lastEra = eraId;
         uint256 memberIdx = _getMemberId(_oracleMember);
         if (memberIdx == MEMBER_N_FOUND) {
-            return (lastEra, false);
+            return (lastEra, lastPart, false);
         }
-        return (lastEra, IOracle(ORACLE).isReported(memberIdx));
+        return (lastEra, lastPart, IOracle(ORACLE).isReported(memberIdx));
     }
 
     /**
@@ -149,6 +160,45 @@ contract OracleMaster is Pausable, Initializable {
      */
     function resume() external auth(ROLE_PAUSE_MANAGER) {
         _unpause();
+    }
+
+    /**
+     * @notice Each active collator can register one address with oracle privileges. The address must be a Governance proxy of the collator at the time of registration, to prove that it is owned by that collator.
+     * @param _collatorRep the collator that the caller represents (each collator can operate one oracle)
+     */
+    function registerAsOracleMember(address _collatorRep)
+        external
+    {
+        require(_getMemberId(msg.sender) == MEMBER_N_FOUND, "OM: MEMBER_EXISTS");
+        require(members.length < MAX_MEMBERS, "OM: MEMBERS_TOO_MANY");
+        require(staking.isSelectedCandidate(_collatorRep), "OM: N_COLLATOR"); // ensure the provided address is an active collator
+        require(proxy.isProxy(_collatorRep, msg.sender, Proxy.ProxyType.Governance, 0), "OM: N_PROXY"); // ensures the sender is authorized/controlled by the collator
+        require(oreps[_collatorRep] == address(0), "OM: ALREADY_REGISTERED"); // ensures that each collator can register one oracle only
+
+        members.push(msg.sender);
+        oreps[_collatorRep] = msg.sender;
+        emit MemberAdded(msg.sender);
+    }
+
+    /**
+     * @notice Remove me from the oracle member committee list
+     * @param _collatorRep the collator that the caller represents
+     */
+    function unregisterOracleMember(address _collatorRep)
+        external
+    {
+        uint256 index = _getMemberId(msg.sender);
+        require(index != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
+        require(oreps[_collatorRep] == msg.sender, "OM: N_COLLATOR");
+        uint256 last = members.length - 1;
+        if (index != last) members[index] = members[last];
+        members.pop();
+
+        delete oreps[_collatorRep];
+
+        emit MemberRemoved(msg.sender);
+        // delete the data for the last eraId, let remained oracles report it again
+        // _clearReporting();
     }
 
     /**
@@ -188,9 +238,10 @@ contract OracleMaster is Pausable, Initializable {
     /**
      * @notice Accept oracle committee member reports from the relay side
      * @param _eraId relaychain era
+     * @param _eraNonce era nonce
      * @param _report relaychain data report
      */
-    function reportRelay(uint64 _eraId, Types.OracleData calldata _report)
+    function reportRelay(uint128 _eraId, uint128 _eraNonce, Types.OracleData calldata _report)
         external
         whenNotPaused
     {
@@ -200,13 +251,13 @@ contract OracleMaster is Pausable, Initializable {
         require(ORACLE != address(0), "OM: ORACLE_N_FOUND");
         require(_eraId >= eraId, "OM: ERA_TOO_OLD");
 
-        // new era
         if (_eraId > eraId) {
+            // new era
             eraId = _eraId;
-            _clearReporting();
+            // _clearReporting();
         }
 
-        IOracle(ORACLE).reportRelay(memberIndex, QUORUM, _eraId, _report);
+        IOracle(ORACLE).reportRelay(memberIndex, QUORUM, _eraId, _eraNonce,  _report);
     }
 
     function addRemovePushable(address payable _pushable, bool _toAdd)

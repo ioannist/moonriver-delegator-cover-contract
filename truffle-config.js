@@ -73,6 +73,13 @@ module.exports = {
    compilers: {
       solc: {
          version: '^0.8.2',
+         settings: {
+            optimizer: {
+              enabled: true,
+              runs: 200
+            },
+            viaIR: true
+          }
       },
    },
    // Moonbeam Truffle Plugin & Truffle Plugin for Verifying Smart Contracts

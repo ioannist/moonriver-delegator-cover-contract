@@ -93,10 +93,10 @@ module.exports = async (deployer, network, accounts) => {
     _inactivity_cover,
     _quorum,
   );
-  await OM.addOracleMember(oracleMember, { from: oracleMembersManager });
+  await OM.addOracleMember(oracleMember, { from: oracleMembersManager, gas: 10000000 });
 
   console.log(`Initializing Oracle`);
-  await OR.initialize(_oracle_master, _inactivity_cover);
+  await OR.initialize(_oracle_master, _inactivity_cover); // TODO, change first pushed eraId
   
   console.log(`Initializing DepositStaking`);
   await DS.initialize(_auth_manager, _inactivity_cover);
@@ -116,10 +116,10 @@ module.exports = async (deployer, network, accounts) => {
 
   console.log('Whitelist the first collator to join')
   const _collator = process.env.FIRST_COLLATOR_MEMBER
-  await IC.whitelist(_collator, true, { from: manager });
+  await IC.whitelist(_collator, true, { from: manager, gas: 10000000 });
   console.log("Make deposit for the first collator member")
   const _collator_deposit = web3.utils.toWei(process.env.FIRST_COLLATOR_DEPOSIT, "ether");
-  await IC.depositCover(_collator, { from: manager, value: _collator_deposit });
+  await IC.depositCover(_collator, { from: manager, value: _collator_deposit, gas: 10000000 });
 
   console.log("Contracts created:")
   console.log({

@@ -12,7 +12,7 @@ interface Types {
 
     struct Stash {
         bytes32 stashAccount;
-        uint64  eraId;
+        uint128  eraId;
     }
 
     enum LedgerStatus {

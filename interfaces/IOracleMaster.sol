@@ -5,6 +5,6 @@ interface IOracleMaster {
 
     function getOracle(address ledger) view external returns (address);
 
-    function eraId() view external returns (uint64);
+    function eraId() view external returns (uint128);
 
 }

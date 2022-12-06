@@ -4,11 +4,11 @@ pragma solidity ^0.8.2;
 import "./Types.sol";
 
 interface IOracle {
-    function initialize(address oracleMaster) external;
+    function initialize(address oracleMaster, address payable _pushable, uint128 _eraId) external;
 
-    function reportRelay(uint256 index, uint256 quorum, uint64 eraId, Types.OracleData calldata staking) external;
+    function reportRelay(uint256 index, uint256 quorum, uint128 eraId, uint128 _eraNonce, Types.OracleData calldata staking) external;
 
-    function softenQuorum(uint8 quorum, uint64 _eraId) external;
+    function softenQuorum(uint8 quorum, uint128 _eraId) external;
 
     function clearReporting() external;
 

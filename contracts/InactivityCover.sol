@@ -25,13 +25,16 @@ contract InactivityCover is IPushable {
         uint256 deposit; // deposit
         uint256 maxDefaulted; // the max cover payment that has defaulted and is pending
         uint256 maxCoveredDelegation; // any amount of this limit is not covered (used to incentivize splitting large delegations among multiple collators)
+        uint128 lastPushedEra; // the last era that was pushed and processed for this member; oracles may agree to not report an era for a member if there is no effect (no cover claims)
+        uint128 noZeroPtsCoverAfterEra; // if positive (non-zero), then the member does not offer 0-point cover after this era
+        uint128 noActiveSetCoverAfterEra; // if positive (non-zero), the member does not offer out-of-active-set cover after this era
     }
 
     event DepositEvent(address member, uint256 amount);
     event DecreaseCoverScheduledEvent(address member, uint256 amount);
     event DecreaseCoverEvent(address member, uint256 amount);
     event CancelDecreaseCoverEvent(address member);
-    event ReportPushedEvent(uint128 eraId, uint256 coverClaims);
+    event ReportPushedEvent(uint128 eraId);
     event MemberNotActive(address member, uint128 eraId);
     event MemberHasZeroPoints(address member, uint128 eraId);
     event PayoutEvent(address delegator, uint256 amount);
@@ -61,7 +64,7 @@ contract InactivityCover is IPushable {
 
     //Variables for Cover Claims
     // Current era id (round)
-    uint64 public eraId;
+    uint128 public eraId;
     // Whitelisted members
     mapping(address => bool) public whitelisted;
     // Total members
@@ -160,6 +163,8 @@ contract InactivityCover is IPushable {
         if (!members[collator].isMember) {
             memberAddresses.push(collator);
             members[collator].isMember = true;
+            members[collator].maxCoveredDelegation = 999999999 ether; // default no-max value (editable)
+            erasCovered[collator] = 8; // initial cover period - to be updated in the next oracle push
         }
         members[collator].active = true;
         members[collator].deposit += msg.value;
@@ -257,19 +262,26 @@ contract InactivityCover is IPushable {
         emit CancelDecreaseCoverEvent(msg.sender);
     }
 
+
     /// @dev The method is used by the oracle to push data into the contract and calculate potential cover claims.
     /// @param _eraId The round number
     /// @param _report The collator data, including authored block counts, delegators, etc.
-    function pushData(uint64 _eraId, Types.OracleData calldata _report)
+    function pushData(uint128 _eraId, Types.OracleData calldata _report)
         external
         onlyOracle
     {
-        require(_eraId > eraId, "PAST_ERA");
+        // we allow reporting the same era more than once, because oracles may split the report to pieces if many collators miss rounds
+        // this is required because each pushData cannot handle more than 500 delegator payouts
+        // require(_eraId == uint128(staking.round() - 1), "INV_ERA"); TODO
+        require(_eraId >= eraId, "OLD_ERA");
         eraId = _eraId;
-        uint256 coverClaims;
 
         for (uint256 i = 0; i < _report.collators.length; i++) {
-            Types.CollatorData memory collatorData = _report.collators[i];
+            Types.CollatorData calldata collatorData = _report.collators[i];
+            // a member report may only be pushed once per era
+            require(_eraId > members[collatorData.collatorAccount].lastPushedEra, "OLD_MEMBER_ERA");
+            members[collatorData.collatorAccount].lastPushedEra = _eraId;
+
             if (
                 !members[collatorData.collatorAccount].isMember ||
                 !members[collatorData.collatorAccount].active
@@ -288,12 +300,24 @@ contract InactivityCover is IPushable {
                 : 1080; // max 3 months
 
             bool mustPay;
-            if (!collatorData.active) {
+            uint128 noActiveSetCoverAfterEra = members[collatorData.collatorAccount].noActiveSetCoverAfterEra;
+            if (
+                (noActiveSetCoverAfterEra == 0 || noActiveSetCoverAfterEra + erasCovered[collatorData.collatorAccount] > eraId) &&
+                !collatorData.active
+                ) {
                 // if collator is out of the active set
                 emit MemberNotActive(collatorData.collatorAccount, eraId);
                 mustPay = true;
             }
-            if (collatorData.active && collatorData.points == 0) {
+            uint128 noZeroPtsCoverAfterEra = members[collatorData.collatorAccount].noZeroPtsCoverAfterEra;
+            emit MemberHasZeroPoints(address(0), noZeroPtsCoverAfterEra);
+            emit MemberHasZeroPoints(address(0), erasCovered[collatorData.collatorAccount]);
+            emit MemberHasZeroPoints(address(0), eraId);
+            if (
+                (noZeroPtsCoverAfterEra == 0 || noZeroPtsCoverAfterEra + erasCovered[collatorData.collatorAccount] > eraId) &&
+                collatorData.active &&
+                collatorData.points == 0
+                ) {
                 // if collator is in the active set but produced 0 blocks
                 emit MemberHasZeroPoints(collatorData.collatorAccount, eraId);
                 mustPay = true;
@@ -302,58 +326,41 @@ contract InactivityCover is IPushable {
                 continue;
             }
 
+            // this loop may run for 300 times so ops must be minimized
             for (
                 uint128 j = 0;
                 j < collatorData.topActiveDelegations.length;
                 j++
             ) {
-                Types.DelegationsData memory delegationData = collatorData
+                Types.DelegationsData calldata delegationData = collatorData
                     .topActiveDelegations[j];
-                address delegator = delegationData.ownerAccount;
-                address collator = collatorData.collatorAccount;
-                uint256 delegation = delegationData.amount;
-                if (delegation <= 0) {
-                    // should not happen, as client should pass only positive delegations
-                    continue;
-                }
 
-                uint256 delegationEffective;
-                if(members[collatorData.collatorAccount].maxCoveredDelegation == 0) {
-                    delegationEffective = delegation;
-                } else if (delegation > members[collatorData.collatorAccount].maxCoveredDelegation) {
-                    delegationEffective = members[collatorData.collatorAccount].maxCoveredDelegation;
-                } else {
-                    delegationEffective = delegation;
-                }
-                
-                uint256 toPay = STAKE_UNIT_COVER * (delegationEffective / 1 ether);
-                if (membersDepositTotal < toPay) {
-                    // should never happen; guard against overflow error
-                    continue;
-                }
-                if (members[collator].deposit < toPay) {
-                    members[collator].maxDefaulted = toPay >
-                        members[collator].maxDefaulted
+                uint256 toPay = delegationData.amount > members[collatorData.collatorAccount].maxCoveredDelegation ?
+                    STAKE_UNIT_COVER * (members[collatorData.collatorAccount].maxCoveredDelegation / 1 ether) :
+                    STAKE_UNIT_COVER * (delegationData.amount / 1 ether);
+
+                if (members[collatorData.collatorAccount].deposit < toPay) {
+                    members[collatorData.collatorAccount].maxDefaulted = toPay >
+                        members[collatorData.collatorAccount].maxDefaulted
                         ? toPay
-                        : members[collator].maxDefaulted;
-                    continue;
-                    // we don't skip defaulted collators to allow smaller claims to go through
+                        : members[collatorData.collatorAccount].maxDefaulted;
+                    continue; // TODO change to break
+                    // we could, potentially, make more smaller payments, but this risks the TX reversing due to high gas cost
                 }
 
-                payoutAmounts[delegator][collator] += toPay; // credit the delegator
-                members[collator].deposit -= toPay; // debit the collator deposit
+                payoutAmounts[delegationData.ownerAccount][collatorData.collatorAccount] += toPay; // credit the delegator
+                members[collatorData.collatorAccount].deposit -= toPay; // debit the collator deposit
                 membersDepositTotal -= toPay; // decrease the total members deposit
                 coverOwedTotal += toPay; // current total (not paid out)
-                coverClaims += toPay; // for this round (oracle push)
             }
         }
-        emit ReportPushedEvent(eraId, coverClaims);
+        emit ReportPushedEvent(eraId);
     }
 
     /** @dev Anybody can execute this method to pay out cover claims to any delegator
         @param delegators The delegators to pay cover claims to. These are accumulated claims and could
         even be from multiple collators that missed rounds.
-        @param collators The corresponding collators that the delegators are caliming from
+        @param collators The corresponding collators that the delegators are claiming from
     */
     function payOutCover(
         address payable[] calldata delegators,
@@ -409,15 +416,22 @@ contract InactivityCover is IPushable {
             bool,
             uint256,
             uint256,
-            uint256
+            uint256,
+            uint128,
+            uint128,
+            uint128
         )
     {
+        Member memory m = members[member];
         return (
-            members[member].isMember,
-            members[member].active,
-            members[member].deposit,
-            members[member].maxDefaulted,
-            members[member].maxCoveredDelegation
+            m.isMember,
+            m.active,
+            m.deposit,
+            m.maxDefaulted,
+            m.maxCoveredDelegation,
+            m.lastPushedEra,
+            m.noZeroPtsCoverAfterEra,
+            m.noActiveSetCoverAfterEra
         );
     }
 
@@ -496,9 +510,20 @@ contract InactivityCover is IPushable {
 
     function memberSetMaxCoveredDelegation(uint256 _max_covered) external {
         require(members[msg.sender].active, "NOT_ACTIVE");
-        require(_max_covered == 0 || _max_covered >= 500 ether, "INVALID");
+        require(_max_covered == 999999999999999999 ether || _max_covered >= 500 ether, "INVALID");
         members[msg.sender].maxCoveredDelegation = _max_covered;
     }
+
+    function memberSetCoverTypes(bool _noZeroPtsCoverAfterEra, bool _noActiveSetCoverAfterEra) external {
+        require(members[msg.sender].active, "NOT_ACTIVE");
+        // at least one of the cover types must be active (true)
+        require(_noZeroPtsCoverAfterEra || _noActiveSetCoverAfterEra, "INV_COVER");
+        // the eraIds signify the eras after which the cover should not be advertised or publicly offered
+        // the cover will remain in effect for erasCovered
+        members[msg.sender].noZeroPtsCoverAfterEra = _noZeroPtsCoverAfterEra ? 0 : eraId;
+        members[msg.sender].noActiveSetCoverAfterEra = _noActiveSetCoverAfterEra ? 0 : eraId;
+    }
+
 
     function whitelist(address newMember, bool status)
         external
@@ -526,7 +551,7 @@ contract InactivityCover is IPushable {
         virtual
         onlyDepositStaking
     {
-        staking.delegator_bond_more(candidate, more);
+        staking.delegatorBondMore(candidate, more);
     }
 
     function schedule_delegator_bond_less(address candidate, uint256 less)
@@ -534,7 +559,7 @@ contract InactivityCover is IPushable {
         virtual
         onlyDepositStaking
     {
-        staking.schedule_delegator_bond_less(candidate, less);
+        staking.scheduleDelegatorBondLess(candidate, less);
     }
 
     /** @dev Private method for scheduling a withdrawal of cover funds by a member. Can only be called by the

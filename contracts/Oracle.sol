@@ -13,7 +13,7 @@ contract Oracle is Initializable {
     event Completed(uint256);
 
     // is already pushed flag
-    bool public isPushed;
+    // bool public isPushed;
 
     // Current era report  hashes
     uint256[] internal currentReportVariants;
@@ -28,6 +28,9 @@ contract Oracle is Initializable {
     address payable[] public PUSHABLES;
     // oracle master contract address
     address public ORACLE_MASTER;
+
+    // current part of the current era
+    uint128 public eraNonce;
 
     // Allows function calls only from OracleMaster
     modifier onlyOracleMaster() {
@@ -67,7 +70,8 @@ contract Oracle is Initializable {
     function reportRelay(
         uint256 _index,
         uint256 _quorum,
-        uint64 _eraId,
+        uint128 _eraId,
+        uint128 _eraNonce,
         Types.OracleData calldata _staking
     ) external onlyOracleMaster {
         {
@@ -75,11 +79,12 @@ contract Oracle is Initializable {
             uint256 reportBitmask = currentReportBitmask;
             require(reportBitmask & mask == 0, "ORACLE: ALREADY_SUBMITTED");
             currentReportBitmask = (reportBitmask | mask);
+            require(_eraNonce == eraNonce, "ORACLE: INV_PART");
         }
         // return instantly if already got quorum and pushed data
-        if (isPushed) {
-            return;
-        }
+        //if (isPushed) {
+        //    return;
+        //}
 
         // convert staking report into 31 byte hash. The last byte is used for vote counting
         uint256 variant = uint256(keccak256(abi.encode(_staking))) &
@@ -114,7 +119,7 @@ contract Oracle is Initializable {
     * @param _quorum new quorum threshold
     * @param _eraId current era id
     */
-    function softenQuorum(uint8 _quorum, uint64 _eraId)
+    function softenQuorum(uint8 _quorum, uint128 _eraId, uint128 _eraNonce)
         external
         onlyOracleMaster
     {
@@ -166,23 +171,24 @@ contract Oracle is Initializable {
      */
     function _clearReporting() internal {
         currentReportBitmask = 0;
-        isPushed = false;
-
+        //isPushed = false;
         delete currentReportVariants;
         delete currentReports;
+        eraNonce++;
     }
 
     /**
      * @notice Push data to all pushable contracts
      */
-    function _push(uint64 _eraId, Types.OracleData memory report) internal {
+    function _push(uint128 _eraId, Types.OracleData memory report) internal {
         for (uint256 i = 0; i < PUSHABLES.length; i++) {
             if (PUSHABLES[i] == address(0)) {
                 continue;
             }
             IPushable(PUSHABLES[i]).pushData(_eraId, report);
         }
-        isPushed = true;
+        //isPushed = true;
+        _clearReporting();
     }
 
     /**
