@@ -133,10 +133,10 @@ contract DepositStaking {
             lastForcedUndelegationEra +
                 InactivityCover(INACTIVITY_COVER)
                     .ERAS_BETWEEN_FORCED_UNDELEGATION() <=
-                InactivityCover(INACTIVITY_COVER).eraId(),
+                InactivityCover(INACTIVITY_COVER).getEra(),
             "TOO_FREQUENT"
         );
-        lastForcedUndelegationEra = InactivityCover(INACTIVITY_COVER).eraId();
+        lastForcedUndelegationEra = InactivityCover(INACTIVITY_COVER).getEra();
 
         // A random collator with a delegated balance is chosen to undelegate from
         uint256 collatorIndex = _random() % collatorsDelegated.length;

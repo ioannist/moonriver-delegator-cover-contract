@@ -72,7 +72,8 @@ contract Oracle is Initializable {
         uint256 _quorum,
         uint128 _eraId,
         uint128 _eraNonce,
-        Types.OracleData calldata _staking
+        Types.OracleData calldata _staking,
+        address oracle
     ) external onlyOracleMaster {
         {
             uint256 mask = 1 << _index;
@@ -97,14 +98,14 @@ contract Oracle is Initializable {
             ++i;
         if (i < _length) {
             if (currentReportVariants[i].getCount() + 1 >= _quorum) {
-                _push(_eraId, _staking);
+                _push(_eraId, _staking, oracle);
             } else {
                 ++currentReportVariants[i];
                 // increment variant counter, see ReportUtils for details
             }
         } else {
             if (_quorum == 1) {
-                _push(_eraId, _staking);
+                _push(_eraId, _staking, oracle);
             } else {
                 currentReportVariants.push(variant + 1);
                 currentReports.push(_staking);
@@ -126,7 +127,7 @@ contract Oracle is Initializable {
         (bool isQuorum, uint256 reportIndex) = _getQuorumReport(_quorum);
         if (isQuorum) {
             Types.OracleData memory report = _getStakeReport(reportIndex);
-            _push(_eraId, report);
+            _push(_eraId, report, msg.sender);
         }
     }
 
@@ -180,12 +181,12 @@ contract Oracle is Initializable {
     /**
      * @notice Push data to all pushable contracts
      */
-    function _push(uint128 _eraId, Types.OracleData memory report) internal {
+    function _push(uint128 _eraId, Types.OracleData memory report, address oracle) internal {
         for (uint256 i = 0; i < PUSHABLES.length; i++) {
             if (PUSHABLES[i] == address(0)) {
                 continue;
             }
-            IPushable(PUSHABLES[i]).pushData(_eraId, report);
+            IPushable(PUSHABLES[i]).pushData(_eraId, report, oracle);
         }
         //isPushed = true;
         _clearReporting();

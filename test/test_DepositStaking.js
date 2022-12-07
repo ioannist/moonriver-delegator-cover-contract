@@ -38,7 +38,7 @@ contract('DepositStaking', accounts => {
     const delegator1 = accounts[5]
     const delegator2 = accounts[6]
     const oracleManager = accounts[7]
-    const stakingManager = accounts[8]
+    const stakingManager = accounts[7]
 
     require('dotenv').config()
     const _min_deposit = web3.utils.toWei(process.env.MIN_DEPOSIT, "ether");
@@ -105,7 +105,7 @@ contract('DepositStaking', accounts => {
         );
 
     });
-    return;
+    return
 
     it("manager cannot delegate if a delegator was not paid", async () => {
         const candidate = member1;
@@ -113,7 +113,7 @@ contract('DepositStaking', accounts => {
         const candidateDelegationCount = "150";
         const delegatorDelegationCount = "1";
         await ic.setDelegatorNotPaid_mock(delegator1);
-        await expect(ds.delegate(candidate, amount, candidateDelegationCount, delegatorDelegationCount, { from: manager }))
+        await expect(ds.delegate(candidate, amount, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager }))
             .to.be.rejectedWith('DELEG_N_PAID');
         await expect(ds.delegatorBondMore(candidate, amount, { from: stakingManager }))
             .to.be.rejectedWith('DELEG_N_PAID');

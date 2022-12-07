@@ -67,7 +67,7 @@ contract InactivityCover is IPushable {
     uint128 public eraId;
     // Whitelisted members
     mapping(address => bool) public whitelisted;
-    // Total members
+    // Total members deposit
     uint256 public membersDepositTotal;
     // Addresss of any account that has ever made a deposit
     address[] public memberAddresses;
@@ -99,7 +99,7 @@ contract InactivityCover is IPushable {
 
     // Allows function calls only from Oracle
     modifier onlyOracle() {
-        address oracle = IOracleMaster(ORACLE_MASTER).getOracle(address(this));
+        address oracle = IOracleMaster(ORACLE_MASTER).getOracle();
         require(msg.sender == oracle, "NOT_OR");
         _;
     }
@@ -195,7 +195,7 @@ contract InactivityCover is IPushable {
     }
 
     /** @dev Allows the manager to withdraw any contract balance that is above the total deposits balance.
-        This includes staking rewards or other funds that were sent tot he contract.
+        This includes staking rewards or other funds that were sent to the contract.
         @param amount How much to withdraw
         @param receiver Who to send the withdrawal to
     */
@@ -223,8 +223,7 @@ contract InactivityCover is IPushable {
         require(
             // The current era must be after the era the decrease is scheduled for
             // The manager can change the EXECUTE_DELAY after the decrease was scheduled by the memver, so the "scheduled date" is not fixed
-            scheduledDecreasesMap[collator].era + erasCovered[collator] <=
-                eraId,
+            scheduledDecreasesMap[collator].era + erasCovered[collator] <= getEra(),
             "NOT_EXEC"
         );
 
@@ -267,14 +266,14 @@ contract InactivityCover is IPushable {
     /// @dev The method is used by the oracle to push data into the contract and calculate potential cover claims.
     /// @param _eraId The round number
     /// @param _report The collator data, including authored block counts, delegators, etc.
-    function pushData(uint128 _eraId, Types.OracleData calldata _report)
+    function pushData(uint128 _eraId, Types.OracleData calldata _report, address oracle)
         external
         onlyOracle
     {
         // we allow reporting the same era more than once, because oracles may split the report to pieces if many collators miss rounds
         // this is required because each pushData cannot handle more than 500 delegator payouts
-        // require(_eraId == uint128(staking.round() - 1), "INV_ERA"); TODO
-        require(_eraId >= eraId, "OLD_ERA");
+        require(isNextEra(_eraId), "INV_ERA");
+        // require(_eraId >= eraId, "OLD_ERA");
         eraId = _eraId;
 
         for (uint256 i = 0; i < _report.collators.length; i++) {
@@ -303,9 +302,6 @@ contract InactivityCover is IPushable {
 
             bool mustPay;
             uint128 noActiveSetCoverAfterEra = members[collatorData.collatorAccount].noActiveSetCoverAfterEra;
-            emit MemberHasZeroPoints(address(0), noActiveSetCoverAfterEra);
-            emit MemberHasZeroPoints(address(0), erasCovered[collatorData.collatorAccount]);
-            emit MemberHasZeroPoints(address(0), eraId);
             if (
                 (noActiveSetCoverAfterEra == 0 || noActiveSetCoverAfterEra + erasCovered[collatorData.collatorAccount] > eraId) &&
                 !collatorData.active
@@ -357,12 +353,17 @@ contract InactivityCover is IPushable {
             }
 
             // Refund oracle for gas costs
+            emit MemberHasZeroPoints(address(0), 1);
             if (refundOracleGasPrice > 0) {
+                emit MemberHasZeroPoints(address(0), 2);
                 uint256 gasUsed = startGas - gasleft();
                 uint256 refund = gasUsed * refundOracleGasPrice;
+                emit MemberHasZeroPoints(address(0), uint128(gasUsed));
+                emit MemberHasZeroPoints(address(0), uint128(refund));
                 if (members[collatorData.collatorAccount].deposit > refund) {
+                    emit MemberHasZeroPoints(address(0), 2);
                     members[collatorData.collatorAccount].deposit -= refund;
-                    payoutAmounts[msg.sender][address(1)] += refund;
+                    payoutAmounts[oracle][address(1)] += refund;
                 }
             }
         }
@@ -496,6 +497,8 @@ contract InactivityCover is IPushable {
         erasCovered[member] = _execute_delay;
     }
 
+    /// @dev Sets the cover refund given to delegators for every 1 MOVR staked per round
+    /// @param _stake_unit_cover the unit cover
     function setStakeUnitCover(uint256 _stake_unit_cover)
         external
         auth(ROLE_MANAGER)
@@ -503,18 +506,24 @@ contract InactivityCover is IPushable {
         STAKE_UNIT_COVER = _stake_unit_cover;
     }
 
+    /// @dev Sets the minimum amount that a delegator can claim form accumulated covers
+    /// @param _min_payout the min payout amount
     function setMinPayout(uint256 _min_payout) external auth(ROLE_MANAGER) {
         // Protect delegators from having to wait forever to get paid due to an unresonable min payment
         require(_min_payout <= 10 ether, "HIGH");
         MIN_PAYOUT = _min_payout;
     }
 
-    function setrefundOracleGasPrice(uint256 _refundOracleGasPrice) external auth(ROLE_MANAGER) {
+    /// @dev When covers must be calculated and transfered to delegators, the respective collator can refund the oracle that pushedData the tx fees for that calculation
+    /// @param _refundOracleGasPrice The gar price used to calculate the refund
+    function setRefundOracleGasPrice(uint256 _refundOracleGasPrice) external auth(ROLE_MANAGER) {
         require(_refundOracleGasPrice <= 10_000_000_000, "INV_PRICE"); // TODO change for Moonbeam
         // for market values, check https://moonbeam-gasinfo.netlify.app/
         refundOracleGasPrice = _refundOracleGasPrice;
     }
 
+    /// @dev ForceUndelegate can only be called on a limited frequency to avoid spamming the contract and liquidating all funds unecessarilly
+    /// @param _eras_between_forced_undelegation the number of rounds that must pass to be able to call forceUndelegate again
     function setErasBetweenForcedUndelegations(
         uint128 _eras_between_forced_undelegation
     ) external auth(ROLE_MANAGER) {
@@ -526,20 +535,27 @@ contract InactivityCover is IPushable {
         ERAS_BETWEEN_FORCED_UNDELEGATION = _eras_between_forced_undelegation;
     }
 
+    /// @dev Members can choose to protect delegations up to a specific amount (this might incentivize delegators to spread their stake among collators)
+    /// @param _max_covered the max delegation that is covered (any amount above that will not receive rewards cover)
     function memberSetMaxCoveredDelegation(uint256 _max_covered) external {
         require(members[msg.sender].active, "NOT_ACTIVE");
+        // we use a very high value (instead of zero) to avoid a second boolean check in the loop inside pushData
         require(_max_covered == 999999999999999999 ether || _max_covered >= 500 ether, "INVALID");
         members[msg.sender].maxCoveredDelegation = _max_covered;
     }
 
+
+    /// @dev Members can protect their delegators against them going down (zero points) or out (not in active set) or both. At least one cover type is required.
+    /// @param _noZeroPtsCoverAfterEra true if you want to cover being down, false otherwise
+    /// @param _noActiveSetCoverAfterEra true if you want to cover being out, false otherwise
     function memberSetCoverTypes(bool _noZeroPtsCoverAfterEra, bool _noActiveSetCoverAfterEra) external {
         require(members[msg.sender].active, "NOT_ACTIVE");
         // at least one of the cover types must be active (true)
         require(_noZeroPtsCoverAfterEra || _noActiveSetCoverAfterEra, "INV_COVER");
-        // the eraIds signify the eras after which the cover should not be advertised or publicly offered
-        // the cover will remain in effect for erasCovered
-        members[msg.sender].noZeroPtsCoverAfterEra = _noZeroPtsCoverAfterEra ? 0 : eraId;
-        members[msg.sender].noActiveSetCoverAfterEra = _noActiveSetCoverAfterEra ? 0 : eraId;
+        // The eraIds signify the eras on which the cover stopped being advertised on the stakeX website.
+        // This is not the same as the era when the cover stopped protecting the delegators! That era equals eraId + erasCovered[msg.sender]
+        members[msg.sender].noZeroPtsCoverAfterEra = _noZeroPtsCoverAfterEra ? 0 : getEra();
+        members[msg.sender].noActiveSetCoverAfterEra = _noActiveSetCoverAfterEra ? 0 : getEra();
     }
 
 
@@ -593,7 +609,7 @@ contract InactivityCover is IPushable {
         require(members[member].deposit > 0, "NO_DEP");
         require(members[member].deposit >= amount, "EXC_DEP");
         require(scheduledDecreasesMap[msg.sender].amount == 0, "DECR_EXIST");
-        scheduledDecreasesMap[member] = ScheduledDecrease(eraId, amount);
+        scheduledDecreasesMap[member] = ScheduledDecrease(getEra(), amount);
         emit DecreaseCoverScheduledEvent(member, amount);
     }
 
@@ -602,7 +618,15 @@ contract InactivityCover is IPushable {
         // in unlocking (soon to be reducible)
         return
             address(this).balance +
-            DepositStaking(DEPOSIT_STAKING).stakedTotal(); // reducible + locked
+            DepositStaking(DEPOSIT_STAKING).stakedTotal(); // reducible + (staked + being_unstaked)
+    }
+
+    function getEra() public virtual view returns(uint128) {
+        return uint128(staking.round());
+    }
+
+    function isNextEra(uint128 _eraId) internal virtual view returns(bool) {
+        return _eraId - getEra() == 1;
     }
 
     receive() external payable {}

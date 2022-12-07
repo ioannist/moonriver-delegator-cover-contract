@@ -51,6 +51,7 @@ contract('InactivityCover', accounts => {
     const _eras_between_forced_undelegation = process.env.ERAS_BETWEEN_FORCED_UNDELEGATION;
     const _quorum = process.env.QUORUM;
     const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
+    const ONE_ADDR = "0x0000000000000000000000000000000000000001";
     const zero = new BN("0")
     const payoutReversed = false;
 
@@ -178,6 +179,7 @@ contract('InactivityCover', accounts => {
         const { 4: maxCoveredDelegation } = await ic.getMember(member);
         return maxCoveredDelegation;
     }
+
 
     it("must offer at least one cover (active-set or zero-points)", async () => {
         const deposit = web3.utils.toWei("120", "ether");
@@ -510,7 +512,7 @@ contract('InactivityCover', accounts => {
         return expect(await om.eraId()).to.be.bignumber.equal(newEra2);
     })
 
-    it("oracle pushes report for collator with 400 delegators (gas check)", async () => {
+    it("oracle pushes report for collator with >300 delegators (gas check); no refund as gas price is set to 0", async () => {
         const deposit = web3.utils.toWei("120", "ether");
         const newEra = new BN("222");
 
@@ -530,8 +532,35 @@ contract('InactivityCover', accounts => {
             collators: collators300
         }
 
-        await om.addOracleMember(member1, { from: oracleManager });
-        await om.reportRelay(newEra, 0, oracleDataThis, { from: member1, gas: "10000000" });
+        await om.addOracleMember(member2, { from: oracleManager });
+        await om.reportRelay(newEra, 0, oracleDataThis, { from: member2, gas: "10000000" });
+        await expect(await ic.getPayoutAmount(member2, ONE_ADDR)).to.be.bignumber.equal(new BN("0"));
+    })
+
+    it("oracle pushes report for collator with >300 delegators and gets the loop tx cost refunded", async () => {
+        const deposit = web3.utils.toWei("500", "ether");
+        const newEra = new BN("222");
+
+        await ic.setRefundOracleGasPrice(new BN("9000000000"), { from: manager });
+        await ic.whitelist(member1, true, { from: manager });
+        await ic.depositCover(member1, { from: member1, value: deposit });
+
+        const collators300 = [{
+            collatorAccount: member1,
+            points: "0",
+            active: true,
+            bond: web3.utils.toWei("500", "ether"),
+            delegationsTotal: web3.utils.toWei("25000", "ether"),
+            topActiveDelegations: topActiveDelegations300
+        }];
+        const oracleDataThis = {
+            ...oracleData,
+            collators: collators300
+        }
+
+        await om.addOracleMember(member2, { from: oracleManager });
+        await om.reportRelay(newEra, 0, oracleDataThis, { from: member2, gas: "10000000" });
+        await expect(await ic.getPayoutAmount(member2, ONE_ADDR)).to.be.bignumber.above(new BN("0"));
     })
 
     it("have all variables initialized", async () => {

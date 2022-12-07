@@ -121,10 +121,9 @@ contract OracleMaster is Pausable, Initializable {
 
     /**
      * @notice Return oracle contract for the given ledger
-     * @param  _ledger ledger contract address
      * @return linked oracle address
      */
-    function getOracle(address _ledger) external view returns (address) {
+    function getOracle() external view returns (address) {
         return ORACLE;
     }
 
@@ -164,19 +163,18 @@ contract OracleMaster is Pausable, Initializable {
 
     /**
      * @notice Each active collator can register one address with oracle privileges. The address must be a Governance proxy of the collator at the time of registration, to prove that it is owned by that collator.
-     * @param _collatorRep the collator that the caller represents (each collator can operate one oracle)
+     * @param _collator the collator that the caller represents (each collator can operate one oracle)
      */
-    function registerAsOracleMember(address _collatorRep)
+    function registerAsOracleMember(address _collator)
         external
     {
         require(_getMemberId(msg.sender) == MEMBER_N_FOUND, "OM: MEMBER_EXISTS");
         require(members.length < MAX_MEMBERS, "OM: MEMBERS_TOO_MANY");
-        require(staking.isSelectedCandidate(_collatorRep), "OM: N_COLLATOR"); // ensure the provided address is an active collator
-        require(proxy.isProxy(_collatorRep, msg.sender, Proxy.ProxyType.Governance, 0), "OM: N_PROXY"); // ensures the sender is authorized/controlled by the collator
-        require(oreps[_collatorRep] == address(0), "OM: ALREADY_REGISTERED"); // ensures that each collator can register one oracle only
+        require(isProxyOfSelectedCandidate(msg.sender, _collator), "OM: N_COLLATOR_PROXY");
+        require(oreps[_collator] == address(0), "OM: ALREADY_REGISTERED"); // ensures that each collator can register one oracle only
 
         members.push(msg.sender);
-        oreps[_collatorRep] = msg.sender;
+        oreps[_collator] = msg.sender;
         emit MemberAdded(msg.sender);
     }
 
@@ -251,13 +249,7 @@ contract OracleMaster is Pausable, Initializable {
         require(ORACLE != address(0), "OM: ORACLE_N_FOUND");
         require(_eraId >= eraId, "OM: ERA_TOO_OLD");
 
-        if (_eraId > eraId) {
-            // new era
-            eraId = _eraId;
-            // _clearReporting();
-        }
-
-        IOracle(ORACLE).reportRelay(memberIndex, QUORUM, _eraId, _eraNonce,  _report);
+        IOracle(ORACLE).reportRelay(memberIndex, QUORUM, _eraId, _eraNonce,  _report, msg.sender);
     }
 
     function addRemovePushable(address payable _pushable, bool _toAdd)
@@ -309,5 +301,11 @@ contract OracleMaster is Pausable, Initializable {
      */
     function _clearReporting() internal {
         IOracle(ORACLE).clearReporting();
+    }
+
+    function isProxyOfSelectedCandidate(address _oracle, address _collator) public virtual view returns(bool) {
+        bool isCollator = staking.isSelectedCandidate(_collator);
+        bool isProxy = proxy.isProxy(_collator, _oracle, Proxy.ProxyType.Governance, 0);
+        return isCollator && isProxy;
     }
 }
