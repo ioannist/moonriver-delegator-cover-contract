@@ -19,6 +19,7 @@ module.exports = async (deployer, network, accounts) => {
   const manager = accounts[1];
   const oracleMembersManager = accounts[2]
   const oracleMember = accounts[3]
+  const stakingManager = accounts[4]
   console.log(`Superior is ${superior}`);
 
   console.log(`Deploying AuthManager`);
@@ -41,6 +42,13 @@ module.exports = async (deployer, network, accounts) => {
   await AM.addByString('ROLE_ORACLE_MEMBERS_MANAGER', oracleMembersManager);
   await AM.addByString('ROLE_PAUSE_MANAGER', oracleMembersManager);
   await AM.addByString('ROLE_ORACLE_QUORUM_MANAGER', oracleMembersManager);
+  await AM.addByString('ROLE_STAKING_MANAGER', stakingManager);
+  
+  // replenish balancesif low
+  for (const a of accounts) {
+    console.log(`Sending DEV to ${a}`);
+    await web3.eth.sendTransaction({ to: a, from: manager, value: web3.utils.toWei("1000", "ether") });
+  }
 
   console.log(`Deploying OracleMaster`);
   let _oracle_master, OM;
@@ -52,6 +60,7 @@ module.exports = async (deployer, network, accounts) => {
       break
     } catch { }
   }
+
 
   console.log(`Deploying Oracle`);
   let _oracle, OR;

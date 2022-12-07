@@ -26,8 +26,8 @@ contract DepositStaking {
     // Last era that a forced undelegaton was requested
     uint128 public lastForcedUndelegationEra;
 
-    // Manager role
-    bytes32 internal constant ROLE_MANAGER = keccak256("ROLE_MANAGER");
+    // Stakign manager can stake/unstake contract funds
+    bytes32 internal constant ROLE_STAKING_MANAGER = keccak256("ROLE_STAKING_MANAGER");
 
     // Allows function calls only from member with specific role
     modifier auth(bytes32 role) {
@@ -55,7 +55,7 @@ contract DepositStaking {
         uint256 amount,
         uint256 candidateDelegationCount,
         uint256 delegatorDelegationCount
-    ) external auth(ROLE_MANAGER) {
+    ) external auth(ROLE_STAKING_MANAGER) {
         // To delegate, there must not exist an unpaid delegator or member
         require(
             InactivityCover(INACTIVITY_COVER).memberNotPaid() == address(0),
@@ -87,7 +87,7 @@ contract DepositStaking {
     /// @param more The amount by which the delegation is increased
     function delegatorBondMore(address candidate, uint256 more)
         external
-        auth(ROLE_MANAGER)
+        auth(ROLE_STAKING_MANAGER)
     {
         // To bond more, there must not exist an unpaid delegator or member
         require(
@@ -109,7 +109,7 @@ contract DepositStaking {
     /// @param less The amount by which the delegation is decreased (upon execution)
     function scheduleDelegatorBondLess(address candidate, uint256 less)
         external
-        auth(ROLE_MANAGER)
+        auth(ROLE_STAKING_MANAGER)
     {
         _scheduleDelegatorBondLess(candidate, less);
     }
@@ -163,7 +163,7 @@ contract DepositStaking {
     function getIsDelegated(address candidate)
         external
         view
-        auth(ROLE_MANAGER)
+        auth(ROLE_STAKING_MANAGER)
         returns (bool)
     {
         return delegations[candidate].isDelegated;
@@ -172,7 +172,7 @@ contract DepositStaking {
     function getDelegation(address candidate)
         external
         view
-        auth(ROLE_MANAGER)
+        auth(ROLE_STAKING_MANAGER)
         returns (uint256)
     {
         return delegations[candidate].amount;
@@ -181,7 +181,7 @@ contract DepositStaking {
     function getCollatorsDelegated(uint256 index)
         external
         view
-        auth(ROLE_MANAGER)
+        auth(ROLE_STAKING_MANAGER)
         returns (address)
     {
         return collatorsDelegated[index];

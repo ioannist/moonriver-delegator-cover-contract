@@ -3,7 +3,7 @@
    "version": "1.0.0",
    "dependencies": {
       "@openzeppelin/contracts": "^4.6.0",
-      "@truffle/hdwallet-provider": "^2.0.8",
+      "@truffle/hdwallet-provider": "2.1.2",
       "bn.js": "^5.2.1",
       "chai": "^4.3.6",
       "chai-as-promised": "^7.1.1",

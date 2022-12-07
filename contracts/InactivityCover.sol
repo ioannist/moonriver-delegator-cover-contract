@@ -83,6 +83,8 @@ contract InactivityCover is IPushable {
     mapping(address => uint128) public erasCovered;
     // map of delegators to amounts owed by collators
     mapping(address => mapping(address => uint256)) payoutAmounts;
+    // If not 0, the oracle is credited with the tx cost for caclulating the cover payments
+    uint256 refundOracleGasPrice;
 
     /* If a collator cannot withdraw their funds due to the funds being locked in staking, their address is
     recorded in memberNotPaid .This will prohibit the manager from bonding more until that collator is paid
@@ -218,7 +220,6 @@ contract InactivityCover is IPushable {
     /// @param collator The collator member whose scheduled withdrawal we are executing (anybody can execute it)
     function executeScheduled(address payable collator) external {
         require(scheduledDecreasesMap[collator].amount != 0, "DECR_N_EXIST");
-        require(erasCovered[collator] > 0, "DEL_N_SET");
         require(
             // The current era must be after the era the decrease is scheduled for
             // The manager can change the EXECUTE_DELAY after the decrease was scheduled by the memver, so the "scheduled date" is not fixed
@@ -277,6 +278,7 @@ contract InactivityCover is IPushable {
         eraId = _eraId;
 
         for (uint256 i = 0; i < _report.collators.length; i++) {
+            uint256 startGas = gasleft();
             Types.CollatorData calldata collatorData = _report.collators[i];
             // a member report may only be pushed once per era
             require(_eraId > members[collatorData.collatorAccount].lastPushedEra, "OLD_MEMBER_ERA");
@@ -301,6 +303,9 @@ contract InactivityCover is IPushable {
 
             bool mustPay;
             uint128 noActiveSetCoverAfterEra = members[collatorData.collatorAccount].noActiveSetCoverAfterEra;
+            emit MemberHasZeroPoints(address(0), noActiveSetCoverAfterEra);
+            emit MemberHasZeroPoints(address(0), erasCovered[collatorData.collatorAccount]);
+            emit MemberHasZeroPoints(address(0), eraId);
             if (
                 (noActiveSetCoverAfterEra == 0 || noActiveSetCoverAfterEra + erasCovered[collatorData.collatorAccount] > eraId) &&
                 !collatorData.active
@@ -310,9 +315,6 @@ contract InactivityCover is IPushable {
                 mustPay = true;
             }
             uint128 noZeroPtsCoverAfterEra = members[collatorData.collatorAccount].noZeroPtsCoverAfterEra;
-            emit MemberHasZeroPoints(address(0), noZeroPtsCoverAfterEra);
-            emit MemberHasZeroPoints(address(0), erasCovered[collatorData.collatorAccount]);
-            emit MemberHasZeroPoints(address(0), eraId);
             if (
                 (noZeroPtsCoverAfterEra == 0 || noZeroPtsCoverAfterEra + erasCovered[collatorData.collatorAccount] > eraId) &&
                 collatorData.active &&
@@ -352,6 +354,16 @@ contract InactivityCover is IPushable {
                 members[collatorData.collatorAccount].deposit -= toPay; // debit the collator deposit
                 membersDepositTotal -= toPay; // decrease the total members deposit
                 coverOwedTotal += toPay; // current total (not paid out)
+            }
+
+            // Refund oracle for gas costs
+            if (refundOracleGasPrice > 0) {
+                uint256 gasUsed = startGas - gasleft();
+                uint256 refund = gasUsed * refundOracleGasPrice;
+                if (members[collatorData.collatorAccount].deposit > refund) {
+                    members[collatorData.collatorAccount].deposit -= refund;
+                    payoutAmounts[msg.sender][address(1)] += refund;
+                }
             }
         }
         emit ReportPushedEvent(eraId);
@@ -495,6 +507,12 @@ contract InactivityCover is IPushable {
         // Protect delegators from having to wait forever to get paid due to an unresonable min payment
         require(_min_payout <= 10 ether, "HIGH");
         MIN_PAYOUT = _min_payout;
+    }
+
+    function setrefundOracleGasPrice(uint256 _refundOracleGasPrice) external auth(ROLE_MANAGER) {
+        require(_refundOracleGasPrice <= 10_000_000_000, "INV_PRICE"); // TODO change for Moonbeam
+        // for market values, check https://moonbeam-gasinfo.netlify.app/
+        refundOracleGasPrice = _refundOracleGasPrice;
     }
 
     function setErasBetweenForcedUndelegations(
