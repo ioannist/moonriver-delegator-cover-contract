@@ -58,11 +58,11 @@ contract InactivityCover_mock is InactivityCover {
         onlyDepositStaking
     {}
 
-    function getEra() public override view returns(uint128) {
+    function getEra() internal override view returns(uint128) {
         return eraId;
     }
 
-    function isNextEra(uint128 _eraId) internal override view returns(bool) {
+    function isLastCompletedEra(uint128 _eraId) internal override view returns(bool) {
         return true;
     }
 }

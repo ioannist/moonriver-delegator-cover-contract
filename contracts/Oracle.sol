@@ -46,7 +46,7 @@ contract Oracle is Initializable {
         external
         initializer
     {
-        require(ORACLE_MASTER == address(0), "ORACLE: ALREADY_INITIALIZED");
+        require(ORACLE_MASTER == address(0), "OR: ALREADY_INITIALIZED");
         ORACLE_MASTER = _oracleMaster;
         PUSHABLES.push(_pushable);
     }
@@ -78,9 +78,9 @@ contract Oracle is Initializable {
         {
             uint256 mask = 1 << _index;
             uint256 reportBitmask = currentReportBitmask;
-            require(reportBitmask & mask == 0, "ORACLE: ALREADY_SUBMITTED");
+            require(reportBitmask & mask == 0, "OR: ALREADY_SUBMITTED");
             currentReportBitmask = (reportBitmask | mask);
-            require(_eraNonce == eraNonce, "ORACLE: INV_PART");
+            require(_eraNonce == eraNonce, "OR: INV_NONCE");
         }
         // return instantly if already got quorum and pushed data
         //if (isPushed) {

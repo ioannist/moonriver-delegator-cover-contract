@@ -272,7 +272,7 @@ contract InactivityCover is IPushable {
     {
         // we allow reporting the same era more than once, because oracles may split the report to pieces if many collators miss rounds
         // this is required because each pushData cannot handle more than 500 delegator payouts
-        require(isNextEra(_eraId), "INV_ERA");
+        require(isLastCompletedEra(_eraId), "INV_ERA");
         // require(_eraId >= eraId, "OLD_ERA");
         eraId = _eraId;
 
@@ -621,12 +621,12 @@ contract InactivityCover is IPushable {
             DepositStaking(DEPOSIT_STAKING).stakedTotal(); // reducible + (staked + being_unstaked)
     }
 
-    function getEra() public virtual view returns(uint128) {
+    function getEra() internal virtual view returns(uint128) {
         return uint128(staking.round());
     }
 
-    function isNextEra(uint128 _eraId) internal virtual view returns(bool) {
-        return _eraId - getEra() == 1;
+    function isLastCompletedEra(uint128 _eraId) internal virtual view returns(bool) {
+        return getEra() - _eraId== 1;
     }
 
     receive() external payable {}

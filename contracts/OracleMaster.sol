@@ -60,6 +60,9 @@ contract OracleMaster is Pausable, Initializable {
 
     // Collators to oracle representatives (each collator can have one oracle rep)
     mapping(address => address) public oreps;
+
+    // Allows the oracle manager to add/remove oracles at will
+    bool sudo = true;
     
     // Allows function calls only from member with specific role
     modifier auth(bytes32 role) {
@@ -180,20 +183,19 @@ contract OracleMaster is Pausable, Initializable {
 
     /**
      * @notice Remove me from the oracle member committee list
-     * @param _collatorRep the collator that the caller represents
+     * @param _collator the collator that the caller represents
      */
-    function unregisterOracleMember(address _collatorRep)
+    function unregisterOracleMember(address _collator)
         external
     {
         uint256 index = _getMemberId(msg.sender);
         require(index != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
-        require(oreps[_collatorRep] == msg.sender, "OM: N_COLLATOR");
+        require(oreps[_collator] == msg.sender, "OM: N_COLLATOR");
         uint256 last = members.length - 1;
         if (index != last) members[index] = members[last];
+        
         members.pop();
-
-        delete oreps[_collatorRep];
-
+        delete oreps[_collator];
         emit MemberRemoved(msg.sender);
         // delete the data for the last eraId, let remained oracles report it again
         // _clearReporting();
@@ -207,6 +209,7 @@ contract OracleMaster is Pausable, Initializable {
         external
         auth(ROLE_ORACLE_MEMBERS_MANAGER)
     {
+        require(sudo, "OM: N_SUDO");
         require(_member != address(0), "OM: BAD_ARGUMENT");
         require(_getMemberId(_member) == MEMBER_N_FOUND, "OM: MEMBER_EXISTS");
         require(members.length < MAX_MEMBERS, "OM: MEMBERS_TOO_MANY");
@@ -222,34 +225,33 @@ contract OracleMaster is Pausable, Initializable {
         external
         auth(ROLE_ORACLE_MEMBERS_MANAGER)
     {
+        require(sudo, "OM: N_SUDO");
         uint256 index = _getMemberId(_member);
         require(index != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
         uint256 last = members.length - 1;
         if (index != last) members[index] = members[last];
         members.pop();
         emit MemberRemoved(_member);
-
-        // delete the data for the last eraId, let remained oracles report it again
-        _clearReporting();
     }
 
     /**
      * @notice Accept oracle committee member reports from the relay side
+     * @param _collator The collator that this oracle represents (each collator can run one oracle - each oracle is represented by at most one collator)
      * @param _eraId relaychain era
      * @param _eraNonce era nonce
      * @param _report relaychain data report
      */
-    function reportRelay(uint128 _eraId, uint128 _eraNonce, Types.OracleData calldata _report)
+    function reportRelay(address _collator, uint128 _eraId, uint128 _eraNonce, Types.OracleData calldata _report)
         external
         whenNotPaused
     {
+        require(isProxyOfSelectedCandidate(msg.sender, _collator), "OM: N_COLLATOR_PROXY"); // The oracle must be a Governance proxy of an active collator to be able to push reports
         require(_isConsistent(_report), "OM: INCORRECT_REPORT");
         uint256 memberIndex = _getMemberId(msg.sender);
         require(memberIndex != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
-        require(ORACLE != address(0), "OM: ORACLE_N_FOUND");
-        require(_eraId >= eraId, "OM: ERA_TOO_OLD");
+        require(isLastCompletedEra(_eraId), "OM: INV_ERA");
 
-        // The report will revert (InactivityCover contract) if the reported era is not the last completed era.
+        // Revert if the reported era is not the last completed era.
         // Thus, the security that the correct era is being reported is provided by InactivityCover.
         // The folllowing check is just for efficiency.
         if (_eraId > eraId) {
@@ -264,6 +266,10 @@ contract OracleMaster is Pausable, Initializable {
         auth(ROLE_ORACLE_MEMBERS_MANAGER)
     {
         IOracle(ORACLE).addRemovePushable(_pushable, _toAdd);
+    }
+
+    function removeSudo() external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
+        sudo = false;
     }
 
     /// @notice Return true if report is consistent
@@ -308,11 +314,19 @@ contract OracleMaster is Pausable, Initializable {
      */
     function _clearReporting() internal {
         IOracle(ORACLE).clearReporting();
-    }
+    }    
 
-    function isProxyOfSelectedCandidate(address _oracle, address _collator) public virtual view returns(bool) {
+    function isProxyOfSelectedCandidate(address _oracle, address _collator) internal virtual view returns(bool) {
         bool isCollator = staking.isSelectedCandidate(_collator);
         bool isProxy = proxy.isProxy(_collator, _oracle, Proxy.ProxyType.Governance, 0);
         return isCollator && isProxy;
+    }
+
+    function getEra() public virtual view returns(uint128) {
+        return uint128(staking.round());
+    }
+
+    function isLastCompletedEra(uint128 _eraId) internal virtual view returns(bool) {
+        return getEra() - _eraId== 1;
     }
 }

@@ -4,7 +4,15 @@ import "../OracleMaster.sol";
 
 contract OracleMaster_mock is OracleMaster {
 
-    function isProxyOfSelectedCandidate(address _oracle, address _collator) public override view returns(bool) {
+    function isProxyOfSelectedCandidate(address _oracle, address _collator) internal override view returns(bool) {
+        return true;
+    }
+
+    function getEra() public override view returns(uint128) {
+        return eraId;
+    }
+
+    function isLastCompletedEra(uint128 _eraId) internal override view returns(bool) {
         return true;
     }
 

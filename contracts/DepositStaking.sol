@@ -4,12 +4,17 @@ pragma abicoder v2;
 
 import "../interfaces/IAuthManager.sol";
 import "./InactivityCover.sol";
+import "../interfaces/StakingInterface.sol";
 
 contract DepositStaking {
     struct Delegation {
         bool isDelegated;
         uint256 amount;
     }
+
+    /// The ParachainStaking wrapper at the known pre-compile address. This will be used to make all calls
+    /// to the underlying staking solution
+    ParachainStaking public staking;
 
     // auth manager contract address
     address public AUTH_MANAGER;
@@ -42,6 +47,7 @@ contract DepositStaking {
         address _auth_manager,
         address payable _inactivity_cover
     ) external {
+        staking = ParachainStaking(0x0000000000000000000000000000000000000800);
         AUTH_MANAGER = _auth_manager;
         INACTIVITY_COVER = _inactivity_cover;
     }
@@ -132,11 +138,10 @@ contract DepositStaking {
         require(
             lastForcedUndelegationEra +
                 InactivityCover(INACTIVITY_COVER)
-                    .ERAS_BETWEEN_FORCED_UNDELEGATION() <=
-                InactivityCover(INACTIVITY_COVER).getEra(),
+                    .ERAS_BETWEEN_FORCED_UNDELEGATION() <= getEra(),
             "TOO_FREQUENT"
         );
-        lastForcedUndelegationEra = InactivityCover(INACTIVITY_COVER).getEra();
+        lastForcedUndelegationEra = getEra();
 
         // A random collator with a delegated balance is chosen to undelegate from
         uint256 collatorIndex = _random() % collatorsDelegated.length;
@@ -213,5 +218,9 @@ contract DepositStaking {
             keccak256(abi.encodePacked(block.timestamp, block.difficulty))
         ) % 251;
         return number;
+    }
+
+    function getEra() internal virtual view returns(uint128) {
+        return uint128(staking.round());
     }
 }
