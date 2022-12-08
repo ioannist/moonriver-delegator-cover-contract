@@ -245,15 +245,17 @@ contract OracleMaster is Pausable, Initializable {
         external
         whenNotPaused
     {
-        require(isProxyOfSelectedCandidate(msg.sender, _collator), "OM: N_COLLATOR_PROXY"); // The oracle must be a Governance proxy of an active collator to be able to push reports
         require(_isConsistent(_report), "OM: INCORRECT_REPORT");
         uint256 memberIndex = _getMemberId(msg.sender);
         require(memberIndex != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
         require(isLastCompletedEra(_eraId), "OM: INV_ERA");
+        // Because reports can result in fund transfers, no single entity should control them including manager.
+        // However, the manager needs sudo access in the beginning to run a number of oracles until the total oracle number is large enough.
+        // To secure the initial bootstrapping and the longterm security, we use a sudo key which allows the manager to add/remove oracles.
+        // After sudo is removed, every oracle must be a Governance proxy of an active collator to be able to push reports.
+        // This means that ONLY collators can run oracles (one each) and by extension the manager can also run only one oracle.
+        require(isProxyOfSelectedCandidate(msg.sender, _collator) || sudo, "OM: N_COLLATOR_PROXY");
 
-        // Revert if the reported era is not the last completed era.
-        // Thus, the security that the correct era is being reported is provided by InactivityCover.
-        // The folllowing check is just for efficiency.
         if (_eraId > eraId) {
             eraId = _eraId;
             // _clearReporting(); // there can be multiple reports per era

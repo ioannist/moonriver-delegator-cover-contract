@@ -165,7 +165,7 @@ contract InactivityCover is IPushable {
         if (!members[collator].isMember) {
             memberAddresses.push(collator);
             members[collator].isMember = true;
-            members[collator].maxCoveredDelegation = 999999999 ether; // default no-max value (editable)
+            members[collator].maxCoveredDelegation = type(uint256).max; // default no-max value (editable)
             erasCovered[collator] = 8; // initial cover period - to be updated in the next oracle push
         }
         members[collator].active = true;
@@ -539,8 +539,8 @@ contract InactivityCover is IPushable {
     /// @param _max_covered the max delegation that is covered (any amount above that will not receive rewards cover)
     function memberSetMaxCoveredDelegation(uint256 _max_covered) external {
         require(members[msg.sender].active, "NOT_ACTIVE");
-        // we use a very high value (instead of zero) to avoid a second boolean check in the loop inside pushData
-        require(_max_covered == 999999999999999999 ether || _max_covered >= 500 ether, "INVALID");
+        // to disable max_covered, we can use a very high value
+        require(_max_covered >= 500 ether, "INVALID");
         members[msg.sender].maxCoveredDelegation = _max_covered;
     }
 
