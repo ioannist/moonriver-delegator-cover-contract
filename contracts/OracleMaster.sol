@@ -249,6 +249,13 @@ contract OracleMaster is Pausable, Initializable {
         require(ORACLE != address(0), "OM: ORACLE_N_FOUND");
         require(_eraId >= eraId, "OM: ERA_TOO_OLD");
 
+        // The report will revert (InactivityCover contract) if the reported era is not the last completed era.
+        // Thus, the security that the correct era is being reported is provided by InactivityCover.
+        // The folllowing check is just for efficiency.
+        if (_eraId > eraId) {
+            eraId = _eraId;
+            // _clearReporting(); // there can be multiple reports per era
+        }
         IOracle(ORACLE).reportRelay(memberIndex, QUORUM, _eraId, _eraNonce,  _report, msg.sender);
     }
 
