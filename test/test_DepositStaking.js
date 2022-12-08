@@ -105,6 +105,7 @@ contract('DepositStaking', accounts => {
         );
 
     });
+    return
 
 
     it("manager cannot delegate if a delegator was not paid", async () => {

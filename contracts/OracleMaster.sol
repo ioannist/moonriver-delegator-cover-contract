@@ -38,7 +38,7 @@ contract OracleMaster is Pausable, Initializable {
     uint8 public QUORUM;
 
     /// Maximum number of oracle committee members
-    uint256 public constant MAX_MEMBERS = 200;
+    uint256 public constant MAX_MEMBERS = 100;
 
     // Missing member index
     uint256 internal constant MEMBER_N_FOUND = type(uint256).max;
@@ -59,7 +59,7 @@ contract OracleMaster is Pausable, Initializable {
     bytes32 internal constant ROLE_MANAGER = keccak256("ROLE_MANAGER");
 
     // Collators to oracle representatives (each collator can have one oracle rep)
-    mapping(address => address) public oreps;
+    mapping(address => address) public collatorsToOracles;
 
     // Allows the oracle manager to add/remove oracles at will
     bool sudo = true;
@@ -174,72 +174,75 @@ contract OracleMaster is Pausable, Initializable {
         require(_getMemberId(msg.sender) == MEMBER_N_FOUND, "OM: MEMBER_EXISTS");
         require(members.length < MAX_MEMBERS, "OM: MEMBERS_TOO_MANY");
         require(isProxyOfSelectedCandidate(msg.sender, _collator), "OM: N_COLLATOR_PROXY");
-        require(oreps[_collator] == address(0), "OM: ALREADY_REGISTERED"); // ensures that each collator can register one oracle only
+        require(collatorsToOracles[_collator] == address(0), "OM: COLLATOR_REGISTERED"); // ensures that each collator can register one oracle only
 
         members.push(msg.sender);
-        oreps[_collator] = msg.sender;
+        collatorsToOracles[_collator] = msg.sender;
         emit MemberAdded(msg.sender);
     }
 
     /**
-     * @notice Remove me from the oracle member committee list
+     * @notice Remove _oracleMember from the oracle member committee list
      * @param _collator the collator that the caller represents
      */
-    function unregisterOracleMember(address _collator)
+    function unregisterOracleMember(address _oracleMember, address _collator)
         external
     {
-        uint256 index = _getMemberId(msg.sender);
+        // Any address that is a Gov proxy of this collator can remove that collator's oracle
+        // This allows collators that lost their oracle's private key to recover and create a new oracle
+        require(isProxyOfSelectedCandidate(msg.sender, _collator), "OM: N_COLLATOR_PROXY");
+        uint256 index = _getMemberId(_oracleMember);
         require(index != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
-        require(oreps[_collator] == msg.sender, "OM: N_COLLATOR");
+        require(collatorsToOracles[_collator] == _oracleMember, "OM: N_COLLATOR");
         uint256 last = members.length - 1;
         if (index != last) members[index] = members[last];
         
         members.pop();
-        delete oreps[_collator];
-        emit MemberRemoved(msg.sender);
+        delete collatorsToOracles[_collator];
+        emit MemberRemoved(_oracleMember);
         // delete the data for the last eraId, let remained oracles report it again
         // _clearReporting();
     }
 
     /**
      * @notice Add new member to the oracle member committee list, allowed to call only by ROLE_ORACLE_MEMBERS_MANAGER
-     * @param _member proposed member address
+     * @param _oracleMember proposed member address
      */
-    function addOracleMember(address _member)
+    function addOracleMember(address _oracleMember)
         external
         auth(ROLE_ORACLE_MEMBERS_MANAGER)
     {
         require(sudo, "OM: N_SUDO");
-        require(_member != address(0), "OM: BAD_ARGUMENT");
-        require(_getMemberId(_member) == MEMBER_N_FOUND, "OM: MEMBER_EXISTS");
+        require(_oracleMember != address(0), "OM: BAD_ARGUMENT");
+        require(_getMemberId(_oracleMember) == MEMBER_N_FOUND, "OM: MEMBER_EXISTS");
         require(members.length < MAX_MEMBERS, "OM: MEMBERS_TOO_MANY");
 
-        members.push(_member);
-        emit MemberAdded(_member);
+        members.push(_oracleMember);
+        emit MemberAdded(_oracleMember);
     }
 
     /**
      * @notice Remove `_member` from the oracle member committee list, allowed to call only by ROLE_ORACLE_MEMBERS_MANAGER
      */
-    function removeOracleMember(address _member)
+    function removeOracleMember(address _oracleMember)
         external
         auth(ROLE_ORACLE_MEMBERS_MANAGER)
     {
         require(sudo, "OM: N_SUDO");
-        uint256 index = _getMemberId(_member);
+        uint256 index = _getMemberId(_oracleMember);
         require(index != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
         uint256 last = members.length - 1;
         if (index != last) members[index] = members[last];
         members.pop();
-        emit MemberRemoved(_member);
+        emit MemberRemoved(_oracleMember);
     }
 
     /**
-     * @notice Accept oracle committee member reports from the relay side
+     * @notice Accept oracle committee member reports
      * @param _collator The collator that this oracle represents (each collator can run one oracle - each oracle is represented by at most one collator)
-     * @param _eraId relaychain era
+     * @param _eraId parachain round
      * @param _eraNonce era nonce
-     * @param _report relaychain data report
+     * @param _report collator status/points data report
      */
     function reportRelay(address _collator, uint128 _eraId, uint128 _eraNonce, Types.OracleData calldata _report)
         external
@@ -249,10 +252,10 @@ contract OracleMaster is Pausable, Initializable {
         uint256 memberIndex = _getMemberId(msg.sender);
         require(memberIndex != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
         require(isLastCompletedEra(_eraId), "OM: INV_ERA");
-        // Because reports can result in fund transfers, no single entity should control them including manager.
-        // However, the manager needs sudo access in the beginning to run a number of oracles until the total oracle number is large enough.
-        // To secure the initial bootstrapping and the longterm security, we use a sudo key which allows the manager to add/remove oracles.
-        // After sudo is removed, every oracle must be a Governance proxy of an active collator to be able to push reports.
+        // Because reports can result in fund transfers, no single entity should control them, including manager.
+        // However, the manager needs sudo access in the beginning to bootstrap oracles until the total oracle number is large enough.
+        // To secure the initial bootstrapping and longterm security, we use a sudo key which allows the manager to add/remove oracles.
+        // After sudo is removed, every oracle must be a Gov proxy of an active collator to be able to push reports.
         // This means that ONLY collators can run oracles (one each) and by extension the manager can also run only one oracle.
         require(isProxyOfSelectedCandidate(msg.sender, _collator) || sudo, "OM: N_COLLATOR_PROXY");
 
@@ -298,13 +301,13 @@ contract OracleMaster is Pausable, Initializable {
 
     /**
      * @notice Return oracle instance index in the member array
-     * @param _member member address
+     * @param _oracleMember member address
      * @return member index
      */
-    function _getMemberId(address _member) internal view returns (uint256) {
+    function _getMemberId(address _oracleMember) internal view returns (uint256) {
         uint256 length = members.length;
         for (uint256 i = 0; i < length; ++i) {
-            if (members[i] == _member) {
+            if (members[i] == _oracleMember) {
                 return i;
             }
         }
@@ -318,9 +321,9 @@ contract OracleMaster is Pausable, Initializable {
         IOracle(ORACLE).clearReporting();
     }    
 
-    function isProxyOfSelectedCandidate(address _oracle, address _collator) internal virtual view returns(bool) {
+    function isProxyOfSelectedCandidate(address _oracleMember, address _collator) internal virtual view returns(bool) {
         bool isCollator = staking.isSelectedCandidate(_collator);
-        bool isProxy = proxy.isProxy(_collator, _oracle, Proxy.ProxyType.Governance, 0);
+        bool isProxy = proxy.isProxy(_collator, _oracleMember, Proxy.ProxyType.Governance, 0);
         return isCollator && isProxy;
     }
 

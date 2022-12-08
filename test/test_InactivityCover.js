@@ -179,8 +179,69 @@ contract('InactivityCover', accounts => {
         const { 4: maxCoveredDelegation } = await ic.getMember(member);
         return maxCoveredDelegation;
     }
-    return;
 
+    it("manager can add oracle member while sudo is true", async () => {
+        await om.addOracleMember(member1, { from: oracleManager });
+        expect(await om.members(0, { from: dev })).to.be.equal(member1);
+    })
+
+    it("manager can remove oracle member while sudo is true", async () => {
+        await om.addOracleMember(member1, { from: oracleManager });
+        await om.removeOracleMember(member1, { from: oracleManager });
+        return await expect(om.members(0, { from: dev })).to.be.rejected;
+    })
+
+    it("manager cannot add oracle member twice", async () => {
+        await om.addOracleMember(member1, { from: oracleManager });
+        return await expect(om.addOracleMember(member1, { from: oracleManager })).to.be.rejectedWith("OM: MEMBER_EXISTS");
+    })
+
+    it("manager cannot add oracle member after sudo is removed", async () => {
+        await om.removeSudo({ from: oracleManager });
+        return await expect(om.addOracleMember(member1, { from: oracleManager })).to.be.rejectedWith("OM: N_SUDO");
+    })
+
+    it("manager cannot remove oracle member after sudo is removed", async () => {
+        await om.addOracleMember(member1, { from: oracleManager });
+        await om.removeSudo({ from: oracleManager });
+        return await expect(om.removeOracleMember(member1, { from: oracleManager })).to.be.rejectedWith("OM: N_SUDO");
+    })
+
+    it("a collator can register an oracle", async () => {
+        // we use the zero address as a collator address (does not matter bc there is no proxy-collator checking in testnet due to mock implementation)
+        const collator = ZERO_ADDR;
+        await om.registerAsOracleMember(collator, { from: member1 });
+        expect(await om.members(0, { from: dev })).to.be.equal(member1);
+    })
+
+    it("a collator can unregister their oracle and register a new one", async () => {
+        const collator = ZERO_ADDR;
+        await om.registerAsOracleMember(collator, { from: member1 });
+        await om.unregisterOracleMember(member1, collator, { from: member1 }); // any from address can be used here, but in mainnet it will have to be a Gov proxy of the collator
+        await expect(om.members(0, { from: dev })).to.be.rejected;
+        await om.registerAsOracleMember(collator, { from: member2 });
+    })
+
+    it("a collator cannot register the same address twice", async () => {
+        const collator = ZERO_ADDR;
+        await om.registerAsOracleMember(collator, { from: member1 });
+        return await expect(om.registerAsOracleMember(collator, { from: member1 })).to.be.rejectedWith("OM: MEMBER_EXISTS");
+    })
+
+    it("a collator cannot register an address that is used by another collator (this assumes two collators have the priv key of that address, i.e. one entity runs multiple collators)", async () => {
+        const collator = ZERO_ADDR;
+        const collator2 = ONE_ADDR;
+        await om.registerAsOracleMember(collator, { from: member1 });
+        return await expect(om.registerAsOracleMember(collator2, { from: member1 })).to.be.rejectedWith("OM: MEMBER_EXISTS");
+    })
+
+    it("a collator cannot register two addresses", async () => {
+        const collator = ZERO_ADDR;
+        await om.registerAsOracleMember(collator, { from: member1 });
+        return await expect(om.registerAsOracleMember(collator, { from: member2 })).to.be.rejectedWith("OM: COLLATOR_REGISTERED");
+    })
+
+    return
 
     it("must offer at least one cover (active-set or zero-points)", async () => {
         const deposit = web3.utils.toWei("120", "ether");
