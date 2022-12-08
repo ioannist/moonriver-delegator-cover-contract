@@ -120,14 +120,14 @@ contract Oracle is Initializable {
     * @param _quorum new quorum threshold
     * @param _eraId current era id
     */
-    function softenQuorum(uint8 _quorum, uint128 _eraId, uint128 _eraNonce)
+    function softenQuorum(uint8 _quorum, uint128 _eraId)
         external
         onlyOracleMaster
     {
         (bool isQuorum, uint256 reportIndex) = _getQuorumReport(_quorum);
         if (isQuorum) {
             Types.OracleData memory report = _getStakeReport(reportIndex);
-            _push(_eraId, report, msg.sender);
+            _push(_eraId, report, address(0)); // pushing the zero address will deactivate gas cost refund
         }
     }
 

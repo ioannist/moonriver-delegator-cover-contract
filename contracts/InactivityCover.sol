@@ -353,15 +353,10 @@ contract InactivityCover is IPushable {
             }
 
             // Refund oracle for gas costs
-            emit MemberHasZeroPoints(address(0), 1);
-            if (refundOracleGasPrice > 0) {
-                emit MemberHasZeroPoints(address(0), 2);
+            if (refundOracleGasPrice > 0 && oracle != address(0)) {
                 uint256 gasUsed = startGas - gasleft();
                 uint256 refund = gasUsed * refundOracleGasPrice;
-                emit MemberHasZeroPoints(address(0), uint128(gasUsed));
-                emit MemberHasZeroPoints(address(0), uint128(refund));
                 if (members[collatorData.collatorAccount].deposit > refund) {
-                    emit MemberHasZeroPoints(address(0), 2);
                     members[collatorData.collatorAccount].deposit -= refund;
                     payoutAmounts[oracle][address(1)] += refund;
                 }

@@ -155,6 +155,21 @@ contract('InactivityCover', accounts => {
 
     });
 
+    it("reducing quorum size results in softenQuorum and automatic pushing of report", async () => {
+        const newEra = new BN("222");
+        await om.setQuorum("3", { from: oracleManager })
+        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member2, { from: oracleManager }); 
+        await om.addOracleMember(dev, { from: oracleManager });        
+        await om.reportRelay(ZERO_ADDR, newEra, 0, oracleData, { from: member1 });
+        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
+        await om.reportRelay(ZERO_ADDR, newEra, 0, oracleData, { from: member2 });
+        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
+        await om.setQuorum("2", { from: oracleManager })
+        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("1"));
+    })
+    return
+
     async function getDeposit(member) {
         const { 2: deposit } = await ic.getMember(member);
         return deposit;
@@ -240,8 +255,6 @@ contract('InactivityCover', accounts => {
         await om.registerAsOracleMember(collator, { from: member1 });
         return await expect(om.registerAsOracleMember(collator, { from: member2 })).to.be.rejectedWith("OM: COLLATOR_REGISTERED");
     })
-
-    return
 
     it("must offer at least one cover (active-set or zero-points)", async () => {
         const deposit = web3.utils.toWei("120", "ether");
