@@ -67,7 +67,7 @@ contract Oracle is Initializable {
      * @param _eraId current era id
      * @param _staking report data
      */
-    function reportRelay(
+    function reportPara(
         uint256 _index,
         uint256 _quorum,
         uint128 _eraId,

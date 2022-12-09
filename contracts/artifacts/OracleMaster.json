@@ -185,7 +185,7 @@
 					"parameterSlots": 1,
 					"returnSlots": 0
 				},
-				"@reportRelay_1099": {
+				"@reportPara_1099": {
 					"entryPoint": 2044,
 					"id": 1099,
 					"parameterSlots": 2,
@@ -17153,7 +17153,7 @@
 				"pause()": "infinite",
 				"paused()": "2590",
 				"removeOracleMember(address)": "infinite",
-				"reportRelay(uint64,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[]))": "infinite",
+				"reportPara(uint64,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[]))": "infinite",
 				"resume()": "infinite",
 				"setQuorum(uint8)": "infinite"
 			},
@@ -17178,7 +17178,7 @@
 			"pause()": "8456cb59",
 			"paused()": "5c975abb",
 			"removeOracleMember(address)": "f98fae81",
-			"reportRelay(uint64,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[]))": "5c510b05",
+			"reportPara(uint64,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[]))": "5c510b05",
 			"resume()": "046f7da2",
 			"setQuorum(uint8)": "6dcab78f"
 		}
@@ -17588,7 +17588,7 @@
 					"type": "tuple"
 				}
 			],
-			"name": "reportRelay",
+			"name": "reportPara",
 			"outputs": [],
 			"stateMutability": "nonpayable",
 			"type": "function"

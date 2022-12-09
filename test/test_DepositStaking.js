@@ -111,8 +111,8 @@ contract('DepositStaking', accounts => {
     it("manager cannot delegate if a delegator was not paid", async () => {
         const candidate = member1;
         const amount = web3.utils.toWei("2", "ether");
-        const candidateDelegationCount = "150";
-        const delegatorDelegationCount = "1";
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
         await ic.setDelegatorNotPaid_mock(delegator1);
         await expect(ds.delegate(candidate, amount, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager }))
             .to.be.rejectedWith('DELEG_N_PAID');
@@ -125,8 +125,8 @@ contract('DepositStaking', accounts => {
     it("manager cannot delegate if a member was not paid", async () => {
         const candidate = member1;
         const amount = web3.utils.toWei("2", "ether");
-        const candidateDelegationCount = "150";
-        const delegatorDelegationCount = "1";
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
         await ic.setMemberNotPaid_mock(delegator1)
         await expect(ds.delegate(candidate, amount, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager }))
             .to.be.rejectedWith('MEMBER_N_PAID');
@@ -136,10 +136,10 @@ contract('DepositStaking', accounts => {
 
     it("manager can delegate and delegation is recorded", async () => {
         const deposit = web3.utils.toWei("200", "ether");
-        const candidate = member2;
+        const candidate = member1;
         const amount = web3.utils.toWei("2", "ether");
-        const candidateDelegationCount = "150";
-        const delegatorDelegationCount = "1";
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
         await ic.whitelist(member1, true, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
         const icBalanceStart = new BN(await web3.eth.getBalance(ic.address));
@@ -153,12 +153,12 @@ contract('DepositStaking', accounts => {
 
     it("manager can bond more and delegation is recorded", async () => {
         const deposit = web3.utils.toWei("200", "ether");
-        const candidate = member2;
+        const candidate = member1;
         const amount = web3.utils.toWei("2", "ether");
         const more = web3.utils.toWei("1", "ether");
         const delegationExpected = new BN(amount).add(new BN(more));
-        const candidateDelegationCount = "150";
-        const delegatorDelegationCount = "1";
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
         await ic.whitelist(member1, true, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
         const icBalanceStart = new BN(await web3.eth.getBalance(ic.address));
@@ -173,12 +173,12 @@ contract('DepositStaking', accounts => {
 
     it("manager can schedule a delegation decrease and delegation is recorded", async () => {
         const deposit = web3.utils.toWei("200", "ether");
-        const candidate = member2;
+        const candidate = member1;
         const amount = web3.utils.toWei("2", "ether");
         const less = web3.utils.toWei("1", "ether");
         const delegationExpected = new BN(amount).sub(new BN(less));
-        const candidateDelegationCount = "150";
-        const delegatorDelegationCount = "1";
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
         await ic.whitelist(member1, true, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
         await ds.delegate(candidate, amount, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
@@ -190,12 +190,12 @@ contract('DepositStaking', accounts => {
 
     it("delegated collator is removed from delegations when decreased to 0", async () => {
         const deposit = web3.utils.toWei("200", "ether");
-        const candidate = member2;
+        const candidate = member1;
         const amount = web3.utils.toWei("2", "ether");
         const less = web3.utils.toWei("2", "ether");
         const delegationExpected = new BN(amount).sub(new BN(less));
-        const candidateDelegationCount = "150";
-        const delegatorDelegationCount = "1";
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
         await ic.whitelist(member1, true, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
         const icBalanceStart = new BN(await web3.eth.getBalance(ic.address));
@@ -214,8 +214,8 @@ contract('DepositStaking', accounts => {
         const candidate2 = member2;
         const amount = web3.utils.toWei("2", "ether");
         const stakedTotalExpected = new BN(amount).add(new BN(amount));
-        const candidateDelegationCount = "150";
-        const delegatorDelegationCount = "1";
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
         await ic.whitelist(member1, true, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
         await ds.delegate(candidate, amount, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
@@ -231,8 +231,8 @@ contract('DepositStaking', accounts => {
         const amount2 = web3.utils.toWei("5", "ether");
         const less = web3.utils.toWei("2", "ether");
         const delegationExpected = new BN(amount).sub(new BN(less));
-        const candidateDelegationCount = "150";
-        const delegatorDelegationCount = "1";
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
         await ic.whitelist(member1, true, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
         const icBalanceStart = new BN(await web3.eth.getBalance(ic.address));
@@ -272,10 +272,10 @@ contract('DepositStaking', accounts => {
         const less = web3.utils.toWei("2", "ether");
         const coverOwedtotal = web3.utils.toWei("1", "ether");
         const deposit = web3.utils.toWei("200", "ether");
-        const candidate = member2;
+        const candidate = member1;
         const amount = web3.utils.toWei("2", "ether");
-        const candidateDelegationCount = "150";
-        const delegatorDelegationCount = "1";
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
 
         await ic.whitelist(member1, true, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
@@ -290,8 +290,8 @@ contract('DepositStaking', accounts => {
         const delegation = web3.utils.toWei("3", "ether");
         const less = web3.utils.toWei("1", "ether");
         const deposit = web3.utils.toWei("200", "ether");
-        const candidateDelegationCount = "150";
-        const delegatorDelegationCount = "1";
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
         const delegationExpected = new BN(delegation).sub(new BN(less));
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
@@ -316,8 +316,8 @@ contract('DepositStaking', accounts => {
         const delegation = web3.utils.toWei("3", "ether");
         const less = web3.utils.toWei("1", "ether");
         const deposit = web3.utils.toWei("200", "ether");
-        const candidateDelegationCount = "150";
-        const delegatorDelegationCount = "1";
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
         await ic.whitelist(member2, true, { from: manager });
@@ -335,8 +335,8 @@ contract('DepositStaking', accounts => {
         const delegation = web3.utils.toWei("3", "ether");
         const less = web3.utils.toWei("1", "ether");
         const deposit = web3.utils.toWei("200", "ether");
-        const candidateDelegationCount = "150";
-        const delegatorDelegationCount = "1";
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
         const delegationExpected = new BN(delegation).sub(new BN(less));
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
@@ -370,8 +370,8 @@ contract('DepositStaking', accounts => {
         const delegation = web3.utils.toWei("3", "ether");
         const less = web3.utils.toWei("3", "ether");
         const deposit = web3.utils.toWei("200", "ether");
-        const candidateDelegationCount = "150";
-        const delegatorDelegationCount = "1";
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
         const delegationExpected = BN.max(new BN("0"), new BN(delegation).sub(new BN(less)));
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
@@ -404,8 +404,8 @@ contract('DepositStaking', accounts => {
         const delegation = web3.utils.toWei("3", "ether");
         const less = web3.utils.toWei("4", "ether");
         const deposit = web3.utils.toWei("200", "ether");
-        const candidateDelegationCount = "150";
-        const delegatorDelegationCount = "1";
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
         const delegationExpected = BN.max(new BN("0"), new BN(delegation).sub(new BN(less)));
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
@@ -438,8 +438,8 @@ contract('DepositStaking', accounts => {
         const delegation = web3.utils.toWei("3", "ether");
         const less = web3.utils.toWei("4", "ether");
         const deposit = web3.utils.toWei("200", "ether");
-        const candidateDelegationCount = "150";
-        const delegatorDelegationCount = "1";
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
         const delegationExpected = BN.max(new BN("0"), new BN(delegation).sub(new BN(less)));
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);

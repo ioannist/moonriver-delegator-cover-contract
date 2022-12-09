@@ -6,7 +6,7 @@ import "./Types.sol";
 interface IOracle {
     function initialize(address oracleMaster, address payable _pushable, uint128 _eraId) external;
 
-    function reportRelay(uint256 index, uint256 quorum, uint128 eraId, uint128 _eraNonce, Types.OracleData calldata staking, address oracle) external;
+    function reportPara(uint256 index, uint256 quorum, uint128 eraId, uint128 _eraNonce, Types.OracleData calldata staking, address oracle) external;
 
     function softenQuorum(uint8 quorum, uint128 _eraId) external;
 

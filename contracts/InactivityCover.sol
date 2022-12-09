@@ -204,7 +204,7 @@ contract InactivityCover is IPushable {
         auth(ROLE_MANAGER)
     {
         // The contract must have enough non-locked funds
-        require(address(this).balance > 0, "NO_FUNDS");
+        require(address(this).balance > amount, "NO_FUNDS");
         // The remaining funds after the withdrawal must exceed the deposited funds + the owed funds, i.e. cannot withdraw member funds, but only staking rewards;
         // because _get_free_balance does not include contract funds in unlocking (understated), this check might fail (false negative) to withdraw if a contract undelegation is pending
         // however, the check will never allow withdrawal of member funds (no false positives)
@@ -589,6 +589,14 @@ contract InactivityCover is IPushable {
         onlyDepositStaking
     {
         staking.scheduleDelegatorBondLess(candidate, less);
+    }
+
+    function schedule_delegator_revoke(address candidate)
+        external
+        virtual
+        onlyDepositStaking
+    {
+        staking.scheduleRevokeDelegation(candidate);
     }
 
     /** @dev Private method for scheduling a withdrawal of cover funds by a member. Can only be called by the

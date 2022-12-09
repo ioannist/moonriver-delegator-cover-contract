@@ -88,7 +88,6 @@ contract DepositStaking {
     }
 
     /// @dev Bond more for delegators with respect to a specific collator candidate
-    /// Selector: f8331108
     /// @param candidate The address of the collator candidate for which delegation shall increase
     /// @param more The amount by which the delegation is increased
     function delegatorBondMore(address candidate, uint256 more)
@@ -110,7 +109,6 @@ contract DepositStaking {
     }
 
     /// @dev Request to bond less for delegators with respect to a specific collator candidate
-    /// Selector: 00043acf
     /// @param candidate The address of the collator candidate for which delegation shall decrease
     /// @param less The amount by which the delegation is decreased (upon execution)
     function scheduleDelegatorBondLess(address candidate, uint256 less)
@@ -118,6 +116,15 @@ contract DepositStaking {
         auth(ROLE_STAKING_MANAGER)
     {
         _scheduleDelegatorBondLess(candidate, less);
+    }
+
+    /// @dev Request to revoke delegation with respect to a specific collator candidate
+    /// @param candidate The address of the collator candidate for which delegation shall decrease
+    function scheduleDelegatorRevoke(address candidate)
+        external
+        auth(ROLE_STAKING_MANAGER)
+    {
+        _scheduleDelegatorRevoke(candidate);
     }
 
     /// @dev Allows anybody to force an undelegation to increase the contract's reducible balance so it can make payments. Can be called with limited frequency and only if the contract has failed to make payments.
@@ -211,6 +218,24 @@ contract DepositStaking {
             less
         );
         // There is no method to cancel a request, and anybody can execute a scheduled request, so this is a one-way to decreasing the delegation
+    }
+
+    function _scheduleDelegatorRevoke(address candidate)
+        internal
+    {
+        stakedTotal -= delegations[candidate].amount;
+        delegations[candidate].amount = 0;
+        delegations[candidate].isDelegated = false;
+        for (uint256 i; i < collatorsDelegated.length; i++) {
+            if (collatorsDelegated[i] == candidate) {
+                delete collatorsDelegated[i];
+                break;
+            }
+        }
+        InactivityCover(INACTIVITY_COVER).schedule_delegator_revoke(
+            candidate
+        );
+        // There is no method to cancel a request, and anybody can execute a scheduled request, so this is a one-way to revoking the delegation
     }
 
     function _random() private view returns (uint256) {

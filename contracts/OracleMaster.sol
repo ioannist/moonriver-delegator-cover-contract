@@ -151,14 +151,14 @@ contract OracleMaster is Pausable, Initializable {
     }
 
     /**
-     * @notice Stop pool routine operations (reportRelay), allowed to call only by ROLE_PAUSE_MANAGER
+     * @notice Stop pool routine operations (reportPara), allowed to call only by ROLE_PAUSE_MANAGER
      */
     function pause() external auth(ROLE_PAUSE_MANAGER) {
         _pause();
     }
 
     /**
-     * @notice Resume pool routine operations (reportRelay), allowed to call only by ROLE_PAUSE_MANAGER
+     * @notice Resume pool routine operations (reportPara), allowed to call only by ROLE_PAUSE_MANAGER
      */
     function resume() external auth(ROLE_PAUSE_MANAGER) {
         _unpause();
@@ -244,7 +244,7 @@ contract OracleMaster is Pausable, Initializable {
      * @param _eraNonce era nonce
      * @param _report collator status/points data report
      */
-    function reportRelay(address _collator, uint128 _eraId, uint128 _eraNonce, Types.OracleData calldata _report)
+    function reportPara(address _collator, uint128 _eraId, uint128 _eraNonce, Types.OracleData calldata _report)
         external
         whenNotPaused
     {
@@ -263,7 +263,7 @@ contract OracleMaster is Pausable, Initializable {
             eraId = _eraId;
             // _clearReporting(); // there can be multiple reports per era
         }
-        IOracle(ORACLE).reportRelay(memberIndex, QUORUM, _eraId, _eraNonce,  _report, msg.sender);
+        IOracle(ORACLE).reportPara(memberIndex, QUORUM, _eraId, _eraNonce,  _report, msg.sender);
     }
 
     function addRemovePushable(address payable _pushable, bool _toAdd)

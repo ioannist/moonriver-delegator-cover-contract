@@ -409,7 +409,7 @@
 						"type": "tuple"
 					}
 				],
-				"name": "reportRelay",
+				"name": "reportPara",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -468,7 +468,7 @@
 				"paused()": {
 					"details": "Returns true if the contract is paused, and false otherwise."
 				},
-				"reportRelay(uint64,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[]))": {
+				"reportPara(uint64,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[]))": {
 					"params": {
 						"_eraId": "relaychain era",
 						"_report": "relaychain data report"
@@ -501,16 +501,16 @@
 					"notice": "Return last reported era and oracle is already reported indicator"
 				},
 				"pause()": {
-					"notice": "Stop pool routine operations (reportRelay), allowed to call only by ROLE_PAUSE_MANAGER"
+					"notice": "Stop pool routine operations (reportPara), allowed to call only by ROLE_PAUSE_MANAGER"
 				},
 				"removeOracleMember(address)": {
 					"notice": "Remove `_member` from the oracle member committee list, allowed to call only by ROLE_ORACLE_MEMBERS_MANAGER"
 				},
-				"reportRelay(uint64,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[]))": {
+				"reportPara(uint64,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[]))": {
 					"notice": "Accept oracle committee member reports from the relay side"
 				},
 				"resume()": {
-					"notice": "Resume pool routine operations (reportRelay), allowed to call only by ROLE_PAUSE_MANAGER"
+					"notice": "Resume pool routine operations (reportPara), allowed to call only by ROLE_PAUSE_MANAGER"
 				},
 				"setQuorum(uint8)": {
 					"notice": "Set the number of exactly the same reports needed to finalize the era allowed to call only by ROLE_ORACLE_QUORUM_MANAGER"
