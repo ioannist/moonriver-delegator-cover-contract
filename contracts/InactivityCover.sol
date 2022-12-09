@@ -510,7 +510,7 @@ contract InactivityCover is IPushable {
     }
 
     /// @dev When covers must be calculated and transfered to delegators, the respective collator can refund the oracle that pushedData the tx fees for that calculation
-    /// @param _refundOracleGasPrice The gar price used to calculate the refund
+    /// @param _refundOracleGasPrice The gas price used to calculate the refund
     function setRefundOracleGasPrice(uint256 _refundOracleGasPrice) external auth(ROLE_MANAGER) {
         require(_refundOracleGasPrice <= 10_000_000_000, "INV_PRICE"); // TODO change for Moonbeam
         // for market values, check https://moonbeam-gasinfo.netlify.app/
