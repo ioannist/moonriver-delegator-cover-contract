@@ -61,6 +61,9 @@ contract OracleMaster is Pausable, Initializable {
     // Collators to oracle representatives (each collator can have one oracle rep)
     mapping(address => address) public collatorsToOracles;
 
+    // Collator report counts
+    mapping(address => uint256) public reportCounts;
+
     // Allows the oracle manager to add/remove oracles at will
     bool sudo = true;
     
@@ -200,8 +203,6 @@ contract OracleMaster is Pausable, Initializable {
         members.pop();
         delete collatorsToOracles[_collator];
         emit MemberRemoved(_oracleMember);
-        // delete the data for the last eraId, let remained oracles report it again
-        // _clearReporting();
     }
 
     /**
@@ -261,17 +262,28 @@ contract OracleMaster is Pausable, Initializable {
 
         if (_eraId > eraId) {
             eraId = _eraId;
-            // _clearReporting(); // there can be multiple reports per era
         }
+        reportCounts[_collator]++;
         IOracle(ORACLE).reportPara(memberIndex, QUORUM, _eraId, _eraNonce,  _report, msg.sender);
     }
 
+    /**
+     * @notice Oracle data can be pushed to other contracts in the future, although care must be taken to not exceed max tx gas
+     */
     function addRemovePushable(address payable _pushable, bool _toAdd)
         external
         auth(ROLE_ORACLE_MEMBERS_MANAGER)
     {
         IOracle(ORACLE).addRemovePushable(_pushable, _toAdd);
     }
+
+    /**
+     * @notice Delete interim data for current Era, free storage memory for each oracle; can be used by manager to troublesoot a contested era
+     */
+    function clearReporting() external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
+        require(sudo, "OM: N_SUDO");
+        IOracle(ORACLE).clearReporting();
+    }   
 
     function removeSudo() external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
         sudo = false;
@@ -290,7 +302,6 @@ contract OracleMaster is Pausable, Initializable {
             }
         }
         return
-            (report.collators.length < 5 || collatorsWithZeroPoints < (report.collators.length * 2) / 3) &&
             report.round > 0 &&
             report.totalStaked > 0 &&
             report.totalSelected > 0 &&
@@ -314,12 +325,7 @@ contract OracleMaster is Pausable, Initializable {
         return MEMBER_N_FOUND;
     }
 
-    /**
-     * @notice Delete interim data for current Era, free storage memory for each oracle
-     */
-    function _clearReporting() internal {
-        IOracle(ORACLE).clearReporting();
-    }    
+ 
 
     function isProxyOfSelectedCandidate(address _oracleMember, address _collator) internal virtual view returns(bool) {
         bool isCollator = staking.isSelectedCandidate(_collator);

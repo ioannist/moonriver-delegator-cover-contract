@@ -316,7 +316,6 @@ contract('InactivityCover', accounts => {
         await om.reportPara(ZERO_ADDR, newEra, 0, oracleData, { from: member1 });
         await ic.withdrawRewards(new BN(withdrawal), manager, { from: manager });
     })
-    
 
     it("manager cannot withdraw an amount larger than the staking rewards w/ delegation and undelegation event", async () => {
         const deposit = web3.utils.toWei("120", "ether");
@@ -368,9 +367,9 @@ contract('InactivityCover', accounts => {
     })
 
     it("manager cannot withdraw an amount larger than the staking rewards w/ delegation and undelegation event (3)", async () => {
-        const deposit = web3.utils.toWei("250", "ether");
+        const deposit = web3.utils.toWei("150", "ether");
         const rewards = web3.utils.toWei("14", "ether");
-        const delegation = new BN("230");
+        const delegation = new BN(web3.utils.toWei("130", "ether"));
         const withdrawal =  new BN(rewards).sub(new BN("1"));
         const less = web3.utils.toWei("20", "ether")
         const newEra = new BN("222");
@@ -391,32 +390,6 @@ contract('InactivityCover', accounts => {
         await expect(ic.withdrawRewards(new BN(withdrawal), manager, { from: manager }))
             .to.be.rejectedWith("NO_REWARDS");
     })
-
-    it("manager cannot withdraw an amount larger than the staking rewards w/ delegation and undelegation event (3)", async () => {
-        const deposit = web3.utils.toWei("150", "ether");
-        const rewards = web3.utils.toWei("14", "ether");
-        const delegation = new BN(web3.utils.toWei("130", "ether"));
-        const withdrawal =  new BN(rewards);
-        const less = web3.utils.toWei("20", "ether")
-        const newEra = new BN("222");
-        const candidate = member1;
-
-        const candidateDelegationCount = "100";
-        const delegatorDelegationCount = "100";
-        await ic.whitelist(member1, true, { from: manager });
-        await ic.depositCover(member1, { from: member1, value: deposit });
-        // simulate staking rewards
-        await web3.eth.sendTransaction({ to: ic.address, from: dev, value: rewards });
-        // delegate almost all funds (deposits and rewards)
-        await ds.delegate(candidate, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
-        await ds.scheduleDelegatorBondLess(candidate, less, { from: stakingManager });
-
-        await om.addOracleMember(member1, { from: oracleManager });
-        await om.reportPara(ZERO_ADDR, newEra, 0, oracleData, { from: member1 });
-        await expect(ic.withdrawRewards(new BN(withdrawal), manager, { from: manager }))
-            .to.be.rejectedWith("NO_REWARDS");
-    })
-
     
     it("reducing quorum size results in softenQuorum and automatic pushing of report", async () => {
         const newEra = new BN("222");

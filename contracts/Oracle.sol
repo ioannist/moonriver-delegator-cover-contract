@@ -12,9 +12,6 @@ contract Oracle is Initializable {
 
     event Completed(uint256);
 
-    // is already pushed flag
-    // bool public isPushed;
-
     // Current era report  hashes
     uint256[] internal currentReportVariants;
 
@@ -82,10 +79,6 @@ contract Oracle is Initializable {
             currentReportBitmask = (reportBitmask | mask);
             require(_eraNonce == eraNonce, "OR: INV_NONCE");
         }
-        // return instantly if already got quorum and pushed data
-        //if (isPushed) {
-        //    return;
-        //}
 
         // convert staking report into 31 byte hash. The last byte is used for vote counting
         uint256 variant = uint256(keccak256(abi.encode(_staking))) &
@@ -172,7 +165,6 @@ contract Oracle is Initializable {
      */
     function _clearReporting() internal {
         currentReportBitmask = 0;
-        //isPushed = false;
         delete currentReportVariants;
         delete currentReports;
         eraNonce++;
@@ -188,7 +180,6 @@ contract Oracle is Initializable {
             }
             IPushable(PUSHABLES[i]).pushData(_eraId, report, oracle);
         }
-        //isPushed = true;
         _clearReporting();
     }
 

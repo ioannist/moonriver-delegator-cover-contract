@@ -35,28 +35,30 @@ contract InactivityCover_mock is InactivityCover {
         coverOwedTotal = amount;
     }
 
-    /*function delegate(
+    /// The dev env provides only one active collator (member1 0xf24FF3a9CF04c71Dbc94D0b566f7A27B94566cac) which is ok for most test cases.
+    /// However, for test cases that require >1 active collators, we must uncomment the methods below:
+    function delegate(
         address candidate,
         uint256 amount,
         uint256 candidateDelegationCount,
         uint256 delegatorDelegationCount
     ) external override onlyDepositStaking {
         address(0).call{value: amount}("");
-    }*/
+    }
 
-    /*function delegator_bond_more(address candidate, uint256 more)
+    function delegator_bond_more(address candidate, uint256 more)
         external
         override
         onlyDepositStaking
     {
         address(0).call{value: more}("");
-    }*/
+    }
 
-    /*function schedule_delegator_bond_less(address candidate, uint256 less)
+    function schedule_delegator_bond_less(address candidate, uint256 less)
         external
         override
         onlyDepositStaking
-    {}*/
+    {}
 
     function getEra() internal override view returns(uint128) {
         return eraId;
