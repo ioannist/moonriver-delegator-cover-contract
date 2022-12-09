@@ -60,6 +60,12 @@ contract InactivityCover_mock is InactivityCover {
         onlyDepositStaking
     {}
 
+    function schedule_delegator_revoke(address candidate)
+        external
+        override
+        onlyDepositStaking
+    {}
+
     function getEra() internal override view returns(uint128) {
         return eraId;
     }
