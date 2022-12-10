@@ -34,7 +34,7 @@ contract InactivityCover is IPushable {
     event DecreaseCoverScheduledEvent(address member, uint256 amount);
     event DecreaseCoverEvent(address member, uint256 amount);
     event CancelDecreaseCoverEvent(address member);
-    event ReportPushedEvent(uint128 eraId);
+    event ReportPushedEvent(uint128 eraId, address oracle);
     event MemberNotActive(address member, uint128 eraId);
     event MemberHasZeroPoints(address member, uint128 eraId);
     event PayoutEvent(address delegator, uint256 amount);
@@ -83,6 +83,8 @@ contract InactivityCover is IPushable {
     mapping(address => uint128) public erasCovered;
     // map of delegators to amounts owed by collators
     mapping(address => mapping(address => uint256)) payoutAmounts;
+    // map of total payouts to delegators
+    mapping(address => uint256) public totalPayouts;
     // If not 0, the oracle is credited with the tx cost for caclulating the cover payments
     uint256 refundOracleGasPrice;
 
@@ -266,7 +268,7 @@ contract InactivityCover is IPushable {
     /// @dev The method is used by the oracle to push data into the contract and calculate potential cover claims.
     /// @param _eraId The round number
     /// @param _report The collator data, including authored block counts, delegators, etc.
-    function pushData(uint128 _eraId, Types.OracleData calldata _report, address oracle)
+    function pushData(uint128 _eraId, Types.OracleData calldata _report, address _oracle)
         external
         onlyOracle
     {
@@ -353,16 +355,16 @@ contract InactivityCover is IPushable {
             }
 
             // Refund oracle for gas costs
-            if (refundOracleGasPrice > 0 && oracle != address(0)) {
+            if (refundOracleGasPrice > 0 && _oracle != address(0)) {
                 uint256 gasUsed = startGas - gasleft();
                 uint256 refund = gasUsed * refundOracleGasPrice;
                 if (members[collatorData.collatorAccount].deposit > refund) {
                     members[collatorData.collatorAccount].deposit -= refund;
-                    payoutAmounts[oracle][address(1)] += refund;
+                    payoutAmounts[_oracle][address(1)] += refund;
                 }
             }
         }
-        emit ReportPushedEvent(eraId);
+        emit ReportPushedEvent(eraId, _oracle);
     }
 
     /** @dev Anybody can execute this method to pay out cover claims to any delegator
@@ -409,6 +411,7 @@ contract InactivityCover is IPushable {
             delete payoutAmounts[delegator][collator];
             // remove collator from addresses that owe cover to this delegator
             coverOwedTotal -= toPay; // debit the total cover owed
+            totalPayouts[delegator] += toPay;
             emit PayoutEvent(delegator, toPay);
 
             (bool sent, ) = delegator.call{value: toPay}("");

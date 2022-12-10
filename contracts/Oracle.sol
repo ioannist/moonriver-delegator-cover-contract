@@ -10,7 +10,8 @@ import "./utils/ReportUtils.sol";
 contract Oracle is Initializable {
     using ReportUtils for uint256;
 
-    event Completed(uint256);
+    event NextEraNonce(uint128 eraNonce);
+    event ReportSubmitted(uint128 eraId, uint128 eraNonce, address oracle);
 
     // Current era report  hashes
     uint256[] internal currentReportVariants;
@@ -70,7 +71,7 @@ contract Oracle is Initializable {
         uint128 _eraId,
         uint128 _eraNonce,
         Types.OracleData calldata _staking,
-        address oracle
+        address _oracle
     ) external onlyOracleMaster {
         {
             uint256 mask = 1 << _index;
@@ -91,19 +92,20 @@ contract Oracle is Initializable {
             ++i;
         if (i < _length) {
             if (currentReportVariants[i].getCount() + 1 >= _quorum) {
-                _push(_eraId, _staking, oracle);
+                _push(_eraId, _staking, _oracle);
             } else {
                 ++currentReportVariants[i];
                 // increment variant counter, see ReportUtils for details
             }
         } else {
             if (_quorum == 1) {
-                _push(_eraId, _staking, oracle);
+                _push(_eraId, _staking, _oracle);
             } else {
                 currentReportVariants.push(variant + 1);
                 currentReports.push(_staking);
             }
         }
+        emit ReportSubmitted(_eraId, _eraNonce, _oracle);
     }
 
     /**
@@ -168,6 +170,7 @@ contract Oracle is Initializable {
         delete currentReportVariants;
         delete currentReports;
         eraNonce++;
+        emit NextEraNonce(eraNonce);
     }
 
     /**

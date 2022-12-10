@@ -249,49 +249,27 @@ contract('DepositStaking', accounts => {
     })
 
     it("force bond less fails if there is no non-paid delegator or member", async () => {
-        const less = web3.utils.toWei("2", "ether");
-        await expect(ds.forceScheduleDelegatorBondLess(less)).to.be.rejectedWith('FORBIDDEN');
+        await expect(ds.forceScheduleRevoke()).to.be.rejectedWith('FORBIDDEN');
     })
 
     it("force bond less fails if nothing is staked (1)", async () => {
-        const less = web3.utils.toWei("2", "ether");
         const coverOwedtotal = web3.utils.toWei("3", "ether");
         await ic.setDelegatorNotPaid_mock(delegator1);
         await ic.setCoverOwedTotal_mock(coverOwedtotal);
-        await expect(ds.forceScheduleDelegatorBondLess(less)).to.be.rejectedWith('ZERO_STAKED');
+        await expect(ds.forceScheduleRevoke()).to.be.rejectedWith('ZERO_STAKED');
     })
 
     it("force bond less fails if nothing is staked (2)", async () => {
-        const less = web3.utils.toWei("2", "ether");
         await ic.setMemberNotPaid_mock(member1);
-        await expect(ds.forceScheduleDelegatorBondLess(less)).to.be.rejectedWith('ZERO_STAKED');
+        await expect(ds.forceScheduleRevoke()).to.be.rejectedWith('ZERO_STAKED');
     })
 
-    it("trying to force an undelegation larger than the total cover owed, should fail", async () => {
-        const less = web3.utils.toWei("2", "ether");
-        const coverOwedtotal = web3.utils.toWei("1", "ether");
-        const deposit = web3.utils.toWei("200", "ether");
-        const candidate = member1;
-        const amount = web3.utils.toWei("2", "ether");
-        const candidateDelegationCount = "100";
-        const delegatorDelegationCount = "100";
-
-        await ic.whitelist(member1, true, { from: manager });
-        await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
-        await ds.delegate(candidate, amount, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
-
-        await ic.setDelegatorNotPaid_mock(delegator1);
-        await ic.setCoverOwedTotal_mock(coverOwedtotal);
-        await expect(ds.forceScheduleDelegatorBondLess(less)).to.be.rejectedWith('FORBIDDEN');
-    })
-
-    it("force undelegate succesfully undelegates from the one and only delegated collator", async () => {
+    it("force undelegate succesfully revokes from one delegated collator", async () => {
         const delegation = web3.utils.toWei("3", "ether");
-        const less = web3.utils.toWei("1", "ether");
         const deposit = web3.utils.toWei("200", "ether");
         const candidateDelegationCount = "100";
         const delegatorDelegationCount = "100";
-        const delegationExpected = new BN(delegation).sub(new BN(less));
+        const delegationExpected = new BN("0");
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
         await ic.whitelist(member2, true, { from: manager });
@@ -301,17 +279,17 @@ contract('DepositStaking', accounts => {
 
         await ds.delegate(member1, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ic.setMemberNotPaid_mock(member1);
-        const stakedTotalExpected = new BN(delegation).sub(new BN(less));
+        const stakedTotalExpected = new BN("0"); // revoked
 
-        await ds.forceScheduleDelegatorBondLess(less, { from: dev }); // should not throw
-        await expect(await ds.getIsDelegated(member1, { from: stakingManager })).to.be.true;
+        await ds.forceScheduleRevoke({ from: dev }); // should not throw
+        await expect(await ds.getIsDelegated(member1, { from: stakingManager })).to.be.false;
         await expect(await ds.getDelegation(member1, { from: stakingManager })).to.be.bignumber.equal(delegationExpected);
-        await expect(await ds.getCollatorsDelegated(0, { from: stakingManager })).to.be.equal(member1);
+        await expect(await ds.getCollatorsDelegated(0, { from: stakingManager })).to.be.equal(ZERO_ADDR);
         await expect(await ds.stakedTotal({ from: dev })).to.be.bignumber.equal(stakedTotalExpected);
         await expect(await web3.eth.getBalance(ic.address)).to.be.bignumber.equal(icBalanceExpected);
     })
 
-    it("force undelegate for a second time throws a too frequent error", async () => {
+    it("force undelegate for a second time throws a zero staked error", async () => {
         const delegation = web3.utils.toWei("3", "ether");
         const less = web3.utils.toWei("1", "ether");
         const deposit = web3.utils.toWei("200", "ether");
@@ -325,18 +303,36 @@ contract('DepositStaking', accounts => {
         await ds.delegate(member1, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ic.setMemberNotPaid_mock(dev);
 
-        await ds.forceScheduleDelegatorBondLess(less, { from: dev }); // should not throw
+        await ds.forceScheduleRevoke({ from: dev }); // should not throw
         await ic.timetravel(+_eras_between_forced_undelegation - 20);
-        await expect(ds.forceScheduleDelegatorBondLess(less, { from: dev })).to.be.rejectedWith('TOO_FREQUENT');
+        await expect(ds.forceScheduleRevoke({ from: dev })).to.be.rejectedWith('ZERO_STAKED');
+    })
+
+    it("force undelegate for a second time throws a too frequent error", async () => {
+        const delegation = web3.utils.toWei("1", "ether");
+        const deposit = web3.utils.toWei("200", "ether");
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
+
+        await ic.timetravel(100 + _eras_between_forced_undelegation);
+        await ic.whitelist(member2, true, { from: manager });
+        await ic.depositCover(member2, { from: member2, value: deposit }); // ic gets 200 ether
+
+        await ds.delegate(member1, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
+        await ds.delegate(member2, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
+        await ic.setMemberNotPaid_mock(dev);
+
+        await ds.forceScheduleRevoke({ from: dev }); // should not throw
+        await ic.timetravel(+_eras_between_forced_undelegation - 20);
+        await expect(ds.forceScheduleRevoke({ from: dev })).to.be.rejectedWith('TOO_FREQUENT');
     })
 
     it("force undelegate succesfully undelegates one of two collators", async () => {
         const delegation = web3.utils.toWei("3", "ether");
-        const less = web3.utils.toWei("1", "ether");
         const deposit = web3.utils.toWei("200", "ether");
         const candidateDelegationCount = "100";
         const delegatorDelegationCount = "100";
-        const delegationExpected = new BN(delegation).sub(new BN(less));
+        const delegationExpected = new BN("0");
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
         await ic.whitelist(member2, true, { from: manager });
@@ -347,19 +343,19 @@ contract('DepositStaking', accounts => {
         await ds.delegate(member1, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ds.delegate(member2, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ic.setMemberNotPaid_mock(dev);
-        const stakedTotalExpected = new BN(delegation).add(new BN(delegation)).sub(new BN(less));
+        const stakedTotalExpected = new BN(delegation);
 
-        await ds.forceScheduleDelegatorBondLess(less, { from: dev }); // should not throw
+        await ds.forceScheduleRevoke({ from: dev }); // should not throw
         try {
-            await expect(await ds.getIsDelegated(member1, { from: stakingManager })).to.be.true;
+            await expect(await ds.getIsDelegated(member1, { from: stakingManager })).to.be.false;
             await expect(await ds.getDelegation(member1, { from: stakingManager })).to.be.bignumber.equal(delegationExpected);
+            await expect(await ds.getCollatorsDelegated(0, { from: stakingManager })).to.be.equal(ZERO_ADDR);
         } catch {
             // if the above fails, this must succeed (choice of collator to undelegate from is random)
-            await expect(await ds.getIsDelegated(member2, { from: stakingManager })).to.be.true;
+            await expect(await ds.getIsDelegated(member2, { from: stakingManager })).to.be.false;
             await expect(await ds.getDelegation(member2, { from: stakingManager })).to.be.bignumber.equal(delegationExpected);
+            await expect(await ds.getCollatorsDelegated(1, { from: stakingManager })).to.be.equal(ZERO_ADDR);
         }
-        await expect(await ds.getCollatorsDelegated(0, { from: stakingManager })).to.be.equal(member1);
-        await expect(await ds.getCollatorsDelegated(1, { from: stakingManager })).to.be.equal(member2);
         await expect(await ds.stakedTotal({ from: dev })).to.be.bignumber.equal(stakedTotalExpected);
         await expect(await web3.eth.getBalance(ic.address)).to.be.bignumber.equal(icBalanceExpected);
     })
@@ -384,7 +380,7 @@ contract('DepositStaking', accounts => {
         await ic.setMemberNotPaid_mock(dev);
         const stakedTotalExpected = BN.max(new BN("0"), new BN(delegation).add(new BN(delegation)).sub(new BN(less)));
 
-        await ds.forceScheduleDelegatorBondLess(less, { from: dev }); // should not throw
+        await ds.forceScheduleRevoke({ from: dev }); // should not throw
         try {
             await expect(await ds.getIsDelegated(member1, { from: stakingManager })).to.be.false;
             await expect(await ds.getDelegation(member1, { from: stakingManager })).to.be.bignumber.equal(delegationExpected);
@@ -401,11 +397,10 @@ contract('DepositStaking', accounts => {
 
     it("force undelegate succesfully undelegates fully one of two collators, but not entire requested undelegation amount is met", async () => {
         const delegation = web3.utils.toWei("3", "ether");
-        const less = web3.utils.toWei("4", "ether");
         const deposit = web3.utils.toWei("200", "ether");
         const candidateDelegationCount = "100";
         const delegatorDelegationCount = "100";
-        const delegationExpected = BN.max(new BN("0"), new BN(delegation).sub(new BN(less)));
+        const delegationExpected = new BN("0");
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
         await ic.whitelist(member2, true, { from: manager });
@@ -416,9 +411,9 @@ contract('DepositStaking', accounts => {
         await ds.delegate(member1, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ds.delegate(member2, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ic.setMemberNotPaid_mock(dev);
-        const stakedTotalExpected = BN.max(new BN("0"), new BN(delegation).add(new BN(delegation)).sub(BN.min(new BN(less), new BN(delegation))));
+        const stakedTotalExpected = new BN(delegation);
 
-        await ds.forceScheduleDelegatorBondLess(less, { from: dev }); // should not throw
+        await ds.forceScheduleRevoke({ from: dev }); // should not throw
         try {
             await expect(await ds.getIsDelegated(member1, { from: stakingManager })).to.be.false;
             await expect(await ds.getDelegation(member1, { from: stakingManager })).to.be.bignumber.equal(delegationExpected);
@@ -435,11 +430,10 @@ contract('DepositStaking', accounts => {
 
     it("force undelegate (x2) successfully undelegates both collators", async () => {
         const delegation = web3.utils.toWei("3", "ether");
-        const less = web3.utils.toWei("4", "ether");
         const deposit = web3.utils.toWei("200", "ether");
         const candidateDelegationCount = "100";
         const delegatorDelegationCount = "100";
-        const delegationExpected = BN.max(new BN("0"), new BN(delegation).sub(new BN(less)));
+        const delegationExpected = new BN("0");
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
         await ic.whitelist(member2, true, { from: manager });
@@ -450,10 +444,10 @@ contract('DepositStaking', accounts => {
         await ds.delegate(member1, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ds.delegate(member2, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ic.setMemberNotPaid_mock(dev);
-        const stakedTotalExpected = BN.max(new BN("0"), new BN(delegation).add(new BN(delegation)).sub(BN.min(new BN(less), new BN(delegation))));
-        const stakedTotalExpected2 = BN.max(new BN("0"), stakedTotalExpected.sub(BN.min(new BN(less), new BN(delegation))));
+        const stakedTotalExpected = new BN(delegation);
+        const stakedTotalExpected2 = new BN("0");
 
-        await ds.forceScheduleDelegatorBondLess(less, { from: dev }); // should not throw
+        await ds.forceScheduleRevoke({ from: dev }); // should not throw
         let member1GoesFirst = false;
         try {
             await expect(await ds.getIsDelegated(member1, { from: stakingManager })).to.be.false;
@@ -470,7 +464,7 @@ contract('DepositStaking', accounts => {
         await expect(await web3.eth.getBalance(ic.address)).to.be.bignumber.equal(icBalanceExpected);
 
         await ic.timetravel(1 + _eras_between_forced_undelegation);
-        await ds.forceScheduleDelegatorBondLess(less, { from: dev }); // should not throw
+        await ds.forceScheduleRevoke({ from: dev }); // should not throw
         if (!member1GoesFirst) {
             await expect(await ds.getIsDelegated(member1, { from: stakingManager })).to.be.false;
             await expect(await ds.getDelegation(member1, { from: stakingManager })).to.be.bignumber.equal(delegationExpected);

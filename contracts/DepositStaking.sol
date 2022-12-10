@@ -12,6 +12,8 @@ contract DepositStaking {
         uint256 amount;
     }
 
+    event ScheduleRevokeEvent(uint128 eraId, address collator);
+
     /// The ParachainStaking wrapper at the known pre-compile address. This will be used to make all calls
     /// to the underlying staking solution
     ParachainStaking public staking;
@@ -127,16 +129,12 @@ contract DepositStaking {
         _scheduleDelegatorRevoke(candidate);
     }
 
-    /// @dev Allows anybody to force an undelegation to increase the contract's reducible balance so it can make payments. Can be called with limited frequency and only if the contract has failed to make payments.
-    /// @param less How much to undelegate
-    function forceScheduleDelegatorBondLess(uint256 less) external {
-        require(less > 0, "AMOUNT_N_POSITIVE");
+    /// @dev Allows anybody to force a revoke to increase the contract's reducible balance so it can make payments. Can be called with limited frequency and only if the contract has defaulted in making payments.
+    function forceScheduleRevoke() external {
         // There must be a non-paid delegator or member to call this method
         require(
-            (InactivityCover(INACTIVITY_COVER).delegatorNotPaid() !=
-                address(0) &&
-                less <= InactivityCover(INACTIVITY_COVER).coverOwedTotal()) ||
-                InactivityCover(INACTIVITY_COVER).memberNotPaid() != address(0),
+            InactivityCover(INACTIVITY_COVER).delegatorNotPaid() != address(0) ||
+            InactivityCover(INACTIVITY_COVER).memberNotPaid() != address(0),
             "FORBIDDEN"
         );
         // The contract must have staked funds
@@ -162,10 +160,8 @@ contract DepositStaking {
                 continue;
             }
             if (delegations[candidate].amount > 0) {
-                uint256 amount = delegations[candidate].amount < less
-                    ? delegations[candidate].amount
-                    : less;
-                _scheduleDelegatorBondLess(candidate, amount);
+                _scheduleDelegatorRevoke(candidate);
+                emit ScheduleRevokeEvent(lastForcedUndelegationEra, candidate);
                 break;
             }
             collatorIndex = (collatorIndex + 1) % collatorsDelegated.length;
