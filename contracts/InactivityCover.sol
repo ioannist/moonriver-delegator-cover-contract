@@ -38,6 +38,8 @@ contract InactivityCover is IPushable {
     event MemberNotActive(address member, uint128 eraId);
     event MemberHasZeroPoints(address member, uint128 eraId);
     event PayoutEvent(address delegator, uint256 amount);
+    event DelegatorNotPaid(address delegator, address collator, uint256 amount);
+    event MemberNotPaid(address member, uint256 amount);
 
     /// The ParachainStaking wrapper at the known pre-compile address. This will be used to make all calls
     /// to the underlying staking solution
@@ -236,6 +238,7 @@ contract InactivityCover is IPushable {
             // This means that memberNotPaid will always store the first member that was not paid and only that member, until they are paid
             if (memberNotPaid == address(0)) {
                 memberNotPaid = collator;
+                emit MemberNotPaid(collator, amount);
             }
             return;
         }
@@ -398,11 +401,12 @@ contract InactivityCover is IPushable {
                 // only update if not already set
                 if (delegatorNotPaid == address(0)) {
                     delegatorNotPaid = delegator;
+                    emit DelegatorNotPaid(delegator, collator, toPay);
                 }
                 // will continue paying as many delegators as possible (smaller amounts owed) until drained
                 continue;
             }
-            // Reset delegatorNotPaid to 0 (if it is this delegator) as it can now get paid
+            // Reset delegatorNotPaid to 0 (if it is this delegator) as they can now get paid
             if (delegatorNotPaid == delegator) {
                 delegatorNotPaid = address(0);
             }
