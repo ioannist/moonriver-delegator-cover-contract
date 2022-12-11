@@ -106,7 +106,6 @@ contract('DepositStaking', accounts => {
 
     });
 
-
     it("manager cannot delegate if a delegator was not paid", async () => {
         const candidate = member1;
         const amount = web3.utils.toWei("2", "ether");
@@ -478,4 +477,6 @@ contract('DepositStaking', accounts => {
         await expect(await ds.stakedTotal({ from: dev })).to.be.bignumber.equal(stakedTotalExpected2);
         await expect(await web3.eth.getBalance(ic.address)).to.be.bignumber.equal(icBalanceExpected);
     })
+
+
 })

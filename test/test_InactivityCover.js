@@ -182,6 +182,7 @@ contract('InactivityCover', accounts => {
         return maxCoveredDelegation;
     }
 
+
     it("manager can withdraw staking rewards w/ report event", async () => {
         const deposit = web3.utils.toWei("120", "ether");
         const rewards = web3.utils.toWei("14", "ether");
@@ -1008,9 +1009,9 @@ contract('InactivityCover', accounts => {
 
     it("anyone can execute a member's scheduled decrease", async () => {
         const balanceStart = new BN(await web3.eth.getBalance(member1));
-        const deposit = web3.utils.toWei("10", "ether");
-        const decrease = web3.utils.toWei("7", "ether");
-        const expected = web3.utils.toWei("3", "ether");
+        const deposit = web3.utils.toWei("20", "ether");
+        const decrease = web3.utils.toWei("13", "ether");
+        const expected = web3.utils.toWei("7", "ether");
         const balanceEndExpected = balanceStart.sub(new BN(deposit)).add(new BN(decrease));
         await ic.whitelist(member1, true, { from: manager });
         await ic.setExecuteDelay("33", member1, { from: manager });

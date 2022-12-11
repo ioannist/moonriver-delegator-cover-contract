@@ -35,11 +35,11 @@ contract InactivityCover is IPushable {
     event DecreaseCoverEvent(address member, uint256 amount);
     event CancelDecreaseCoverEvent(address member);
     event ReportPushedEvent(uint128 eraId, address oracle);
-    event MemberNotActive(address member, uint128 eraId);
-    event MemberHasZeroPoints(address member, uint128 eraId);
+    event MemberNotActiveEvent(address member, uint128 eraId);
+    event MemberHasZeroPointsEvent(address member, uint128 eraId);
     event PayoutEvent(address delegator, uint256 amount);
-    event DelegatorNotPaid(address delegator, address collator, uint256 amount);
-    event MemberNotPaid(address member, uint256 amount);
+    event DelegatorNotPaidEvent(address delegator, address collator, uint256 amount);
+    event MemberNotPaidEvent(address member, uint256 amount);
 
     /// The ParachainStaking wrapper at the known pre-compile address. This will be used to make all calls
     /// to the underlying staking solution
@@ -238,7 +238,7 @@ contract InactivityCover is IPushable {
             // This means that memberNotPaid will always store the first member that was not paid and only that member, until they are paid
             if (memberNotPaid == address(0)) {
                 memberNotPaid = collator;
-                emit MemberNotPaid(collator, amount);
+                emit MemberNotPaidEvent(collator, amount);
             }
             return;
         }
@@ -312,7 +312,7 @@ contract InactivityCover is IPushable {
                 !collatorData.active
                 ) {
                 // if collator is out of the active set
-                emit MemberNotActive(collatorData.collatorAccount, eraId);
+                emit MemberNotActiveEvent(collatorData.collatorAccount, eraId);
                 mustPay = true;
             }
             uint128 noZeroPtsCoverAfterEra = members[collatorData.collatorAccount].noZeroPtsCoverAfterEra;
@@ -322,7 +322,7 @@ contract InactivityCover is IPushable {
                 collatorData.points == 0
                 ) {
                 // if collator is in the active set but produced 0 blocks
-                emit MemberHasZeroPoints(collatorData.collatorAccount, eraId);
+                emit MemberHasZeroPointsEvent(collatorData.collatorAccount, eraId);
                 mustPay = true;
             }
             if (!mustPay) {
@@ -401,7 +401,7 @@ contract InactivityCover is IPushable {
                 // only update if not already set
                 if (delegatorNotPaid == address(0)) {
                     delegatorNotPaid = delegator;
-                    emit DelegatorNotPaid(delegator, collator, toPay);
+                    emit DelegatorNotPaidEvent(delegator, collator, toPay);
                 }
                 // will continue paying as many delegators as possible (smaller amounts owed) until drained
                 continue;

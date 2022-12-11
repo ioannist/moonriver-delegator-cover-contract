@@ -155,6 +155,7 @@ contract DepositStaking {
             counter > 0;
             counter--
         ) {
+            collatorIndex = (collatorIndex + 1) % collatorsDelegated.length;
             address candidate = collatorsDelegated[collatorIndex];
             if (candidate == address(0)) {
                 continue;
@@ -164,7 +165,6 @@ contract DepositStaking {
                 emit ScheduleRevokeEvent(lastForcedUndelegationEra, candidate);
                 break;
             }
-            collatorIndex = (collatorIndex + 1) % collatorsDelegated.length;
         }
     }
 
