@@ -269,6 +269,8 @@ contract InactivityCover is IPushable {
 
 
     /// @dev The method is used by the oracle to push data into the contract and calculate potential cover claims.
+    /// Cover claims are not transfered to delegators; instea, they are credited as sums to a mapping and can be transfered later in a separate tx.
+    /// This is necessary to keep the method under the gas limit and to also save tx costs by not executing imaterial transfers.
     /// @param _eraId The round number
     /// @param _report The collator data, including authored block counts, delegators, etc.
     function pushData(uint128 _eraId, Types.OracleData calldata _report, address _oracle)
@@ -303,12 +305,15 @@ contract InactivityCover is IPushable {
             );
             erasCovered[collatorData.collatorAccount] = erasCov <= 1080
                 ? erasCov
-                : 1080; // max 3 months
+                : 1080; // max 3 months TODO change for Moonbeam
 
             bool mustPay;
             uint128 noActiveSetCoverAfterEra = members[collatorData.collatorAccount].noActiveSetCoverAfterEra;
             if (
+                // check that member is offering active-set cover;
+                // if noActiveSetCoverAfterEra is a positive number, then the member will stop offering cover after noActiveSetCoverAfterEra + erasCovered
                 (noActiveSetCoverAfterEra == 0 || noActiveSetCoverAfterEra + erasCovered[collatorData.collatorAccount] > eraId) &&
+                // collator must not be in the active set
                 !collatorData.active
                 ) {
                 // if collator is out of the active set
@@ -317,9 +322,11 @@ contract InactivityCover is IPushable {
             }
             uint128 noZeroPtsCoverAfterEra = members[collatorData.collatorAccount].noZeroPtsCoverAfterEra;
             if (
+                // check that member is offering zero-points cover;
+                // if noZeroPtsCoverAfterEra is a positive number, then the member will stop offering cover after noZeroPtsCoverAfterEra + erasCovered
                 (noZeroPtsCoverAfterEra == 0 || noZeroPtsCoverAfterEra + erasCovered[collatorData.collatorAccount] > eraId) &&
-                collatorData.active &&
-                collatorData.points == 0
+                // collator must be in the active set and have reported 0 points for this era
+                collatorData.active && collatorData.points == 0
                 ) {
                 // if collator is in the active set but produced 0 blocks
                 emit MemberHasZeroPointsEvent(collatorData.collatorAccount, eraId);
@@ -329,7 +336,7 @@ contract InactivityCover is IPushable {
                 continue;
             }
 
-            // this loop may run for 300 times so ops must be minimized
+            // this loop may run for 300 times so it must stay optimized and light
             for (
                 uint128 j = 0;
                 j < collatorData.topActiveDelegations.length;
@@ -357,7 +364,10 @@ contract InactivityCover is IPushable {
                 coverOwedTotal += toPay; // current total (not paid out)
             }
 
-            // Refund oracle for gas costs
+            // Refund oracle for gas costs. Calculating cover claims for every delegator can get expensive for 300 delegators.
+            // Oracles pay some minor tx fees when they submit a report, but they get reimusrsed for the calculation of the claims when that happens.
+            // This is not only fair but also necessary because only 1 oracle will have to run pushData per eraNonce (the oracle that happens to be the Nth one in an N-quorum)
+            // If the oracle is not reimbursed, then there is an incentive to not be the Nth oracle to avoid the fee.
             if (refundOracleGasPrice > 0 && _oracle != address(0)) {
                 uint256 gasUsed = startGas - gasleft();
                 uint256 refund = gasUsed * refundOracleGasPrice;
@@ -371,8 +381,7 @@ contract InactivityCover is IPushable {
     }
 
     /** @dev Anybody can execute this method to pay out cover claims to any delegator
-        @param delegators The delegators to pay cover claims to. These are accumulated claims and could
-        even be from multiple collators that missed rounds.
+        @param delegators The delegators to pay cover claims to. These are accumulated claims and could even be from multiple collators.
         @param collators The corresponding collators that the delegators are claiming from
     */
     function payOutCover(
@@ -610,7 +619,10 @@ contract InactivityCover is IPushable {
         staking.scheduleRevokeDelegation(candidate);
     }
 
-
+    function resetNotPaid() external onlyDepositStaking {
+        memberNotPaid = address(0);
+        delegatorNotPaid = address(0);
+    }
 
     /** @dev Private method for scheduling a withdrawal of cover funds by a member. Can only be called by the
     collator itself. Only one scheduled decrease can exist per member at a time. The waiting time to withdraw is

@@ -30,6 +30,7 @@ A contract which manages roles for the whole protocol. New and old roles can be 
 npm i
 truffle run moonbeam install
 truffle run moonbeam start
+# make sure Moonbeam node is v0.27.2 or later; if not, remove old docker image and reinstall
 ```
 
 ### Make .secret.env file in root folder
@@ -65,6 +66,8 @@ truffle migrate --network dev
 ```
 
 ### Deployed Contracts on Moonriver
+
+These contracts are on the initial version that was test-driven for 2 months with one member / one oracle. We will update the addresses to reflect the new contracts as soon as they are deployed.
 
 AuthManager
 [0xdDBEa1588fB4738639E1d8d63cf10E30d7f2dc95](https://moonriver.moonscan.io/address/0xdDBEa1588fB4738639E1d8d63cf10E30d7f2dc95)

@@ -304,6 +304,7 @@ contract('DepositStaking', accounts => {
 
         await ds.forceScheduleRevoke({ from: dev }); // should not throw
         await ic.timetravel(+_eras_between_forced_undelegation - 20);
+        await ic.setMemberNotPaid_mock(dev);
         await expect(ds.forceScheduleRevoke({ from: dev })).to.be.rejectedWith('ZERO_STAKED');
     })
 
@@ -323,6 +324,7 @@ contract('DepositStaking', accounts => {
 
         await ds.forceScheduleRevoke({ from: dev }); // should not throw
         await ic.timetravel(+_eras_between_forced_undelegation - 20);
+        await ic.setMemberNotPaid_mock(dev);
         await expect(ds.forceScheduleRevoke({ from: dev })).to.be.rejectedWith('TOO_FREQUENT');
     })
 
@@ -463,6 +465,7 @@ contract('DepositStaking', accounts => {
         await expect(await web3.eth.getBalance(ic.address)).to.be.bignumber.equal(icBalanceExpected);
 
         await ic.timetravel(1 + _eras_between_forced_undelegation);
+        await ic.setMemberNotPaid_mock(dev);
         await ds.forceScheduleRevoke({ from: dev }); // should not throw
         if (!member1GoesFirst) {
             await expect(await ds.getIsDelegated(member1, { from: stakingManager })).to.be.false;

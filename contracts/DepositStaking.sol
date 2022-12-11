@@ -54,7 +54,11 @@ contract DepositStaking {
         INACTIVITY_COVER = _inactivity_cover;
     }
 
-    /// @dev Delegate the contracts funds to a collator
+    /// @dev Delegate the contracts funds to a collator. Can be called only by staking manager.
+    /// The cover contract does not have any fees and it relies on staking to generate income for the contract manager/owner.
+    /// Some funds must remain liquid to be able to meet cover claims and member withdrawals.
+    /// It is the job of the staking manager to ensure enough liquid funds are available.
+    /// If a payment to a delegator or collator member fails, then anybody can force the automatic undelegation of funds.
     /// @param candidate The collator to delegate it to
     /// @param candidateDelegationCount The number of delegations this collator has
     /// @param delegatorDelegationCount The number of delegations this contracts has
@@ -89,7 +93,7 @@ contract DepositStaking {
         );
     }
 
-    /// @dev Bond more for delegators with respect to a specific collator candidate
+    /// @dev Bond more of this contract's balance to a collator that the contract already delegates to.
     /// @param candidate The address of the collator candidate for which delegation shall increase
     /// @param more The amount by which the delegation is increased
     function delegatorBondMore(address candidate, uint256 more)
@@ -129,7 +133,13 @@ contract DepositStaking {
         _scheduleDelegatorRevoke(candidate);
     }
 
-    /// @dev Allows anybody to force a revoke to increase the contract's reducible balance so it can make payments. Can be called with limited frequency and only if the contract has defaulted in making payments.
+    /// @dev Allows anybody to force a revoke to increase the contract's reducible balance so it can make payments.
+    /// The method can be called with limited frequency and only if the contract has defaulted in making payments to delegators or members.
+    /// The method will choose one random collator to revoke from and reset the default flags.
+    /// Calling the method does not guarantee that the delegator or member that was not paid, WILL be able to get paid, as the revoked amount may be less.
+    /// However, users can keep revoking until the liquid balance is high enough to meet obligations.
+    /// This is a method of last resort and it allows members and delegators to get their funds, should the manager fail to keep enough funds liquid.
+    /// The manager would want to avoid forcing users to run this function which is 1) inconvenient for them, and 2) exposes the manager to random revoke risk.
     function forceScheduleRevoke() external {
         // There must be a non-paid delegator or member to call this method
         require(
@@ -157,14 +167,13 @@ contract DepositStaking {
         ) {
             collatorIndex = (collatorIndex + 1) % collatorsDelegated.length;
             address candidate = collatorsDelegated[collatorIndex];
-            if (candidate == address(0)) {
+            if (candidate == address(0) || delegations[candidate].amount == 0) {
                 continue;
             }
-            if (delegations[candidate].amount > 0) {
-                _scheduleDelegatorRevoke(candidate);
-                emit ScheduleRevokeEvent(lastForcedUndelegationEra, candidate);
-                break;
-            }
+            _scheduleDelegatorRevoke(candidate);
+            InactivityCover(INACTIVITY_COVER).resetNotPaid();
+            emit ScheduleRevokeEvent(lastForcedUndelegationEra, candidate);
+            break;
         }
     }
 

@@ -57,7 +57,7 @@ contract('InactivityCover', accounts => {
     const payoutReversed = false;
 
     function bnToEther(bignumber) {
-        return new BN(bignumber).div(new BN("1000000000000000000")).toNumber()
+        return new BN(bignumber).div(new BN(web3.utils.toWei("1", "ether"))).toNumber()
     }
 
     const topActiveDelegations1 = [{
