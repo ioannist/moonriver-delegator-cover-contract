@@ -537,8 +537,8 @@ contract InactivityCover is IPushable {
     /// @param _max_covered the max delegation that is covered (any amount above that will not receive rewards cover)
     function memberSetMaxCoveredDelegation(uint256 _max_covered) external {
         require(members[msg.sender].active, "NOT_ACTIVE");
-        // to disable max_covered, we can use a very high value
-        require(_max_covered >= 500 ether, "INVALID");
+        // To disable max_covered, we can use a very high value.
+        require(_max_covered >= 500 ether, "INVALID"); // TODO change value for Moonbeam
         members[msg.sender].maxCoveredDelegation = _max_covered;
     }
 
@@ -562,6 +562,10 @@ contract InactivityCover is IPushable {
         auth(ROLE_MANAGER)
     {
         whitelisted[newMember] = status;
+    }
+
+    function executeDelegationRequest(address delegator, address candidate) external {
+            staking.executeDelegationRequest(delegator, candidate);
     }
 
     function delegate(
@@ -601,6 +605,8 @@ contract InactivityCover is IPushable {
     {
         staking.scheduleRevokeDelegation(candidate);
     }
+
+
 
     /** @dev Private method for scheduling a withdrawal of cover funds by a member. Can only be called by the
     collator itself. Only one scheduled decrease can exist per member at a time. The waiting time to withdraw is

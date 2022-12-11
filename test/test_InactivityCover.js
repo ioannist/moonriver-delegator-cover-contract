@@ -181,7 +181,6 @@ contract('InactivityCover', accounts => {
         const { 4: maxCoveredDelegation } = await ic.getMember(member);
         return maxCoveredDelegation;
     }
-    return
 
     it("manager can withdraw staking rewards w/ report event", async () => {
         const deposit = web3.utils.toWei("120", "ether");
