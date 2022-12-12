@@ -50,12 +50,12 @@ module.exports = {
          provider: () => {
             return new HDWalletProvider({
                privateKeys: privateKeysMoonbase,
-               providerOrUrl: 'https://moonbeam-alpha.api.onfinality.io/public'
+               providerOrUrl: 'http://45.82.64.32:9933/'
             });
          },
          network_id: 1287,
-         networkCheckTimeout: 60000,
-         timeoutBlocks: 200
+         //networkCheckTimeout: 60000,
+         //timeoutBlocks: 200
       },
       moonriver: {
          provider: () => {

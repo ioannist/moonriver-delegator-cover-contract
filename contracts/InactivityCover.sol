@@ -10,6 +10,7 @@ import "../interfaces/IOracleMaster.sol";
 import "../interfaces/Types.sol";
 import "../interfaces/IAuthManager.sol";
 import "../interfaces/IPushable.sol";
+import "../interfaces/IProxy.sol";
 import "./DepositStaking.sol";
 
 contract InactivityCover is IPushable {
@@ -38,12 +39,16 @@ contract InactivityCover is IPushable {
     event MemberNotActiveEvent(address member, uint128 eraId);
     event MemberHasZeroPointsEvent(address member, uint128 eraId);
     event PayoutEvent(address delegator, uint256 amount);
-    event DelegatorNotPaidEvent(address delegator, address collator, uint256 amount);
+    event DelegatorNotPaidEvent(address delegator, uint256 amount);
+    event DelegatorPayoutLessThanMinEvent(address delegator);
     event MemberNotPaidEvent(address member, uint256 amount);
+    event MemberSetMaxCoveredDelegationEvent(address member, uint256 amount);
+    event MemberSetCoverTypesEvent(address member, bool noZeroPtsCoverAfterEra, bool noActiveSetCoverAfterEra);
 
     /// The ParachainStaking wrapper at the known pre-compile address. This will be used to make all calls
     /// to the underlying staking solution
     ParachainStaking public staking;
+    IProxy public proxy;
 
     // auth manager contract address
     address public AUTH_MANAGER;
@@ -84,7 +89,7 @@ contract InactivityCover is IPushable {
     // this is also the number of eras a member must wait to execute a decrease request
     mapping(address => uint128) public erasCovered;
     // map of delegators to amounts owed by collators
-    mapping(address => mapping(address => uint256)) payoutAmounts;
+    mapping(address => uint256) public payoutAmounts;
     // map of total payouts to delegators
     mapping(address => uint256) public totalPayouts;
     // If not 0, the oracle is credited with the tx cost for caclulating the cover payments
@@ -138,6 +143,7 @@ contract InactivityCover is IPushable {
             "NOT_ALLOWED"
         );
         staking = ParachainStaking(0x0000000000000000000000000000000000000800);
+        proxy = IProxy(0x000000000000000000000000000000000000080b);
         AUTH_MANAGER = _auth_manager;
         ORACLE_MASTER = _oracle_master;
         DEPOSIT_STAKING = _deposit_staking;
@@ -183,8 +189,9 @@ contract InactivityCover is IPushable {
     until they can withdraw. During this waiting time, their funds continue to cover their delegators.
      @param amount How much to decrease the cover by.
     */
-    function scheduleDecreaseCover(uint256 amount) external {
-        _scheduleDecreaseCover(amount, msg.sender);
+    function scheduleDecreaseCover(address _member, uint256 amount) external {
+        require(_isProxyOfSelectedCandidate(msg.sender, _member), "N_COLLATOR_PROXY");
+        _scheduleDecreaseCover(amount, _member);
     }
 
     /// @dev Allows the manager to schedule a refund of the deposit back to a member that is no longer whitelisted
@@ -221,50 +228,51 @@ contract InactivityCover is IPushable {
     }
 
     /// @dev Execute a scheduled cover decrease (withdrawal) by a member
-    /// @param collator The collator member whose scheduled withdrawal we are executing (anybody can execute it)
-    function executeScheduled(address payable collator) external {
-        require(scheduledDecreasesMap[collator].amount != 0, "DECR_N_EXIST");
+    /// @param _member The collator member whose scheduled withdrawal we are executing (anybody can execute it)
+    function executeScheduled(address payable _member) external {
+        require(scheduledDecreasesMap[_member].amount != 0, "DECR_N_EXIST");
         require(
             // The current era must be after the era the decrease is scheduled for
             // The manager can change the EXECUTE_DELAY after the decrease was scheduled by the memver, so the "scheduled date" is not fixed
-            scheduledDecreasesMap[collator].era + erasCovered[collator] <= getEra(),
+            scheduledDecreasesMap[_member].era + erasCovered[_member] <= getEra(),
             "NOT_EXEC"
         );
 
-        uint256 amount = scheduledDecreasesMap[collator].amount;
+        uint256 amount = scheduledDecreasesMap[_member].amount;
         // Check if contract has enough reducible balance (may be locked in staking)
         if (address(this).balance < amount) {
             // Only update if not already set
             // This means that memberNotPaid will always store the first member that was not paid and only that member, until they are paid
             if (memberNotPaid == address(0)) {
-                memberNotPaid = collator;
-                emit MemberNotPaidEvent(collator, amount);
+                memberNotPaid = _member;
+                emit MemberNotPaidEvent(_member, amount);
             }
             return;
         }
         // Reset memberNotPaid to 0 if it was set to this collator, otherwise leave as is
-        if (memberNotPaid == collator) {
+        if (memberNotPaid == _member) {
             memberNotPaid = address(0);
         }
 
-        members[collator].deposit -= amount;
-        if (members[collator].deposit < MIN_DEPOSIT) {
-            members[collator].active = false;
+        members[_member].deposit -= amount;
+        if (members[_member].deposit < MIN_DEPOSIT) {
+            members[_member].active = false;
         }
         membersDepositTotal -= amount;
-        delete scheduledDecreasesMap[collator];
-        emit DecreaseCoverEvent(collator, amount);
+        delete scheduledDecreasesMap[_member];
+        emit DecreaseCoverEvent(_member, amount);
 
-        (bool sent, ) = collator.call{value: amount}("");
+        (bool sent, ) = _member.call{value: amount}("");
         require(sent, "TRANSF_FAIL");
     }
 
     /// @dev Cancel a scheduled cover decrease (withdrawal)
-    function cancelDecreaseCover() external {
-        require(members[msg.sender].deposit > 0, "NO_DEP");
-        require(scheduledDecreasesMap[msg.sender].amount > 0, "DECR_N_EXIST");
-        delete scheduledDecreasesMap[msg.sender];
-        emit CancelDecreaseCoverEvent(msg.sender);
+    function cancelDecreaseCover(address _member) external {
+        require(_isProxyOfSelectedCandidate(msg.sender, _member), "N_COLLATOR_PROXY");
+        require(members[_member].deposit > 0, "NO_DEP");
+        require(scheduledDecreasesMap[_member].amount > 0, "DECR_N_EXIST");
+        delete scheduledDecreasesMap[_member];
+        emit CancelDecreaseCoverEvent(_member);
     }
 
 
@@ -358,7 +366,7 @@ contract InactivityCover is IPushable {
                     // we could, potentially, make more smaller payments, but this risks the TX reversing due to high gas cost
                 }
 
-                payoutAmounts[delegationData.ownerAccount][collatorData.collatorAccount] += toPay; // credit the delegator
+                payoutAmounts[delegationData.ownerAccount] += toPay; // credit the delegator
                 members[collatorData.collatorAccount].deposit -= toPay; // debit the collator deposit
                 membersDepositTotal -= toPay; // decrease the total members deposit
                 coverOwedTotal += toPay; // current total (not paid out)
@@ -373,7 +381,7 @@ contract InactivityCover is IPushable {
                 uint256 refund = gasUsed * refundOracleGasPrice;
                 if (members[collatorData.collatorAccount].deposit > refund) {
                     members[collatorData.collatorAccount].deposit -= refund;
-                    payoutAmounts[_oracle][address(1)] += refund;
+                    payoutAmounts[_oracle] += refund;
                 }
             }
         }
@@ -382,27 +390,20 @@ contract InactivityCover is IPushable {
 
     /** @dev Anybody can execute this method to pay out cover claims to any delegator
         @param delegators The delegators to pay cover claims to. These are accumulated claims and could even be from multiple collators.
-        @param collators The corresponding collators that the delegators are claiming from
     */
     function payOutCover(
-        address payable[] calldata delegators,
-        address[] calldata collators
+        address payable[] calldata delegators
     ) external {
-        require(delegators.length == collators.length, "INVALID");
-        
         for (uint256 i = 0; i < delegators.length; i++) {
             address delegator = delegators[i];
-            address collator = collators[i];
             require(
-                delegator != address(0) && collator != address(0),
+                delegator != address(0),
                 "ZERO_ADDR"
             );
 
-            uint256 toPay = payoutAmounts[delegator][collator];
-            if (toPay == 0) {
-                continue;
-            }
-            if (toPay < MIN_PAYOUT) {
+            uint256 toPay = payoutAmounts[delegator];
+            if (toPay == 0 || toPay < MIN_PAYOUT) {
+                emit DelegatorPayoutLessThanMinEvent(delegator);
                 continue;
             }
             // Check if contract has enough reducible balance (may be locked in staking)
@@ -410,9 +411,9 @@ contract InactivityCover is IPushable {
                 // only update if not already set
                 if (delegatorNotPaid == address(0)) {
                     delegatorNotPaid = delegator;
-                    emit DelegatorNotPaidEvent(delegator, collator, toPay);
                 }
                 // will continue paying as many delegators as possible (smaller amounts owed) until drained
+                emit DelegatorNotPaidEvent(delegator, toPay);
                 continue;
             }
             // Reset delegatorNotPaid to 0 (if it is this delegator) as they can now get paid
@@ -421,7 +422,7 @@ contract InactivityCover is IPushable {
             }
 
             // delete payout entry from delegator
-            delete payoutAmounts[delegator][collator];
+            delete payoutAmounts[delegator];
             // remove collator from addresses that owe cover to this delegator
             coverOwedTotal -= toPay; // debit the total cover owed
             totalPayouts[delegator] += toPay;
@@ -468,14 +469,6 @@ contract InactivityCover is IPushable {
             scheduledDecreasesMap[member].era,
             scheduledDecreasesMap[member].amount
         );
-    }
-
-    function getPayoutAmount(address delegator, address collator)
-        external
-        view
-        returns (uint256)
-    {
-        return payoutAmounts[delegator][collator];
     }
 
     function getErasCovered(address member) external view returns (uint128) {
@@ -548,25 +541,29 @@ contract InactivityCover is IPushable {
 
     /// @dev Members can choose to protect delegations up to a specific amount (this might incentivize delegators to spread their stake among collators)
     /// @param _max_covered the max delegation that is covered (any amount above that will not receive rewards cover)
-    function memberSetMaxCoveredDelegation(uint256 _max_covered) external {
-        require(members[msg.sender].active, "NOT_ACTIVE");
+    function memberSetMaxCoveredDelegation(address _member, uint256 _max_covered) external {
+        require(_isProxyOfSelectedCandidate(msg.sender, _member), "N_COLLATOR_PROXY");
+        require(members[_member].active, "NOT_ACTIVE");
         // To disable max_covered, we can use a very high value.
         require(_max_covered >= 500 ether, "INVALID"); // TODO change value for Moonbeam
-        members[msg.sender].maxCoveredDelegation = _max_covered;
+        members[_member].maxCoveredDelegation = _max_covered;
+        emit MemberSetMaxCoveredDelegationEvent(_member, _max_covered);
     }
 
 
     /// @dev Members can protect their delegators against them going down (zero points) or out (not in active set) or both. At least one cover type is required.
     /// @param _noZeroPtsCoverAfterEra true if you want to cover being down, false otherwise
     /// @param _noActiveSetCoverAfterEra true if you want to cover being out, false otherwise
-    function memberSetCoverTypes(bool _noZeroPtsCoverAfterEra, bool _noActiveSetCoverAfterEra) external {
-        require(members[msg.sender].active, "NOT_ACTIVE");
+    function memberSetCoverTypes(address _member, bool _noZeroPtsCoverAfterEra, bool _noActiveSetCoverAfterEra) external {
+        require(_isProxyOfSelectedCandidate(msg.sender, _member), "N_COLLATOR_PROXY");
+        require(members[_member].active, "NOT_ACTIVE");
         // at least one of the cover types must be active (true)
         require(_noZeroPtsCoverAfterEra || _noActiveSetCoverAfterEra, "INV_COVER");
         // The eraIds signify the eras on which the cover stopped being advertised on the stakeX website.
         // This is not the same as the era when the cover stopped protecting the delegators! That era equals eraId + erasCovered[msg.sender]
-        members[msg.sender].noZeroPtsCoverAfterEra = _noZeroPtsCoverAfterEra ? 0 : getEra();
-        members[msg.sender].noActiveSetCoverAfterEra = _noActiveSetCoverAfterEra ? 0 : getEra();
+        members[_member].noZeroPtsCoverAfterEra = _noZeroPtsCoverAfterEra ? 0 : getEra();
+        members[_member].noActiveSetCoverAfterEra = _noActiveSetCoverAfterEra ? 0 : getEra();
+        emit MemberSetCoverTypesEvent(_member, _noZeroPtsCoverAfterEra, _noActiveSetCoverAfterEra);
     }
 
 
@@ -655,6 +652,12 @@ contract InactivityCover is IPushable {
 
     function isLastCompletedEra(uint128 _eraId) internal virtual view returns(bool) {
         return getEra() - _eraId== 1;
+    }
+
+    function _isProxyOfSelectedCandidate(address _signer, address _collator) internal virtual view returns(bool) {
+        bool isCollator = staking.isSelectedCandidate(_collator);
+        bool isProxy = proxy.isProxy(_collator, _signer, IProxy.ProxyType.Governance, 0);
+        return isCollator && isProxy;
     }
 
     receive() external payable {}

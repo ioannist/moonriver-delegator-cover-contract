@@ -5,13 +5,13 @@ pragma solidity >=0.8.3;
 address constant PROXY_ADDRESS = 0x000000000000000000000000000000000000080b;
 
 /// @dev The Proxy contract's instance.
-Proxy constant PROXY_CONTRACT = Proxy(PROXY_ADDRESS);
+IProxy constant PROXY_CONTRACT = IProxy(PROXY_ADDRESS);
 
 /// @author The Moonbeam Team
 /// @title Pallet Proxy Interface
 /// @title The interface through which solidity contracts will interact with the Proxy pallet
 /// @custom:address 0x000000000000000000000000000000000000080b
-interface Proxy {
+interface IProxy {
     /// @dev Defines the proxy permission types.
     /// The values start at `0` (most permissive) and are represented as `uint8`
     enum ProxyType {

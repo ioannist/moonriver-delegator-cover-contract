@@ -19,7 +19,7 @@ module.exports = async (deployer, network, accounts) => {
   const manager = accounts[1];
   const oracleMembersManager = accounts[2]
   const oracleMember = accounts[3]
-  const stakingManager = accounts[4]
+  const stakingManager = accounts[2]
   console.log(`Superior is ${superior}`);
 
   console.log(`Deploying AuthManager`);
@@ -43,11 +43,11 @@ module.exports = async (deployer, network, accounts) => {
   await AM.addByString('ROLE_PAUSE_MANAGER', oracleMembersManager);
   await AM.addByString('ROLE_ORACLE_QUORUM_MANAGER', oracleMembersManager);
   await AM.addByString('ROLE_STAKING_MANAGER', stakingManager);
-  
+
   // replenish balancesif low
   for (const a of accounts) {
     console.log(`Sending DEV to ${a}`);
-    await web3.eth.sendTransaction({ to: a, from: manager, value: web3.utils.toWei("1000", "ether") });
+    await web3.eth.sendTransaction({ to: a, from: manager, value: web3.utils.toWei("1", "ether") });
   }
 
   console.log(`Deploying OracleMaster`);
@@ -123,12 +123,12 @@ module.exports = async (deployer, network, accounts) => {
   );
   console.log('Finished deploying and intializing contracts')
 
-  console.log('Whitelist the first collator to join')
-  const _collator = process.env.FIRST_COLLATOR_MEMBER
-  await IC.whitelist(_collator, true, { from: manager, gas: 10000000 });
-  console.log("Make deposit for the first collator member")
-  const _collator_deposit = web3.utils.toWei(process.env.FIRST_COLLATOR_DEPOSIT, "ether");
-  await IC.depositCover(_collator, { from: manager, value: _collator_deposit, gas: 10000000 });
+  //console.log('Whitelist the first collator to join')
+  //const _collator = process.env.FIRST_COLLATOR_MEMBER
+  //await IC.whitelist(_collator, true, { from: manager, gas: 10000000 });
+  //console.log("Make deposit for the first collator member")
+  //const _collator_deposit = web3.utils.toWei(process.env.FIRST_COLLATOR_DEPOSIT, "ether");
+  //await IC.depositCover(_collator, { from: manager, value: _collator_deposit, gas: 10000000 });
 
   console.log("Contracts created:")
   console.log({

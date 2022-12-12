@@ -2,24 +2,21 @@
 pragma solidity ^0.8.2;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "../interfaces/IOracle.sol";
 import "../interfaces/IAuthManager.sol";
-import "../interfaces/ProxyInterface.sol";
+import "../interfaces/IProxy.sol";
 import "../interfaces/StakingInterface.sol";
 
-contract OracleMaster is Pausable, Initializable {
-    using Clones for address;
+contract OracleMaster is Pausable {
 
     event MemberAdded(address member);
     event MemberRemoved(address member);
     event QuorumChanged(uint8 QUORUM);
 
     ParachainStaking public staking;
-    Proxy public proxy;
+    IProxy public proxy;
 
     // current era id
     uint128 public eraId;
@@ -91,11 +88,11 @@ contract OracleMaster is Pausable, Initializable {
         address _oracle,
         address payable _inactivity_cover,
         uint8 _quorum
-    ) external initializer {
+    ) external {
         require(ORACLE == address(0), "OM: ALREADY_INITIALIZED");
         require(_quorum > 0 && _quorum <= MAX_MEMBERS, "OM: INCORRECT_QUORUM");
         staking = ParachainStaking(0x0000000000000000000000000000000000000800);
-        proxy = Proxy(0x000000000000000000000000000000000000080b);
+        proxy = IProxy(0x000000000000000000000000000000000000080b);
         AUTH_MANAGER = _auth_manager;
         ORACLE = _oracle;
         INACTIVITY_COVER = _inactivity_cover;
@@ -176,7 +173,7 @@ contract OracleMaster is Pausable, Initializable {
     {
         require(_getMemberId(msg.sender) == MEMBER_N_FOUND, "OM: MEMBER_EXISTS");
         require(members.length < MAX_MEMBERS, "OM: MEMBERS_TOO_MANY");
-        require(isProxyOfSelectedCandidate(msg.sender, _collator), "OM: N_COLLATOR_PROXY");
+        require(_isProxyOfSelectedCandidate(msg.sender, _collator), "OM: N_COLLATOR_PROXY");
         require(collatorsToOracles[_collator] == address(0), "OM: COLLATOR_REGISTERED"); // ensures that each collator can register one oracle only
 
         members.push(msg.sender);
@@ -193,7 +190,7 @@ contract OracleMaster is Pausable, Initializable {
     {
         // Any address that is a Gov proxy of this collator can remove that collator's oracle
         // This allows collators that lost their oracle's private key to recover and create a new oracle
-        require(isProxyOfSelectedCandidate(msg.sender, _collator), "OM: N_COLLATOR_PROXY");
+        require(_isProxyOfSelectedCandidate(msg.sender, _collator), "OM: N_COLLATOR_PROXY");
         uint256 index = _getMemberId(_oracleMember);
         require(index != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
         require(collatorsToOracles[_collator] == _oracleMember, "OM: N_COLLATOR");
@@ -252,13 +249,13 @@ contract OracleMaster is Pausable, Initializable {
         require(_isConsistent(_report), "OM: INCORRECT_REPORT");
         uint256 memberIndex = _getMemberId(msg.sender);
         require(memberIndex != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
-        require(isLastCompletedEra(_eraId), "OM: INV_ERA");
+        require(_isLastCompletedEra(_eraId), "OM: INV_ERA");
         // Because reports can result in fund transfers, no single entity should control them, including manager.
         // However, the manager needs sudo access in the beginning to bootstrap oracles until the total oracle number is large enough.
         // To secure the initial bootstrapping and longterm security, we use a sudo key which allows the manager to add/remove oracles.
         // After sudo is removed, every oracle must be a Gov proxy of an active collator to be able to push reports.
         // This means that ONLY collators can run oracles (one each) and by extension the manager can also run only one oracle.
-        require(isProxyOfSelectedCandidate(msg.sender, _collator) || sudo, "OM: N_COLLATOR_PROXY");
+        require(_isProxyOfSelectedCandidate(msg.sender, _collator) || sudo, "OM: N_COLLATOR_PROXY");
 
         if (_eraId > eraId) {
             eraId = _eraId;
@@ -327,9 +324,9 @@ contract OracleMaster is Pausable, Initializable {
 
  
 
-    function isProxyOfSelectedCandidate(address _oracleMember, address _collator) internal virtual view returns(bool) {
+    function _isProxyOfSelectedCandidate(address _oracleMember, address _collator) internal virtual view returns(bool) {
         bool isCollator = staking.isSelectedCandidate(_collator);
-        bool isProxy = proxy.isProxy(_collator, _oracleMember, Proxy.ProxyType.Governance, 0);
+        bool isProxy = proxy.isProxy(_collator, _oracleMember, IProxy.ProxyType.Governance, 0);
         return isCollator && isProxy;
     }
 
@@ -337,7 +334,7 @@ contract OracleMaster is Pausable, Initializable {
         return uint128(staking.round());
     }
 
-    function isLastCompletedEra(uint128 _eraId) internal virtual view returns(bool) {
+    function _isLastCompletedEra(uint128 _eraId) internal virtual view returns(bool) {
         return getEra() - _eraId== 1;
     }
 }

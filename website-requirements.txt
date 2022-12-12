@@ -37,6 +37,7 @@ getMember(address member)
             m.lastPushedEra,
             m.noZeroPtsCoverAfterEra,
             m.noActiveSetCoverAfterEra
+            
 getErasCovered(address member) returns (uint128) 
 getScheduledDecrease(address member) returns (uint128, uint256)
             scheduledDecreasesMap[member].era,
@@ -55,3 +56,9 @@ memberSetMaxCoveredDelegation(uint256 _max_covered)
 memberSetCoverTypes(bool _noZeroPtsCoverAfterEra, bool _noActiveSetCoverAfterEra)
 
 370315ce28812b5ed0f9767d920a57a1da17cc04d68ac87361c770f929acf48d
+
+auto whitelisting
+veto power
+max % of balance stakeable (manager)
+limit on total delegations per collator to limit payOutCover
+check how malformatted json input can affect computations

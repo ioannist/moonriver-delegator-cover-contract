@@ -73,4 +73,8 @@ contract InactivityCover_mock is InactivityCover {
     function isLastCompletedEra(uint128 _eraId) internal override view returns(bool) {
         return true;
     }
+
+    function _isProxyOfSelectedCandidate(address _oracle, address _collator) internal override view returns(bool) {
+        return true;
+    }
 }
