@@ -194,7 +194,8 @@ contract InactivityCover is IPushable {
         _scheduleDecreaseCover(amount, _member);
     }
 
-    /// @dev Allows the manager to schedule a refund of the deposit back to a member that is no longer whitelisted
+    /// @dev Allows the manager to schedule a refund of the deposit back to a member
+    /// Requires that the member is no longer whitelisted
     /// @param amount How much to refund back.
     /// @param member The member to refund their deposit to.
     function scheduleDecreaseCoverManager(uint256 amount, address member)
@@ -354,8 +355,8 @@ contract InactivityCover is IPushable {
                     .topActiveDelegations[j];
 
                 uint256 toPay = delegationData.amount > members[collatorData.collatorAccount].maxCoveredDelegation ?
-                    STAKE_UNIT_COVER * (members[collatorData.collatorAccount].maxCoveredDelegation / 1 ether) :
-                    STAKE_UNIT_COVER * (delegationData.amount / 1 ether);
+                    (STAKE_UNIT_COVER * members[collatorData.collatorAccount].maxCoveredDelegation) / 1 ether :
+                    (STAKE_UNIT_COVER * delegationData.amount) / 1 ether;
 
                 if (members[collatorData.collatorAccount].deposit < toPay) {
                     members[collatorData.collatorAccount].maxDefaulted = toPay >
@@ -648,6 +649,10 @@ contract InactivityCover is IPushable {
 
     function getEra() internal virtual view returns(uint128) {
         return uint128(staking.round());
+    }
+
+    function getBalance() public view returns(uint256) {
+        return address(this).balance;
     }
 
     function isLastCompletedEra(uint128 _eraId) internal virtual view returns(bool) {
