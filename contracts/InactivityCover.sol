@@ -508,6 +508,11 @@ contract InactivityCover is IPushable {
         external
         auth(ROLE_MANAGER)
     {
+        uint256 maxAPR = 30; // 30%
+        uint256 minRoundsPerDay = 1; // current is 12, but this might change
+        // Protect against nonsensical values of unit cover that could drain the account
+        // Currently the worst case scenario (maxed unit cover) is that delegators get 30% * 12 = 360% APR
+        require(STAKE_UNIT_COVER < maxAPR *  1 ether / (100 * 365 * minRoundsPerDay), "HIGH");
         STAKE_UNIT_COVER = _stake_unit_cover;
     }
 
