@@ -138,10 +138,7 @@ contract InactivityCover is IPushable {
         uint256 _min_payout,
         uint128 _eras_between_forced_undelegation
     ) external {
-        require(
-            AUTH_MANAGER == address(0) && _auth_manager != address(0), // guarantees that init will only be called once
-            "NOT_ALLOWED"
-        );
+        require(AUTH_MANAGER == address(0) && _auth_manager != address(0), "ALREADY_INITIALIZED");
         staking = ParachainStaking(0x0000000000000000000000000000000000000800);
         proxy = IProxy(0x000000000000000000000000000000000000080b);
         AUTH_MANAGER = _auth_manager;

@@ -13,6 +13,10 @@ contract DepositStaking {
     }
 
     event ScheduleRevokeEvent(uint128 eraId, address collator);
+    event DelegatorBondMoreEvent(address collator, uint256 amount);
+    event DelegatorBondLessEvent(address collator, uint256 amount);
+    event RevokeEvent(address collator);
+    event DelegateEvent(address collator, uint256 amount);
 
     /// The ParachainStaking wrapper at the known pre-compile address. This will be used to make all calls
     /// to the underlying staking solution
@@ -49,6 +53,7 @@ contract DepositStaking {
         address _auth_manager,
         address payable _inactivity_cover
     ) external {
+        require(AUTH_MANAGER == address(0) && _auth_manager != address(0), "ALREADY_INITIALIZED");
         staking = ParachainStaking(0x0000000000000000000000000000000000000800);
         AUTH_MANAGER = _auth_manager;
         INACTIVITY_COVER = _inactivity_cover;
@@ -91,6 +96,7 @@ contract DepositStaking {
             candidateDelegationCount,
             delegatorDelegationCount
         );
+        emit DelegateEvent(candidate, amount);
     }
 
     /// @dev Bond more of this contract's balance to a collator that the contract already delegates to.
@@ -112,6 +118,7 @@ contract DepositStaking {
         delegations[candidate].amount += more;
         stakedTotal += more;
         InactivityCover(INACTIVITY_COVER).delegator_bond_more(candidate, more);
+        emit DelegatorBondMoreEvent(candidate, more);
     }
 
     /// @dev Request to bond less for delegators with respect to a specific collator candidate
@@ -122,6 +129,7 @@ contract DepositStaking {
         auth(ROLE_STAKING_MANAGER)
     {
         _scheduleDelegatorBondLess(candidate, less);
+        emit DelegatorBondLessEvent(candidate, less);
     }
 
     /// @dev Request to revoke delegation with respect to a specific collator candidate
@@ -131,6 +139,7 @@ contract DepositStaking {
         auth(ROLE_STAKING_MANAGER)
     {
         _scheduleDelegatorRevoke(candidate);
+        emit RevokeEvent(candidate);
     }
 
     /// @dev Allows anybody to force a revoke to increase the contract's reducible balance so it can make payments.

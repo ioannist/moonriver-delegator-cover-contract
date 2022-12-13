@@ -7,7 +7,7 @@ import "../interfaces/IOracleMaster.sol";
 import "../interfaces/IPushable.sol";
 import "./utils/ReportUtils.sol";
 
-contract Oracle is Initializable {
+contract Oracle {
     using ReportUtils for uint256;
 
     event NextEraNonce(uint128 eraNonce);
@@ -42,9 +42,8 @@ contract Oracle is Initializable {
      */
     function initialize(address _oracleMaster, address payable _pushable)
         external
-        initializer
     {
-        require(ORACLE_MASTER == address(0), "OR: ALREADY_INITIALIZED");
+        require(ORACLE_MASTER == address(0) && _oracleMaster != address(0), "ALREADY_INITIALIZED");
         ORACLE_MASTER = _oracleMaster;
         PUSHABLES.push(_pushable);
     }

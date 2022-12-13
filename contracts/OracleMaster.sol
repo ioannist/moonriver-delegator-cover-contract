@@ -89,7 +89,7 @@ contract OracleMaster is Pausable {
         address payable _inactivity_cover,
         uint8 _quorum
     ) external {
-        require(ORACLE == address(0), "OM: ALREADY_INITIALIZED");
+        require(ORACLE == address(0) && _oracle != address(0), "ALREADY_INITIALIZED");
         require(_quorum > 0 && _quorum <= MAX_MEMBERS, "OM: INCORRECT_QUORUM");
         staking = ParachainStaking(0x0000000000000000000000000000000000000800);
         proxy = IProxy(0x000000000000000000000000000000000000080b);
