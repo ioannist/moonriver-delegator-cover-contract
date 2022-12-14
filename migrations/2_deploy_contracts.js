@@ -11,7 +11,7 @@ module.exports = async (deployer, network, accounts) => {
   const _min_deposit = web3.utils.toWei(process.env.MIN_DEPOSIT, "ether");
   const _max_deposit_total = web3.utils.toWei(process.env.MAX_DEPOSIT_TOTAL, "ether");
   const _stake_unit_cover = web3.utils.toWei(process.env.STAKE_UNIT_COVER, "wei");
-  const _min_payout = web3.utils.toWei(process.env.MIN_PAYOUT, "ether");
+  const _min_payout = web3.utils.toWei(process.env.MIN_PAYOUT, "wei");
   const _eras_between_forced_undelegation = process.env.ERAS_BETWEEN_FORCED_UNDELEGATION;
   const _quorum = process.env.QUORUM;
 
