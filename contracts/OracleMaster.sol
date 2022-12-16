@@ -10,7 +10,6 @@ import "../interfaces/IProxy.sol";
 import "../interfaces/StakingInterface.sol";
 
 contract OracleMaster is Pausable {
-
     event MemberAdded(address member);
     event MemberRemoved(address member);
     event QuorumChanged(uint8 QUORUM);
@@ -63,7 +62,13 @@ contract OracleMaster is Pausable {
 
     // Allows the oracle manager to add/remove oracles at will
     bool sudo = true;
-    
+
+    // This address can veto a quorum decission; this means that:
+    // 1) the address cannot vote in a report by itself, but
+    // 2) the quorum-voted report must match this addresse's report for it to pass
+    // If the address does not push a report, then its veto ability is not exercised during that round nonce
+    address public vetoOracleMember;
+
     // Allows function calls only from member with specific role
     modifier auth(bytes32 role) {
         require(IAuthManager(AUTH_MANAGER).has(role, msg.sender), "OM: UNAUTH");
@@ -89,7 +94,10 @@ contract OracleMaster is Pausable {
         address payable _inactivity_cover,
         uint8 _quorum
     ) external {
-        require(ORACLE == address(0) && _oracle != address(0), "ALREADY_INITIALIZED");
+        require(
+            ORACLE == address(0) && _oracle != address(0),
+            "ALREADY_INITIALIZED"
+        );
         require(_quorum > 0 && _quorum <= MAX_MEMBERS, "OM: INCORRECT_QUORUM");
         staking = ParachainStaking(0x0000000000000000000000000000000000000800);
         proxy = IProxy(0x000000000000000000000000000000000000080b);
@@ -98,6 +106,8 @@ contract OracleMaster is Pausable {
         INACTIVITY_COVER = _inactivity_cover;
         QUORUM = _quorum;
     }
+
+    /// ***************** ORACLE MANAGER FUNCTIONS *****************
 
     /**
     * @notice Set the number of exactly the same reports needed to finalize the era
@@ -123,86 +133,6 @@ contract OracleMaster is Pausable {
     }
 
     /**
-     * @notice Return oracle contract for the given ledger
-     * @return linked oracle address
-     */
-    function getOracle() external view returns (address) {
-        return ORACLE;
-    }
-
-    /**
-     * @notice Return last reported era and oracle is already reported indicator
-     * @param _oracleMember - oracle member address
-     * @return lastEra - last reported era
-     * @return lastPart - last reported era part
-     * @return isReported - true if oracle member already reported for given stash, else false
-     */
-    function isReportedLastEra(address _oracleMember)
-        external
-        view
-        returns (uint128 lastEra, uint128 lastPart, bool isReported)
-    {
-        lastEra = eraId;
-        uint256 memberIdx = _getMemberId(_oracleMember);
-        if (memberIdx == MEMBER_N_FOUND) {
-            return (lastEra, lastPart, false);
-        }
-        return (lastEra, lastPart, IOracle(ORACLE).isReported(memberIdx));
-    }
-
-    /**
-     * @notice Stop pool routine operations (reportPara), allowed to call only by ROLE_PAUSE_MANAGER
-     */
-    function pause() external auth(ROLE_PAUSE_MANAGER) {
-        _pause();
-    }
-
-    /**
-     * @notice Resume pool routine operations (reportPara), allowed to call only by ROLE_PAUSE_MANAGER
-     */
-    function resume() external auth(ROLE_PAUSE_MANAGER) {
-        _unpause();
-    }
-
-    /**
-     * @notice Each active collator can register one address with oracle privileges. The address must be a Governance proxy of the collator at the time of registration, to prove that it is owned by that collator.
-     * @param _collator the collator that the caller represents (each collator can operate one oracle)
-     */
-    function registerAsOracleMember(address _collator)
-        external
-    {
-        require(_getMemberId(msg.sender) == MEMBER_N_FOUND, "OM: MEMBER_EXISTS");
-        require(members.length < MAX_MEMBERS, "OM: MEMBERS_TOO_MANY");
-        require(_isProxyOfSelectedCandidate(msg.sender, _collator), "OM: N_COLLATOR_PROXY");
-        require(collatorsToOracles[_collator] == address(0), "OM: COLLATOR_REGISTERED"); // ensures that each collator can register one oracle only
-
-        members.push(msg.sender);
-        collatorsToOracles[_collator] = msg.sender;
-        emit MemberAdded(msg.sender);
-    }
-
-    /**
-     * @notice Remove _oracleMember from the oracle member committee list
-     * @param _collator the collator that the caller represents
-     */
-    function unregisterOracleMember(address _oracleMember, address _collator)
-        external
-    {
-        // Any address that is a Gov proxy of this collator can remove that collator's oracle
-        // This allows collators that lost their oracle's private key to recover and create a new oracle
-        require(_isProxyOfSelectedCandidate(msg.sender, _collator), "OM: N_COLLATOR_PROXY");
-        uint256 index = _getMemberId(_oracleMember);
-        require(index != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
-        require(collatorsToOracles[_collator] == _oracleMember, "OM: N_COLLATOR");
-        uint256 last = members.length - 1;
-        if (index != last) members[index] = members[last];
-        
-        members.pop();
-        delete collatorsToOracles[_collator];
-        emit MemberRemoved(_oracleMember);
-    }
-
-    /**
      * @notice Add new member to the oracle member committee list, allowed to call only by ROLE_ORACLE_MEMBERS_MANAGER
      * @param _oracleMember proposed member address
      */
@@ -212,7 +142,10 @@ contract OracleMaster is Pausable {
     {
         require(sudo, "OM: N_SUDO");
         require(_oracleMember != address(0), "OM: BAD_ARGUMENT");
-        require(_getMemberId(_oracleMember) == MEMBER_N_FOUND, "OM: MEMBER_EXISTS");
+        require(
+            _getMemberId(_oracleMember) == MEMBER_N_FOUND,
+            "OM: MEMBER_EXISTS"
+        );
         require(members.length < MAX_MEMBERS, "OM: MEMBERS_TOO_MANY");
 
         members.push(_oracleMember);
@@ -236,35 +169,6 @@ contract OracleMaster is Pausable {
     }
 
     /**
-     * @notice Accept oracle committee member reports
-     * @param _collator The collator that this oracle represents (each collator can run one oracle - each oracle is represented by at most one collator)
-     * @param _eraId parachain round
-     * @param _eraNonce era nonce
-     * @param _report collator status/points data report
-     */
-    function reportPara(address _collator, uint128 _eraId, uint128 _eraNonce, Types.OracleData calldata _report)
-        external
-        whenNotPaused
-    {
-        require(_isConsistent(_report), "OM: INCORRECT_REPORT");
-        uint256 memberIndex = _getMemberId(msg.sender);
-        require(memberIndex != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
-        require(_isLastCompletedEra(_eraId), "OM: INV_ERA");
-        // Because reports can result in fund transfers, no single entity should control them, including manager.
-        // However, the manager needs sudo access in the beginning to bootstrap oracles until the total oracle number is large enough.
-        // To secure the initial bootstrapping and longterm security, we use a sudo key which allows the manager to add/remove oracles.
-        // After sudo is removed, every oracle must be a Gov proxy of an active collator to be able to push reports.
-        // This means that ONLY collators can run oracles (one each) and by extension the manager can also run only one oracle.
-        require(_isProxyOfSelectedCandidate(msg.sender, _collator) || sudo, "OM: N_COLLATOR_PROXY");
-
-        if (_eraId > eraId) {
-            eraId = _eraId;
-        }
-        reportCounts[_collator]++;
-        IOracle(ORACLE).reportPara(memberIndex, QUORUM, _eraId, _eraNonce,  _report, msg.sender);
-    }
-
-    /**
      * @notice Oracle data can be pushed to other contracts in the future, although care must be taken to not exceed max tx gas
      */
     function addRemovePushable(address payable _pushable, bool _toAdd)
@@ -280,11 +184,166 @@ contract OracleMaster is Pausable {
     function clearReporting() external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
         require(sudo, "OM: N_SUDO");
         IOracle(ORACLE).clearReporting();
-    }   
+    }
 
     function removeSudo() external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
         sudo = false;
     }
+
+    function setVetoOracleMembet(address _vetoOracleMember)
+        external
+        auth(ROLE_ORACLE_MEMBERS_MANAGER)
+    {
+        vetoOracleMember = _vetoOracleMember;
+    }
+
+    /**
+     * @notice Stop pool routine operations (reportPara), allowed to call only by ROLE_PAUSE_MANAGER
+     */
+    function pause() external auth(ROLE_PAUSE_MANAGER) {
+        _pause();
+    }
+
+    /**
+     * @notice Resume pool routine operations (reportPara), allowed to call only by ROLE_PAUSE_MANAGER
+     */
+    function resume() external auth(ROLE_PAUSE_MANAGER) {
+        _unpause();
+    }
+
+    /// ***************** ORACLE MEMBER FUNCTIONS *****************
+
+    /**
+     * @notice Each active collator can register one address with oracle privileges. The address must be a Governance proxy of the collator at the time of registration, to prove that it is owned by that collator.
+     * @param _collator the collator that the caller represents (each collator can operate one oracle)
+     */
+    function registerAsOracleMember(address _collator) external {
+        require(
+            _getMemberId(msg.sender) == MEMBER_N_FOUND,
+            "OM: MEMBER_EXISTS"
+        );
+        require(members.length < MAX_MEMBERS, "OM: MEMBERS_TOO_MANY");
+        require(
+            _isProxyOfSelectedCandidate(msg.sender, _collator),
+            "OM: N_COLLATOR_PROXY"
+        );
+        require(
+            collatorsToOracles[_collator] == address(0),
+            "OM: COLLATOR_REGISTERED"
+        ); // ensures that each collator can register one oracle only
+
+        members.push(msg.sender);
+        collatorsToOracles[_collator] = msg.sender;
+        emit MemberAdded(msg.sender);
+    }
+
+    /**
+     * @notice Remove _oracleMember from the oracle member committee list
+     * @param _collator the collator that the caller represents
+     */
+    function unregisterOracleMember(address _oracleMember, address _collator)
+        external
+    {
+        // Any address that is a Gov proxy of this collator can remove that collator's oracle
+        // This allows collators that lost their oracle's private key to recover and create a new oracle
+        require(
+            _isProxyOfSelectedCandidate(msg.sender, _collator),
+            "OM: N_COLLATOR_PROXY"
+        );
+        uint256 index = _getMemberId(_oracleMember);
+        require(index != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
+        require(
+            collatorsToOracles[_collator] == _oracleMember,
+            "OM: N_COLLATOR"
+        );
+        uint256 last = members.length - 1;
+        if (index != last) members[index] = members[last];
+
+        members.pop();
+        delete collatorsToOracles[_collator];
+        emit MemberRemoved(_oracleMember);
+    }
+
+    /**
+     * @notice Accept oracle committee member reports
+     * @param _collator The collator that this oracle represents (each collator can run one oracle - each oracle is represented by at most one collator)
+     * @param _eraId parachain round
+     * @param _eraNonce era nonce
+     * @param _report collator status/points data report
+     */
+    function reportPara(
+        address _collator,
+        uint128 _eraId,
+        uint128 _eraNonce,
+        Types.OracleData calldata _report
+    ) external whenNotPaused {
+        require(_isConsistent(_report), "OM: INCORRECT_REPORT");
+        uint256 memberIndex = _getMemberId(msg.sender);
+        require(memberIndex != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
+        require(_isLastCompletedEra(_eraId), "OM: INV_ERA");
+        // Because reports can result in fund transfers, no single entity should control them, including manager.
+        // However, the manager needs sudo access in the beginning to bootstrap oracles until the total oracle number is large enough.
+        // To secure the initial bootstrapping and longterm security, we use a sudo key which allows the manager to add/remove oracles.
+        // After sudo is removed, every oracle must be a Gov proxy of an active collator to be able to push reports.
+        // This means that ONLY collators can run oracles (one each) and by extension the manager can also run only one oracle.
+        require(
+            _isProxyOfSelectedCandidate(msg.sender, _collator) || sudo,
+            "OM: N_COLLATOR_PROXY"
+        );
+
+        if (_eraId > eraId) {
+            eraId = _eraId;
+        }
+        reportCounts[_collator]++;
+        bool veto = vetoOracleMember == _collator;
+        IOracle(ORACLE).reportPara(
+            memberIndex,
+            QUORUM,
+            _eraId,
+            _eraNonce,
+            _report,
+            msg.sender,
+            veto
+        );
+    }
+
+    /// ***************** FUNCTIONS CALLABLE BY ANYBODY *****************
+
+    /**
+     * @notice Return last reported era and oracle is already reported indicator
+     * @param _oracleMember - oracle member address
+     * @return lastEra - last reported era
+     * @return lastPart - last reported era part
+     * @return isReported - true if oracle member already reported for given stash, else false
+     */
+    function isReportedLastEra(address _oracleMember)
+        external
+        view
+        returns (
+            uint128 lastEra,
+            uint128 lastPart,
+            bool isReported
+        )
+    {
+        lastEra = eraId;
+        uint256 memberIdx = _getMemberId(_oracleMember);
+        if (memberIdx == MEMBER_N_FOUND) {
+            return (lastEra, lastPart, false);
+        }
+        return (lastEra, lastPart, IOracle(ORACLE).isReported(memberIdx));
+    }
+
+    /// ***************** GETTERS *****************
+
+    /**
+     * @notice Return oracle contract for the given ledger
+     * @return linked oracle address
+     */
+    function getOracle() external view returns (address) {
+        return ORACLE;
+    }
+
+    /// ***************** INTERNAL FUNCTIONS *****************
 
     /// @notice Return true if report is consistent
     function _isConsistent(Types.OracleData memory report)
@@ -312,7 +371,11 @@ contract OracleMaster is Pausable {
      * @param _oracleMember member address
      * @return member index
      */
-    function _getMemberId(address _oracleMember) internal view returns (uint256) {
+    function _getMemberId(address _oracleMember)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 length = members.length;
         for (uint256 i = 0; i < length; ++i) {
             if (members[i] == _oracleMember) {
@@ -322,19 +385,30 @@ contract OracleMaster is Pausable {
         return MEMBER_N_FOUND;
     }
 
- 
-
-    function _isProxyOfSelectedCandidate(address _oracleMember, address _collator) internal virtual view returns(bool) {
+    function _isProxyOfSelectedCandidate(
+        address _oracleMember,
+        address _collator
+    ) internal view virtual returns (bool) {
         bool isCollator = staking.isSelectedCandidate(_collator);
-        bool isProxy = proxy.isProxy(_collator, _oracleMember, IProxy.ProxyType.Governance, 0);
+        bool isProxy = proxy.isProxy(
+            _collator,
+            _oracleMember,
+            IProxy.ProxyType.Governance,
+            0
+        );
         return isCollator && isProxy;
     }
 
-    function getEra() public virtual view returns(uint128) {
+    function _getEra() public view virtual returns (uint128) {
         return uint128(staking.round());
     }
 
-    function _isLastCompletedEra(uint128 _eraId) internal virtual view returns(bool) {
-        return getEra() - _eraId== 1;
+    function _isLastCompletedEra(uint128 _eraId)
+        internal
+        view
+        virtual
+        returns (bool)
+    {
+        return _getEra() - _eraId == 1;
     }
 }

@@ -57,8 +57,26 @@ memberSetCoverTypes(bool _noZeroPtsCoverAfterEra, bool _noActiveSetCoverAfterEra
 
 370315ce28812b5ed0f9767d920a57a1da17cc04d68ac87361c770f929acf48d
 
-auto whitelisting
-veto power
-max % of balance stakeable (manager)
+veto power - test
+max % of balance stakeable (manager) - test
 limit on total delegations per collator to limit payOutCover
 check how malformatted json input can affect computations
+change random revoke collator to lowest delegated collator
+
+
+--------------------------------
+
+delegate(
+        address candidate,
+        uint256 amount,
+        uint256 candidateDelegationCount,
+        uint256 delegatorDelegationCount
+    ) 
+
+    delegatorBondMore(address candidate, uint256 more)
+
+    scheduleDelegatorBondLess(address candidate, uint256 less)
+
+    scheduleDelegatorRevoke(address candidate)
+
+    

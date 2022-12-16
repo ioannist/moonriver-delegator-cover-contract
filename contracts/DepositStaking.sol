@@ -37,8 +37,12 @@ contract DepositStaking {
     // Last era that a forced undelegaton was requested
     uint128 public lastForcedUndelegationEra;
 
+    // Max percentage of contract balance that can be staked; controlled by manager, imposed on staking-manager
+    uint256 public maxPercentStaked = 100;
+
     // Stakign manager can stake/unstake contract funds
-    bytes32 internal constant ROLE_STAKING_MANAGER = keccak256("ROLE_STAKING_MANAGER");
+    bytes32 internal constant ROLE_STAKING_MANAGER =
+        keccak256("ROLE_STAKING_MANAGER");
 
     // Allows function calls only from member with specific role
     modifier auth(bytes32 role) {
@@ -53,11 +57,16 @@ contract DepositStaking {
         address _auth_manager,
         address payable _inactivity_cover
     ) external {
-        require(AUTH_MANAGER == address(0) && _auth_manager != address(0), "ALREADY_INITIALIZED");
+        require(
+            AUTH_MANAGER == address(0) && _auth_manager != address(0),
+            "ALREADY_INITIALIZED"
+        );
         staking = ParachainStaking(0x0000000000000000000000000000000000000800);
         AUTH_MANAGER = _auth_manager;
         INACTIVITY_COVER = _inactivity_cover;
     }
+
+    /// ***************** STAKING MANAGER FUNCTIONS *****************
 
     /// @dev Delegate the contracts funds to a collator. Can be called only by staking manager.
     /// The cover contract does not have any fees and it relies on staking to generate income for the contract manager/owner.
@@ -81,6 +90,12 @@ contract DepositStaking {
         require(
             InactivityCover(INACTIVITY_COVER).delegatorNotPaid() == address(0),
             "DELEG_N_PAID"
+        );
+        // this balance does not include amounts in unstaking phase (pending decreases, revokes, etc.)
+        uint256 balance = address(INACTIVITY_COVER).balance + stakedTotal;
+        require(
+            stakedTotal + amount < (maxPercentStaked * balance) / 100,
+            "EXCEEDS_MAX_PERCENT"
         );
 
         if (!delegations[candidate].isDelegated) {
@@ -142,6 +157,8 @@ contract DepositStaking {
         emit RevokeEvent(candidate);
     }
 
+    /// ***************** FUNCTIONAS CALLABLE BY ANYBODY *****************
+
     /// @dev Allows anybody to force a revoke to increase the contract's reducible balance so it can make payments.
     /// The method can be called with limited frequency and only if the contract has defaulted in making payments to delegators or members.
     /// The method will choose one random collator to revoke from and reset the default flags.
@@ -152,8 +169,9 @@ contract DepositStaking {
     function forceScheduleRevoke() external {
         // There must be a non-paid delegator or member to call this method
         require(
-            InactivityCover(INACTIVITY_COVER).delegatorNotPaid() != address(0) ||
-            InactivityCover(INACTIVITY_COVER).memberNotPaid() != address(0),
+            InactivityCover(INACTIVITY_COVER).delegatorNotPaid() !=
+                address(0) ||
+                InactivityCover(INACTIVITY_COVER).memberNotPaid() != address(0),
             "FORBIDDEN"
         );
         // The contract must have staked funds
@@ -162,10 +180,11 @@ contract DepositStaking {
         require(
             lastForcedUndelegationEra +
                 InactivityCover(INACTIVITY_COVER)
-                    .ERAS_BETWEEN_FORCED_UNDELEGATION() <= getEra(),
+                    .ERAS_BETWEEN_FORCED_UNDELEGATION() <=
+                _getEra(),
             "TOO_FREQUENT"
         );
-        lastForcedUndelegationEra = getEra();
+        lastForcedUndelegationEra = _getEra();
 
         // A random collator with a delegated balance is chosen to undelegate from
         uint256 collatorIndex = _random() % collatorsDelegated.length;
@@ -180,11 +199,13 @@ contract DepositStaking {
                 continue;
             }
             _scheduleDelegatorRevoke(candidate);
-            InactivityCover(INACTIVITY_COVER).resetNotPaid();
+            // InactivityCover(INACTIVITY_COVER).resetNotPaid();
             emit ScheduleRevokeEvent(lastForcedUndelegationEra, candidate);
             break;
         }
     }
+
+    /// ***************** GETTERS *****************
 
     function getIsDelegated(address candidate)
         external
@@ -213,6 +234,8 @@ contract DepositStaking {
         return collatorsDelegated[index];
     }
 
+    /// ***************** INTERNAL FUNCTIONS *****************
+
     function _scheduleDelegatorBondLess(address candidate, uint256 less)
         internal
     {
@@ -234,9 +257,7 @@ contract DepositStaking {
         // There is no method to cancel a request, and anybody can execute a scheduled request, so this is a one-way to decreasing the delegation
     }
 
-    function _scheduleDelegatorRevoke(address candidate)
-        internal
-    {
+    function _scheduleDelegatorRevoke(address candidate) internal {
         stakedTotal -= delegations[candidate].amount;
         delegations[candidate].amount = 0;
         delegations[candidate].isDelegated = false;
@@ -246,9 +267,7 @@ contract DepositStaking {
                 break;
             }
         }
-        InactivityCover(INACTIVITY_COVER).schedule_delegator_revoke(
-            candidate
-        );
+        InactivityCover(INACTIVITY_COVER).schedule_delegator_revoke(candidate);
         // There is no method to cancel a request, and anybody can execute a scheduled request, so this is a one-way to revoking the delegation
     }
 
@@ -259,7 +278,7 @@ contract DepositStaking {
         return number;
     }
 
-    function getEra() internal virtual view returns(uint128) {
+    function _getEra() internal view virtual returns (uint128) {
         return uint128(staking.round());
     }
 }

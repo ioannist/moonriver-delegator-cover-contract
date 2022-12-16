@@ -30,6 +30,9 @@ contract Oracle {
     // current part of the current era
     uint128 public eraNonce;
 
+    // Current report variant hash by veto oracle member
+    uint256 internal currentVetoReportVariant;
+
     // Allows function calls only from OracleMaster
     modifier onlyOracleMaster() {
         require(msg.sender == ORACLE_MASTER);
@@ -43,19 +46,15 @@ contract Oracle {
     function initialize(address _oracleMaster, address payable _pushable)
         external
     {
-        require(ORACLE_MASTER == address(0) && _oracleMaster != address(0), "ALREADY_INITIALIZED");
+        require(
+            ORACLE_MASTER == address(0) && _oracleMaster != address(0),
+            "ALREADY_INITIALIZED"
+        );
         ORACLE_MASTER = _oracleMaster;
         PUSHABLES.push(_pushable);
     }
 
-    /**
-     * @notice Returns true if member is already reported
-     * @param _index oracle member index
-     * @return is reported indicator
-     */
-    function isReported(uint256 _index) external view returns (bool) {
-        return (currentReportBitmask & (1 << _index)) != 0;
-    }
+    /// ***************** FUNCTIONS CALLABLE BY ORACLE MASTER *****************
 
     /**
      * @notice Accept oracle report data, allowed to call only by oracle master contract
@@ -70,7 +69,8 @@ contract Oracle {
         uint128 _eraId,
         uint128 _eraNonce,
         Types.OracleData calldata _staking,
-        address _oracle
+        address _oracle,
+        bool veto
     ) external onlyOracleMaster {
         {
             uint256 mask = 1 << _index;
@@ -84,20 +84,26 @@ contract Oracle {
         uint256 variant = uint256(keccak256(abi.encode(_staking))) &
             ReportUtils.COUNT_OUTMASK;
 
+        if (veto) {
+            currentVetoReportVariant = variant;
+        }
+
         uint256 i = 0;
         uint256 _length = currentReportVariants.length;
         // iterate on all report variants we already have, limited by the oracle members maximum
         while (i < _length && currentReportVariants[i].isDifferent(variant))
             ++i;
+        bool vetoed = currentVetoReportVariant != 0 &&
+            currentReportVariants[i].isDifferent(currentVetoReportVariant);
         if (i < _length) {
-            if (currentReportVariants[i].getCount() + 1 >= _quorum) {
+            if (currentReportVariants[i].getCount() + 1 >= _quorum && !vetoed) {
                 _push(_eraId, _staking, _oracle);
             } else {
                 ++currentReportVariants[i];
                 // increment variant counter, see ReportUtils for details
             }
         } else {
-            if (_quorum == 1) {
+            if (_quorum == 1 && !vetoed) {
                 _push(_eraId, _staking, _oracle);
             } else {
                 currentReportVariants.push(variant + 1);
@@ -125,13 +131,6 @@ contract Oracle {
         }
     }
 
-    /**
-     * @notice Clear data about current reporting, allowed to call only by oracle master contract
-     */
-    function clearReporting() external onlyOracleMaster {
-        _clearReporting();
-    }
-
     function addRemovePushable(address payable _pushable, bool _toAdd)
         external
         onlyOracleMaster
@@ -145,6 +144,29 @@ contract Oracle {
                 }
             }
         }
+    }
+
+    /**
+     * @notice Returns true if member is already reported
+     * @param _index oracle member index
+     * @return is reported indicator
+     */
+    function isReported(uint256 _index)
+        external
+        view
+        onlyOracleMaster
+        returns (bool)
+    {
+        return (currentReportBitmask & (1 << _index)) != 0;
+    }
+
+    /// ***************** INTERNAL FUNCTIONS *****************
+
+    /**
+     * @notice Clear data about current reporting, allowed to call only by oracle master contract
+     */
+    function clearReporting() external onlyOracleMaster {
+        _clearReporting();
     }
 
     /**
@@ -165,9 +187,10 @@ contract Oracle {
      * @notice Clear data about current reporting
      */
     function _clearReporting() internal {
-        currentReportBitmask = 0;
+        delete currentReportBitmask; // set to 0
         delete currentReportVariants;
         delete currentReports;
+        delete currentVetoReportVariant; // set to 0
         eraNonce++;
         emit NextEraNonce(eraNonce);
     }
@@ -175,7 +198,11 @@ contract Oracle {
     /**
      * @notice Push data to all pushable contracts
      */
-    function _push(uint128 _eraId, Types.OracleData memory report, address oracle) internal {
+    function _push(
+        uint128 _eraId,
+        Types.OracleData memory report,
+        address oracle
+    ) internal {
         for (uint256 i = 0; i < PUSHABLES.length; i++) {
             if (PUSHABLES[i] == address(0)) {
                 continue;

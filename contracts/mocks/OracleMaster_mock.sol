@@ -8,7 +8,7 @@ contract OracleMaster_mock is OracleMaster {
         return true;
     }
 
-    function getEra() public override view returns(uint128) {
+    function _getEra() public override view returns(uint128) {
         return eraId;
     }
 

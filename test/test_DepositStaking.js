@@ -68,6 +68,7 @@ contract('DepositStaking', accounts => {
         await am.addByString('ROLE_MANAGER', manager);
         await am.addByString('ROLE_ORACLE_MEMBERS_MANAGER', oracleManager);
         await am.addByString('ROLE_STAKING_MANAGER', stakingManager);
+        await am.addByString('ROLE_PAUSE_MANAGER', oracleManager);
 
         ic = await InactivityCover.new();
         assert.ok(ic);
@@ -116,7 +117,6 @@ contract('DepositStaking', accounts => {
             .to.be.rejectedWith('DELEG_N_PAID');
         await expect(ds.delegatorBondMore(candidate, amount, { from: stakingManager }))
             .to.be.rejectedWith('DELEG_N_PAID');
-
     });
 
 
@@ -138,7 +138,7 @@ contract('DepositStaking', accounts => {
         const amount = web3.utils.toWei("2", "ether");
         const candidateDelegationCount = "100";
         const delegatorDelegationCount = "100";
-        await ic.whitelist(member1, true, { from: manager });
+        await ic.whitelist(member1, member1, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
         const icBalanceStart = new BN(await web3.eth.getBalance(ic.address));
         await ds.delegate(candidate, amount, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
@@ -157,7 +157,7 @@ contract('DepositStaking', accounts => {
         const delegationExpected = new BN(amount).add(new BN(more));
         const candidateDelegationCount = "100";
         const delegatorDelegationCount = "100";
-        await ic.whitelist(member1, true, { from: manager });
+        await ic.whitelist(member1, member1, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
         const icBalanceStart = new BN(await web3.eth.getBalance(ic.address));
         const icBalanceExpected = icBalanceStart.sub(new BN(amount)).sub(new BN(more));
@@ -177,7 +177,7 @@ contract('DepositStaking', accounts => {
         const delegationExpected = new BN(amount).sub(new BN(less));
         const candidateDelegationCount = "100";
         const delegatorDelegationCount = "100";
-        await ic.whitelist(member1, true, { from: manager });
+        await ic.whitelist(member1, member1, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
         await ds.delegate(candidate, amount, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ds.scheduleDelegatorBondLess(candidate, less, { from: stakingManager });
@@ -194,7 +194,7 @@ contract('DepositStaking', accounts => {
         const delegationExpected = new BN(amount).sub(new BN(less));
         const candidateDelegationCount = "100";
         const delegatorDelegationCount = "100";
-        await ic.whitelist(member1, true, { from: manager });
+        await ic.whitelist(member1, member1, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
         const icBalanceStart = new BN(await web3.eth.getBalance(ic.address));
         const icBalanceExpected = icBalanceStart.sub(new BN(amount)); // less is not executed until later, so it does not affect balance
@@ -214,7 +214,7 @@ contract('DepositStaking', accounts => {
         const stakedTotalExpected = new BN(amount).add(new BN(amount));
         const candidateDelegationCount = "100";
         const delegatorDelegationCount = "100";
-        await ic.whitelist(member1, true, { from: manager });
+        await ic.whitelist(member1, member1, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
         await ds.delegate(candidate, amount, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ds.delegate(candidate2, amount, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
@@ -231,7 +231,7 @@ contract('DepositStaking', accounts => {
         const delegationExpected = new BN(amount).sub(new BN(less));
         const candidateDelegationCount = "100";
         const delegatorDelegationCount = "100";
-        await ic.whitelist(member1, true, { from: manager });
+        await ic.whitelist(member1, member1, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
         const icBalanceStart = new BN(await web3.eth.getBalance(ic.address));
         const icBalanceExpected = icBalanceStart.sub(new BN(amount)).sub(new BN(amount2));
@@ -271,7 +271,7 @@ contract('DepositStaking', accounts => {
         const delegationExpected = new BN("0");
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
-        await ic.whitelist(member2, true, { from: manager });
+        await ic.whitelist(member2, member2, { from: manager });
         await ic.depositCover(member2, { from: member2, value: deposit }); // ic gets 200 ether
         const icBalanceStart = new BN(await web3.eth.getBalance(ic.address));
         const icBalanceExpected = icBalanceStart.sub(new BN(delegation));
@@ -296,7 +296,7 @@ contract('DepositStaking', accounts => {
         const delegatorDelegationCount = "100";
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
-        await ic.whitelist(member2, true, { from: manager });
+        await ic.whitelist(member2, member2, { from: manager });
         await ic.depositCover(member2, { from: member2, value: deposit }); // ic gets 200 ether
 
         await ds.delegate(member1, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
@@ -315,7 +315,7 @@ contract('DepositStaking', accounts => {
         const delegatorDelegationCount = "100";
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
-        await ic.whitelist(member2, true, { from: manager });
+        await ic.whitelist(member2, member2, { from: manager });
         await ic.depositCover(member2, { from: member2, value: deposit }); // ic gets 200 ether
 
         await ds.delegate(member1, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
@@ -336,7 +336,7 @@ contract('DepositStaking', accounts => {
         const delegationExpected = new BN("0");
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
-        await ic.whitelist(member2, true, { from: manager });
+        await ic.whitelist(member2, member2, { from: manager });
         await ic.depositCover(member2, { from: member2, value: deposit }); // ic gets 200 ether
         const icBalanceStart = new BN(await web3.eth.getBalance(ic.address));
         const icBalanceExpected = icBalanceStart.sub(new BN(delegation)).sub(new BN(delegation));
@@ -371,7 +371,7 @@ contract('DepositStaking', accounts => {
         const delegationExpected = BN.max(new BN("0"), new BN(delegation).sub(new BN(less)));
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
-        await ic.whitelist(member2, true, { from: manager });
+        await ic.whitelist(member2, member2, { from: manager });
         await ic.depositCover(member2, { from: member2, value: deposit }); // ic gets 200 ether
         const icBalanceStart = new BN(await web3.eth.getBalance(ic.address));
         const icBalanceExpected = icBalanceStart.sub(new BN(delegation)).sub(new BN(delegation));
@@ -404,7 +404,7 @@ contract('DepositStaking', accounts => {
         const delegationExpected = new BN("0");
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
-        await ic.whitelist(member2, true, { from: manager });
+        await ic.whitelist(member2, member2, { from: manager });
         await ic.depositCover(member2, { from: member2, value: deposit }); // ic gets 200 ether
         const icBalanceStart = new BN(await web3.eth.getBalance(ic.address));
         const icBalanceExpected = icBalanceStart.sub(new BN(delegation)).sub(new BN(delegation));
@@ -437,7 +437,7 @@ contract('DepositStaking', accounts => {
         const delegationExpected = new BN("0");
 
         await ic.timetravel(100 + _eras_between_forced_undelegation);
-        await ic.whitelist(member2, true, { from: manager });
+        await ic.whitelist(member2, member2, { from: manager });
         await ic.depositCover(member2, { from: member2, value: deposit }); // ic gets 200 ether
         const icBalanceStart = new BN(await web3.eth.getBalance(ic.address));
         const icBalanceExpected = icBalanceStart.sub(new BN(delegation)).sub(new BN(delegation));
