@@ -198,6 +198,7 @@ contract DepositStaking {
                 lowestDelegationCandidate = candidate;
             }
         }
+        require(lowestDelegationCandidate != address(0), "NO_CANDIDATE");
         _scheduleDelegatorRevoke(lowestDelegationCandidate);
         emit ScheduleRevokeEvent(lastForcedUndelegationEra, lowestDelegationCandidate);
     }
