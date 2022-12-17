@@ -7,11 +7,10 @@ library Encoding {
      * @param value - uint256 value
      * @param len - length of output bytes array
      */
-    function toLeBytes(uint256 value, uint256 len)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function toLeBytes(
+        uint256 value,
+        uint256 len
+    ) internal pure returns (bytes memory) {
         bytes memory out = new bytes(len);
         for (uint256 idx = 0; idx < len; ++idx) {
             out[idx] = bytes1(uint8(value));
@@ -24,11 +23,9 @@ library Encoding {
      * @notice Converting uint256 value to bytes
      * @param value - uint256 value
      */
-    function scaleCompactUint(uint256 value)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function scaleCompactUint(
+        uint256 value
+    ) internal pure returns (bytes memory) {
         if (value < 1 << 6) {
             return toLeBytes(value << 2, 1);
         } else if (value < 1 << 14) {

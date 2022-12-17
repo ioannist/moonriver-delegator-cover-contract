@@ -59,7 +59,7 @@ memberSetCoverTypes(bool _noZeroPtsCoverAfterEra, bool _noActiveSetCoverAfterEra
 
 veto power - test
 max % of balance stakeable (manager) - test
-limit on total delegations per collator to limit payOutCover
+limit on total delegations per collator to limit payOutCover - test
 check how malformatted json input can affect computations
 change random revoke collator to lowest delegated collator
 
@@ -79,4 +79,6 @@ delegate(
 
     scheduleDelegatorRevoke(address candidate)
 
-    
+    3,185,000
+
+2,505,000

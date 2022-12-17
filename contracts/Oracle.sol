@@ -43,9 +43,10 @@ contract Oracle {
      * @notice Initialize oracle contract
      * @param _oracleMaster oracle master address
      */
-    function initialize(address _oracleMaster, address payable _pushable)
-        external
-    {
+    function initialize(
+        address _oracleMaster,
+        address payable _pushable
+    ) external {
         require(
             ORACLE_MASTER == address(0) && _oracleMaster != address(0),
             "ALREADY_INITIALIZED"
@@ -120,10 +121,10 @@ contract Oracle {
     * @param _quorum new quorum threshold
     * @param _eraId current era id
     */
-    function softenQuorum(uint8 _quorum, uint128 _eraId)
-        external
-        onlyOracleMaster
-    {
+    function softenQuorum(
+        uint8 _quorum,
+        uint128 _eraId
+    ) external onlyOracleMaster {
         (bool isQuorum, uint256 reportIndex) = _getQuorumReport(_quorum);
         if (isQuorum) {
             Types.OracleData memory report = _getStakeReport(reportIndex);
@@ -131,10 +132,10 @@ contract Oracle {
         }
     }
 
-    function addRemovePushable(address payable _pushable, bool _toAdd)
-        external
-        onlyOracleMaster
-    {
+    function addRemovePushable(
+        address payable _pushable,
+        bool _toAdd
+    ) external onlyOracleMaster {
         if (_toAdd) {
             PUSHABLES.push(_pushable);
         } else {
@@ -151,12 +152,9 @@ contract Oracle {
      * @param _index oracle member index
      * @return is reported indicator
      */
-    function isReported(uint256 _index)
-        external
-        view
-        onlyOracleMaster
-        returns (bool)
-    {
+    function isReported(
+        uint256 _index
+    ) external view onlyOracleMaster returns (bool) {
         return (currentReportBitmask & (1 << _index)) != 0;
     }
 
@@ -174,11 +172,9 @@ contract Oracle {
      * @param _index oracle member index
      * @return staking report data
      */
-    function _getStakeReport(uint256 _index)
-        internal
-        view
-        returns (Types.OracleData storage staking)
-    {
+    function _getStakeReport(
+        uint256 _index
+    ) internal view returns (Types.OracleData storage staking) {
         assert(_index < currentReports.length);
         return currentReports[_index];
     }
@@ -215,11 +211,9 @@ contract Oracle {
     /**
      * @notice Return whether the `_quorum` is reached and the final report can be pushed
      */
-    function _getQuorumReport(uint256 _quorum)
-        internal
-        view
-        returns (bool, uint256)
-    {
+    function _getQuorumReport(
+        uint256 _quorum
+    ) internal view returns (bool, uint256) {
         // check most frequent cases first: all reports are the same or no reports yet
         uint256 _length = currentReportVariants.length;
         if (_length == 1) {

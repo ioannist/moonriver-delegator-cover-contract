@@ -50,6 +50,7 @@ contract('InactivityCover', accounts => {
     const _stake_unit_cover = web3.utils.toWei(process.env.STAKE_UNIT_COVER, "wei");
     const _min_payout = web3.utils.toWei(process.env.MIN_PAYOUT, "wei"); // practically no min payment
     const _eras_between_forced_undelegation = process.env.ERAS_BETWEEN_FORCED_UNDELEGATION;
+    const _max_era_member_payout = web3.utils.toWei(process.env.MAX_ERA_MEMBER_PAYOUT, "ether");
     const _quorum = process.env.QUORUM;
     const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
     const ONE_ADDR = "0x0000000000000000000000000000000000000001";
@@ -152,7 +153,8 @@ contract('InactivityCover', accounts => {
             _max_deposit_total,
             _stake_unit_cover,
             _min_payout,
-            _eras_between_forced_undelegation
+            _max_era_member_payout,
+            _eras_between_forced_undelegation,
         );
         await ic.setMinPayout(0, { from: manager });
     });

@@ -48,12 +48,10 @@ contract AuthManager is IAuthManager, Initializable {
      * @param role - hash of role string
      * @param _member - address of member
      */
-    function has(bytes32 role, address _member)
-        external
-        view
-        override
-        returns (bool)
-    {
+    function has(
+        bytes32 role,
+        address _member
+    ) external view override returns (bool) {
         return _find(members[_member], role) != NOT_FOUND;
     }
 
@@ -127,11 +125,10 @@ contract AuthManager is IAuthManager, Initializable {
      * @param _roles - array of roles hashes
      * @param _role - hash of role string
      */
-    function _find(bytes32[] storage _roles, bytes32 _role)
-        internal
-        view
-        returns (uint256)
-    {
+    function _find(
+        bytes32[] storage _roles,
+        bytes32 _role
+    ) internal view returns (uint256) {
         for (uint256 i = 0; i < _roles.length; ++i) {
             if (_role == _roles[i]) {
                 return i;

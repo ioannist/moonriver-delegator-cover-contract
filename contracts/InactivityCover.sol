@@ -72,6 +72,8 @@ contract InactivityCover is IPushable {
     uint256 public MIN_PAYOUT;
     // Minimum number of eras between forced undelegations
     uint128 public ERAS_BETWEEN_FORCED_UNDELEGATION;
+    // Maximum era payout
+    uint256 public MAX_ERA_MEMBER_PAYOUT;
 
     //Variables for Cover Claims
     // Current era id (round)
@@ -140,6 +142,7 @@ contract InactivityCover is IPushable {
         uint256 _max_deposit_total,
         uint256 _stake_unit_cover,
         uint256 _min_payout,
+        uint256 _max_era_member_payout,
         uint128 _eras_between_forced_undelegation
     ) external {
         require(
@@ -155,6 +158,7 @@ contract InactivityCover is IPushable {
         MAX_DEPOSIT_TOTAL = _max_deposit_total;
         MIN_PAYOUT = _min_payout;
         STAKE_UNIT_COVER = _stake_unit_cover;
+        MAX_ERA_MEMBER_PAYOUT = _max_era_member_payout;
         ERAS_BETWEEN_FORCED_UNDELEGATION = _eras_between_forced_undelegation;
     }
 
@@ -345,10 +349,10 @@ contract InactivityCover is IPushable {
         @param amount How much to withdraw
         @param receiver Who to send the withdrawal to
     */
-    function withdrawRewards(uint256 amount, address payable receiver)
-        external
-        auth(ROLE_MANAGER)
-    {
+    function withdrawRewards(
+        uint256 amount,
+        address payable receiver
+    ) external auth(ROLE_MANAGER) {
         // The contract must have enough non-locked funds
         require(address(this).balance > amount, "NO_FUNDS");
         // The remaining funds after the withdrawal must exceed the deposited funds + the owed funds, i.e. cannot withdraw member funds, but only staking rewards;
@@ -362,10 +366,10 @@ contract InactivityCover is IPushable {
         require(sent, "TRANSF_FAIL");
     }
 
-    function whitelist(address _member, address proxyAccount)
-        external
-        auth(ROLE_MANAGER)
-    {
+    function whitelist(
+        address _member,
+        address proxyAccount
+    ) external auth(ROLE_MANAGER) {
         require(whitelisted[_member] == address(0), "ALREADY_WHITELISTED");
         whitelisted[_member] = proxyAccount;
     }
@@ -375,9 +379,10 @@ contract InactivityCover is IPushable {
         whitelisted[_member] = proxyAccount;
     }
 
-    function executeDelegationRequest(address delegator, address candidate)
-        external
-    {
+    function executeDelegationRequest(
+        address delegator,
+        address candidate
+    ) external {
         staking.executeDelegationRequest(delegator, candidate);
     }
 
@@ -389,19 +394,18 @@ contract InactivityCover is IPushable {
 
     /// @dev Set the maximum total deposit. Member collators cannot deposit more than this total amount.
     /// @param _max_deposit_total The max deposit allowed
-    function setMaxDepositTotal(uint256 _max_deposit_total)
-        external
-        auth(ROLE_MANAGER)
-    {
+    function setMaxDepositTotal(
+        uint256 _max_deposit_total
+    ) external auth(ROLE_MANAGER) {
         MAX_DEPOSIT_TOTAL = _max_deposit_total;
     }
 
     /// @dev Manager can override execute delay (this is temporary and will be overwritten in next pushData)
     /// @param _execute_delay The decrease execution delay
-    function setExecuteDelay(uint128 _execute_delay, address member)
-        external
-        auth(ROLE_MANAGER)
-    {
+    function setExecuteDelay(
+        uint128 _execute_delay,
+        address member
+    ) external auth(ROLE_MANAGER) {
         // Cannot set delay to longer than 3 months (12 rounds per day * 30 * 3)
         require(_execute_delay <= 1080, "HIGH");
         erasCovered[member] = _execute_delay;
@@ -409,10 +413,9 @@ contract InactivityCover is IPushable {
 
     /// @dev Sets the cover refund given to delegators for every 1 MOVR staked per round
     /// @param _stake_unit_cover the unit cover
-    function setStakeUnitCover(uint256 _stake_unit_cover)
-        external
-        auth(ROLE_MANAGER)
-    {
+    function setStakeUnitCover(
+        uint256 _stake_unit_cover
+    ) external auth(ROLE_MANAGER) {
         uint256 maxAPR = 30; // 30%
         uint256 minRoundsPerDay = 1; // current is 12, but this might change
         // Protect against nonsensical values of unit cover that could drain the account
@@ -435,10 +438,9 @@ contract InactivityCover is IPushable {
 
     /// @dev When covers must be calculated and transfered to delegators, the respective collator can refund the oracle that pushedData the tx fees for that calculation
     /// @param _refundOracleGasPrice The gas price used to calculate the refund
-    function setRefundOracleGasPrice(uint256 _refundOracleGasPrice)
-        external
-        auth(ROLE_MANAGER)
-    {
+    function setRefundOracleGasPrice(
+        uint256 _refundOracleGasPrice
+    ) external auth(ROLE_MANAGER) {
         require(_refundOracleGasPrice <= 10_000_000_000, "INV_PRICE"); // TODO change for Moonbeam
         // for market values, check https://moonbeam-gasinfo.netlify.app/
         refundOracleGasPrice = _refundOracleGasPrice;
@@ -454,9 +456,15 @@ contract InactivityCover is IPushable {
         ERAS_BETWEEN_FORCED_UNDELEGATION = _eras_between_forced_undelegation;
     }
 
+    function setMaxEraPayout(uint256 _max_era_member_payout) external auth(ROLE_MANAGER) {
+        MAX_ERA_MEMBER_PAYOUT = _max_era_member_payout;
+    }
+
     /// ***************** GETTERS *****************
 
-    function getMember(address member)
+    function getMember(
+        address member
+    )
         external
         view
         returns (
@@ -483,11 +491,9 @@ contract InactivityCover is IPushable {
         );
     }
 
-    function getScheduledDecrease(address member)
-        external
-        view
-        returns (uint128, uint256)
-    {
+    function getScheduledDecrease(
+        address member
+    ) external view returns (uint128, uint256) {
         return (
             scheduledDecreasesMap[member].era,
             scheduledDecreasesMap[member].amount
@@ -588,6 +594,7 @@ contract InactivityCover is IPushable {
             }
 
             // this loop may run for 300 times so it must stay optimized and light
+            uint256 toPayTotal;
             for (
                 uint128 j = 0;
                 j < collatorData.topActiveDelegations.length;
@@ -614,9 +621,11 @@ contract InactivityCover is IPushable {
 
                 payoutAmounts[delegationData.ownerAccount] += toPay; // credit the delegator
                 members[collatorData.collatorAccount].deposit -= toPay; // debit the collator deposit
-                membersDepositTotal -= toPay; // decrease the total members deposit
-                coverOwedTotal += toPay; // current total (not paid out)
+                toPayTotal += toPay;
             }
+            require(toPayTotal <= MAX_ERA_MEMBER_PAYOUT, "EXCEEDS_MAX_ERA_MEMBER_PAYOUT");
+            membersDepositTotal -= toPayTotal; // decrease the total members deposit
+            coverOwedTotal += toPayTotal; // current total (not paid out)
 
             // Refund oracle for gas costs. Calculating cover claims for every delegator can get expensive for 300 delegators.
             // Oracles pay some minor tx fees when they submit a report, but they get reimusrsed for the calculation of the claims when that happens.
@@ -648,27 +657,23 @@ contract InactivityCover is IPushable {
         );
     }
 
-    function delegator_bond_more(address candidate, uint256 more)
-        external
-        virtual
-        onlyDepositStaking
-    {
+    function delegator_bond_more(
+        address candidate,
+        uint256 more
+    ) external virtual onlyDepositStaking {
         staking.delegatorBondMore(candidate, more);
     }
 
-    function schedule_delegator_bond_less(address candidate, uint256 less)
-        external
-        virtual
-        onlyDepositStaking
-    {
+    function schedule_delegator_bond_less(
+        address candidate,
+        uint256 less
+    ) external virtual onlyDepositStaking {
         staking.scheduleDelegatorBondLess(candidate, less);
     }
 
-    function schedule_delegator_revoke(address candidate)
-        external
-        virtual
-        onlyDepositStaking
-    {
+    function schedule_delegator_revoke(
+        address candidate
+    ) external virtual onlyDepositStaking {
         staking.scheduleRevokeDelegation(candidate);
     }
 
@@ -708,18 +713,16 @@ contract InactivityCover is IPushable {
         return uint128(staking.round());
     }
 
-    function _isLastCompletedEra(uint128 _eraId)
-        internal
-        view
-        virtual
-        returns (bool)
-    {
+    function _isLastCompletedEra(
+        uint128 _eraId
+    ) internal view virtual returns (bool) {
         return _getEra() - _eraId == 1;
     }
 
-    function _updateErasCovered(address _member, uint256 _delegationsTotal)
-        internal
-    {
+    function _updateErasCovered(
+        address _member,
+        uint256 _delegationsTotal
+    ) internal {
         if (_delegationsTotal == 0) {
             erasCovered[_member] = 8;
             return;
@@ -730,22 +733,19 @@ contract InactivityCover is IPushable {
         erasCovered[_member] = erasCov <= 1080 ? erasCov : 1080; // max 3 months TODO change for Moonbeam
     }
 
-    function _isMemberAuth(address _caller, address _member)
-        internal
-        view
-        returns (bool)
-    {
+    function _isMemberAuth(
+        address _caller,
+        address _member
+    ) internal view returns (bool) {
         return
             whitelisted[_member] == _caller ||
             _isProxyOfSelectedCandidate(_caller, _member);
     }
 
-    function _isProxyOfSelectedCandidate(address _signer, address _collator)
-        internal
-        view
-        virtual
-        returns (bool)
-    {
+    function _isProxyOfSelectedCandidate(
+        address _signer,
+        address _collator
+    ) internal view virtual returns (bool) {
         bool isCollator = staking.isSelectedCandidate(_collator);
         bool isProxy = proxy.isProxy(
             _collator,

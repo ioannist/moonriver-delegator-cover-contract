@@ -7,11 +7,10 @@ library ReportUtils {
         0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00;
 
     /// @notice Check if the given reports are different, not considering the counter of the first
-    function isDifferent(uint256 value, uint256 that)
-        internal
-        pure
-        returns (bool)
-    {
+    function isDifferent(
+        uint256 value,
+        uint256 that
+    ) internal pure returns (bool) {
         return (value & COUNT_OUTMASK) != that;
     }
 

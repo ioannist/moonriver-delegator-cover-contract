@@ -114,10 +114,9 @@ contract OracleMaster is Pausable {
               allowed to call only by ROLE_ORACLE_QUORUM_MANAGER
     * @param _quorum new value of quorum threshold
     */
-    function setQuorum(uint8 _quorum)
-        external
-        auth(ROLE_ORACLE_QUORUM_MANAGER)
-    {
+    function setQuorum(
+        uint8 _quorum
+    ) external auth(ROLE_ORACLE_QUORUM_MANAGER) {
         require(
             _quorum > 0 && _quorum < MAX_MEMBERS,
             "OM: QUORUM_WONT_BE_MADE"
@@ -136,10 +135,9 @@ contract OracleMaster is Pausable {
      * @notice Add new member to the oracle member committee list, allowed to call only by ROLE_ORACLE_MEMBERS_MANAGER
      * @param _oracleMember proposed member address
      */
-    function addOracleMember(address _oracleMember)
-        external
-        auth(ROLE_ORACLE_MEMBERS_MANAGER)
-    {
+    function addOracleMember(
+        address _oracleMember
+    ) external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
         require(sudo, "OM: N_SUDO");
         require(_oracleMember != address(0), "OM: BAD_ARGUMENT");
         require(
@@ -155,10 +153,9 @@ contract OracleMaster is Pausable {
     /**
      * @notice Remove `_member` from the oracle member committee list, allowed to call only by ROLE_ORACLE_MEMBERS_MANAGER
      */
-    function removeOracleMember(address _oracleMember)
-        external
-        auth(ROLE_ORACLE_MEMBERS_MANAGER)
-    {
+    function removeOracleMember(
+        address _oracleMember
+    ) external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
         require(sudo, "OM: N_SUDO");
         uint256 index = _getMemberId(_oracleMember);
         require(index != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
@@ -171,10 +168,10 @@ contract OracleMaster is Pausable {
     /**
      * @notice Oracle data can be pushed to other contracts in the future, although care must be taken to not exceed max tx gas
      */
-    function addRemovePushable(address payable _pushable, bool _toAdd)
-        external
-        auth(ROLE_ORACLE_MEMBERS_MANAGER)
-    {
+    function addRemovePushable(
+        address payable _pushable,
+        bool _toAdd
+    ) external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
         IOracle(ORACLE).addRemovePushable(_pushable, _toAdd);
     }
 
@@ -190,10 +187,9 @@ contract OracleMaster is Pausable {
         sudo = false;
     }
 
-    function setVetoOracleMembet(address _vetoOracleMember)
-        external
-        auth(ROLE_ORACLE_MEMBERS_MANAGER)
-    {
+    function setVetoOracleMembet(
+        address _vetoOracleMember
+    ) external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
         vetoOracleMember = _vetoOracleMember;
     }
 
@@ -241,9 +237,10 @@ contract OracleMaster is Pausable {
      * @notice Remove _oracleMember from the oracle member committee list
      * @param _collator the collator that the caller represents
      */
-    function unregisterOracleMember(address _oracleMember, address _collator)
-        external
-    {
+    function unregisterOracleMember(
+        address _oracleMember,
+        address _collator
+    ) external {
         // Any address that is a Gov proxy of this collator can remove that collator's oracle
         // This allows collators that lost their oracle's private key to recover and create a new oracle
         require(
@@ -316,14 +313,12 @@ contract OracleMaster is Pausable {
      * @return lastPart - last reported era part
      * @return isReported - true if oracle member already reported for given stash, else false
      */
-    function isReportedLastEra(address _oracleMember)
+    function isReportedLastEra(
+        address _oracleMember
+    )
         external
         view
-        returns (
-            uint128 lastEra,
-            uint128 lastPart,
-            bool isReported
-        )
+        returns (uint128 lastEra, uint128 lastPart, bool isReported)
     {
         lastEra = eraId;
         uint256 memberIdx = _getMemberId(_oracleMember);
@@ -346,11 +341,9 @@ contract OracleMaster is Pausable {
     /// ***************** INTERNAL FUNCTIONS *****************
 
     /// @notice Return true if report is consistent
-    function _isConsistent(Types.OracleData memory report)
-        internal
-        pure
-        returns (bool)
-    {
+    function _isConsistent(
+        Types.OracleData memory report
+    ) internal pure returns (bool) {
         uint256 collatorsWithZeroPoints = 0;
         for (uint256 i = 0; i < report.collators.length; i++) {
             if (report.collators[i].points == 0) {
@@ -371,11 +364,9 @@ contract OracleMaster is Pausable {
      * @param _oracleMember member address
      * @return member index
      */
-    function _getMemberId(address _oracleMember)
-        internal
-        view
-        returns (uint256)
-    {
+    function _getMemberId(
+        address _oracleMember
+    ) internal view returns (uint256) {
         uint256 length = members.length;
         for (uint256 i = 0; i < length; ++i) {
             if (members[i] == _oracleMember) {
@@ -403,12 +394,9 @@ contract OracleMaster is Pausable {
         return uint128(staking.round());
     }
 
-    function _isLastCompletedEra(uint128 _eraId)
-        internal
-        view
-        virtual
-        returns (bool)
-    {
+    function _isLastCompletedEra(
+        uint128 _eraId
+    ) internal view virtual returns (bool) {
         return _getEra() - _eraId == 1;
     }
 }

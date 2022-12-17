@@ -46,35 +46,36 @@ contract InactivityCover_mock is InactivityCover {
         address(0).call{value: amount}("");
     }
 
-    function delegator_bond_more(address candidate, uint256 more)
-        external
-        override
-        onlyDepositStaking
-    {
+    function delegator_bond_more(
+        address candidate,
+        uint256 more
+    ) external override onlyDepositStaking {
         address(0).call{value: more}("");
     }
 
-    function schedule_delegator_bond_less(address candidate, uint256 less)
-        external
-        override
-        onlyDepositStaking
-    {}
+    function schedule_delegator_bond_less(
+        address candidate,
+        uint256 less
+    ) external override onlyDepositStaking {}
 
-    function schedule_delegator_revoke(address candidate)
-        external
-        override
-        onlyDepositStaking
-    {}
+    function schedule_delegator_revoke(
+        address candidate
+    ) external override onlyDepositStaking {}
 
-    function _getEra() internal override view returns(uint128) {
+    function _getEra() internal view override returns (uint128) {
         return eraId;
     }
 
-    function _isLastCompletedEra(uint128 _eraId) internal override view returns(bool) {
+    function _isLastCompletedEra(
+        uint128 _eraId
+    ) internal view override returns (bool) {
         return true;
     }
 
-    function _isProxyOfSelectedCandidate(address _oracle, address _collator) internal override view returns(bool) {
+    function _isProxyOfSelectedCandidate(
+        address _oracle,
+        address _collator
+    ) internal view override returns (bool) {
         return true;
     }
 }

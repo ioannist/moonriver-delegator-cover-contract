@@ -3,17 +3,20 @@ pragma solidity ^0.8.2;
 import "../OracleMaster.sol";
 
 contract OracleMaster_mock is OracleMaster {
-
-    function _isProxyOfSelectedCandidate(address _oracle, address _collator) internal override view returns(bool) {
+    function _isProxyOfSelectedCandidate(
+        address _oracle,
+        address _collator
+    ) internal view override returns (bool) {
         return true;
     }
 
-    function _getEra() public override view returns(uint128) {
+    function _getEra() public view override returns (uint128) {
         return eraId;
     }
 
-    function _isLastCompletedEra(uint128 _eraId) internal override view returns(bool) {
+    function _isLastCompletedEra(
+        uint128 _eraId
+    ) internal view override returns (bool) {
         return true;
     }
-
 }

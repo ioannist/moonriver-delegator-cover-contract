@@ -38,10 +38,10 @@ library WithdrawalQueue {
      * @param queue current queue
      * @param elem element for adding
      */
-    function push(Queue storage queue, Batch memory elem)
-        internal
-        returns (uint256 _id)
-    {
+    function push(
+        Queue storage queue,
+        Batch memory elem
+    ) internal returns (uint256 _id) {
         require(queue.size < queue.cap, "WithdrawalQueue: capacity exceeded");
         uint256 lastIndex = (queue.first + queue.size) % queue.cap;
         queue.items[lastIndex] = elem;
@@ -55,10 +55,9 @@ library WithdrawalQueue {
      * @notice Remove element from top of the queue
      * @param queue current queue
      */
-    function pop(Queue storage queue)
-        internal
-        returns (Batch memory _item, uint256 _id)
-    {
+    function pop(
+        Queue storage queue
+    ) internal returns (Batch memory _item, uint256 _id) {
         require(queue.size > 0, "WithdrawalQueue: queue is empty");
         _item = queue.items[queue.first];
         _id = queue.ids[queue.first];
@@ -71,11 +70,10 @@ library WithdrawalQueue {
      * @param queue current queue
      * @param index index of batch
      */
-    function findBatch(Queue storage queue, uint256 index)
-        internal
-        view
-        returns (Batch memory _item)
-    {
+    function findBatch(
+        Queue storage queue,
+        uint256 index
+    ) internal view returns (Batch memory _item) {
         uint256 startIndex = queue.ids[queue.first];
         if (index >= startIndex) {
             if ((index - startIndex) < queue.size) {
@@ -92,11 +90,9 @@ library WithdrawalQueue {
      * @notice Return first element of the queue
      * @param queue current queue
      */
-    function top(Queue storage queue)
-        internal
-        view
-        returns (Batch memory _item, uint256 _id)
-    {
+    function top(
+        Queue storage queue
+    ) internal view returns (Batch memory _item, uint256 _id) {
         require(queue.size > 0, "WithdrawalQueue: queue is empty");
         _item = queue.items[queue.first];
         _id = queue.ids[queue.first];
@@ -107,11 +103,10 @@ library WithdrawalQueue {
      * @param queue current queue
      * @param shift element shift from top id
      */
-    function element(Queue storage queue, uint256 shift)
-        internal
-        view
-        returns (Batch memory _item, uint256 _id)
-    {
+    function element(
+        Queue storage queue,
+        uint256 shift
+    ) internal view returns (Batch memory _item, uint256 _id) {
         require(queue.size > 0, "WithdrawalQueue: queue is empty");
         require(shift < queue.size, "WithdrawalQueue: index outside queue");
         uint256 index = (queue.first + shift) % queue.cap;
@@ -123,11 +118,9 @@ library WithdrawalQueue {
      * @notice Return last element of the queue
      * @param queue current queue
      */
-    function last(Queue storage queue)
-        internal
-        view
-        returns (Batch memory _item, uint256 _id)
-    {
+    function last(
+        Queue storage queue
+    ) internal view returns (Batch memory _item, uint256 _id) {
         require(queue.size > 0, "WithdrawalQueue: queue is empty");
         uint256 lastIndex = (queue.first + queue.size - 1) % queue.cap;
         _item = queue.items[lastIndex];

@@ -117,10 +117,10 @@ contract DepositStaking {
     /// @dev Bond more of this contract's balance to a collator that the contract already delegates to.
     /// @param candidate The address of the collator candidate for which delegation shall increase
     /// @param more The amount by which the delegation is increased
-    function delegatorBondMore(address candidate, uint256 more)
-        external
-        auth(ROLE_STAKING_MANAGER)
-    {
+    function delegatorBondMore(
+        address candidate,
+        uint256 more
+    ) external auth(ROLE_STAKING_MANAGER) {
         // To bond more, there must not exist an unpaid delegator or member
         require(
             InactivityCover(INACTIVITY_COVER).memberNotPaid() == address(0),
@@ -139,20 +139,19 @@ contract DepositStaking {
     /// @dev Request to bond less for delegators with respect to a specific collator candidate
     /// @param candidate The address of the collator candidate for which delegation shall decrease
     /// @param less The amount by which the delegation is decreased (upon execution)
-    function scheduleDelegatorBondLess(address candidate, uint256 less)
-        external
-        auth(ROLE_STAKING_MANAGER)
-    {
+    function scheduleDelegatorBondLess(
+        address candidate,
+        uint256 less
+    ) external auth(ROLE_STAKING_MANAGER) {
         _scheduleDelegatorBondLess(candidate, less);
         emit DelegatorBondLessEvent(candidate, less);
     }
 
     /// @dev Request to revoke delegation with respect to a specific collator candidate
     /// @param candidate The address of the collator candidate for which delegation shall decrease
-    function scheduleDelegatorRevoke(address candidate)
-        external
-        auth(ROLE_STAKING_MANAGER)
-    {
+    function scheduleDelegatorRevoke(
+        address candidate
+    ) external auth(ROLE_STAKING_MANAGER) {
         _scheduleDelegatorRevoke(candidate);
         emit RevokeEvent(candidate);
     }
@@ -161,7 +160,7 @@ contract DepositStaking {
 
     /// @dev Allows anybody to force a revoke to increase the contract's reducible balance so it can make payments.
     /// The method can be called with limited frequency and only if the contract has defaulted in making payments to delegators or members.
-    /// The method will choose one random collator to revoke from and reset the default flags.
+    /// The method will choose the collator with the smallest delegation to revoke from and reset the default flags.
     /// Calling the method does not guarantee that the delegator or member that was not paid, WILL be able to get paid, as the revoked amount may be less.
     /// However, users can keep revoking until the liquid balance is high enough to meet obligations.
     /// This is a method of last resort and it allows members and delegators to get their funds, should the manager fail to keep enough funds liquid.
@@ -186,59 +185,49 @@ contract DepositStaking {
         );
         lastForcedUndelegationEra = _getEra();
 
-        // A random collator with a delegated balance is chosen to undelegate from
-        uint256 collatorIndex = _random() % collatorsDelegated.length;
+        uint256 lowestDelegation;
+        address lowestDelegationCandidate;
         for (
-            uint256 counter = collatorsDelegated.length;
-            counter > 0;
-            counter--
+            uint256 collatorIndex = 0;
+            collatorIndex < collatorsDelegated.length;
+            collatorIndex++
         ) {
-            collatorIndex = (collatorIndex + 1) % collatorsDelegated.length;
             address candidate = collatorsDelegated[collatorIndex];
-            if (candidate == address(0) || delegations[candidate].amount == 0) {
-                continue;
+            if (candidate != address(0) && (lowestDelegation < delegations[candidate].amount || lowestDelegation == 0)) {
+                lowestDelegation = delegations[candidate].amount;
+                lowestDelegationCandidate = candidate;
             }
-            _scheduleDelegatorRevoke(candidate);
-            // InactivityCover(INACTIVITY_COVER).resetNotPaid();
-            emit ScheduleRevokeEvent(lastForcedUndelegationEra, candidate);
-            break;
         }
+        _scheduleDelegatorRevoke(lowestDelegationCandidate);
+        emit ScheduleRevokeEvent(lastForcedUndelegationEra, lowestDelegationCandidate);
     }
 
     /// ***************** GETTERS *****************
 
-    function getIsDelegated(address candidate)
-        external
-        view
-        auth(ROLE_STAKING_MANAGER)
-        returns (bool)
-    {
+    function getIsDelegated(
+        address candidate
+    ) external view auth(ROLE_STAKING_MANAGER) returns (bool) {
         return delegations[candidate].isDelegated;
     }
 
-    function getDelegation(address candidate)
-        external
-        view
-        auth(ROLE_STAKING_MANAGER)
-        returns (uint256)
-    {
+    function getDelegation(
+        address candidate
+    ) external view auth(ROLE_STAKING_MANAGER) returns (uint256) {
         return delegations[candidate].amount;
     }
 
-    function getCollatorsDelegated(uint256 index)
-        external
-        view
-        auth(ROLE_STAKING_MANAGER)
-        returns (address)
-    {
+    function getCollatorsDelegated(
+        uint256 index
+    ) external view auth(ROLE_STAKING_MANAGER) returns (address) {
         return collatorsDelegated[index];
     }
 
     /// ***************** INTERNAL FUNCTIONS *****************
 
-    function _scheduleDelegatorBondLess(address candidate, uint256 less)
-        internal
-    {
+    function _scheduleDelegatorBondLess(
+        address candidate,
+        uint256 less
+    ) internal {
         delegations[candidate].amount -= less;
         stakedTotal -= less;
         if (delegations[candidate].amount == 0) {
@@ -269,13 +258,6 @@ contract DepositStaking {
         }
         InactivityCover(INACTIVITY_COVER).schedule_delegator_revoke(candidate);
         // There is no method to cancel a request, and anybody can execute a scheduled request, so this is a one-way to revoking the delegation
-    }
-
-    function _random() private view returns (uint256) {
-        uint256 number = uint256(
-            keccak256(abi.encodePacked(block.timestamp, block.difficulty))
-        ) % 251;
-        return number;
     }
 
     function _getEra() internal view virtual returns (uint128) {
