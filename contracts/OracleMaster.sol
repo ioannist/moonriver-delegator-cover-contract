@@ -187,7 +187,7 @@ contract OracleMaster is Pausable {
         sudo = false;
     }
 
-    function setVetoOracleMembet(
+    function setVetoOracleMember(
         address _vetoOracleMember
     ) external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
         vetoOracleMember = _vetoOracleMember;
@@ -274,25 +274,21 @@ contract OracleMaster is Pausable {
         uint128 _eraNonce,
         Types.OracleData calldata _report
     ) external whenNotPaused {
-        require(_isConsistent(_report), "OM: INCORRECT_REPORT");
-        uint256 memberIndex = _getMemberId(msg.sender);
-        require(memberIndex != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
-        require(_isLastCompletedEra(_eraId), "OM: INV_ERA");
         // Because reports can result in fund transfers, no single entity should control them, including manager.
         // However, the manager needs sudo access in the beginning to bootstrap oracles until the total oracle number is large enough.
         // To secure the initial bootstrapping and longterm security, we use a sudo key which allows the manager to add/remove oracles.
         // After sudo is removed, every oracle must be a Gov proxy of an active collator to be able to push reports.
         // This means that ONLY collators can run oracles (one each) and by extension the manager can also run only one oracle.
-        require(
-            _isProxyOfSelectedCandidate(msg.sender, _collator) || sudo,
-            "OM: N_COLLATOR_PROXY"
-        );
+        uint256 memberIndex = _getMemberId(msg.sender);
+        require((sudo && memberIndex != MEMBER_N_FOUND) || _isProxyOfSelectedCandidate(msg.sender, _collator), "OM: MEMBER_N_FOUND");
+        require(_isLastCompletedEra(_eraId), "OM: INV_ERA");
+        require(_isConsistent(_report), "OM: INCORRECT_REPORT");
 
         if (_eraId > eraId) {
             eraId = _eraId;
         }
         reportCounts[_collator]++;
-        bool veto = vetoOracleMember == _collator;
+        bool veto = vetoOracleMember == msg.sender;
         IOracle(ORACLE).reportPara(
             memberIndex,
             QUORUM,

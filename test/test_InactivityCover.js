@@ -184,6 +184,75 @@ contract('InactivityCover', accounts => {
         return maxCoveredDelegation;
     }
 
+    it("oracle reports ar enot pushed due to veto", async () => {
+        const newEra = new BN("222");
+        const oracleData1 = {
+            ...oracleData,
+            collators: [oracleData.collators[0]]
+        }
+        const oracleData2 = {
+            ...oracleData,
+            collators: [oracleData.collators[1]]
+        }
+        await om.setQuorum("2", { from: oracleManager })
+        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member2, { from: oracleManager });
+        await om.addOracleMember(manager, { from: oracleManager });
+        await om.setVetoOracleMember(manager, { from: oracleManager });
+
+        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
+        await om.reportPara(ONE_ADDR, newEra, 0, oracleData2, { from: manager });
+        await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member1 });
+        await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member2 });
+        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
+    })
+
+    it("oracle reports ar enot pushed due to veto (2)", async () => {
+        const newEra = new BN("222");
+        const oracleData1 = {
+            ...oracleData,
+            collators: [oracleData.collators[0]]
+        }
+        const oracleData2 = {
+            ...oracleData,
+            collators: [oracleData.collators[1]]
+        }
+        await om.setQuorum("2", { from: oracleManager })
+        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member2, { from: oracleManager });
+        await om.addOracleMember(manager, { from: oracleManager });
+        await om.setVetoOracleMember(manager, { from: oracleManager });
+
+        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
+        await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member1 });
+        await om.reportPara(ONE_ADDR, newEra, 0, oracleData2, { from: manager });
+        await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member2 });
+        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
+    })
+
+    it("oracle reports are pushed because veto comes after quorum was reached", async () => {
+        const newEra = new BN("222");
+        const oracleData1 = {
+            ...oracleData,
+            collators: [oracleData.collators[0]]
+        }
+        const oracleData2 = {
+            ...oracleData,
+            collators: [oracleData.collators[1]]
+        }
+        await om.setQuorum("2", { from: oracleManager })
+        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member2, { from: oracleManager });
+        await om.addOracleMember(manager, { from: oracleManager });
+        await om.setVetoOracleMember(manager, { from: oracleManager });
+
+        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
+        await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member1 });
+        await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member2 });
+        return expect(om.reportPara(ONE_ADDR, newEra, 0, oracleData2, { from: manager })).to.be.rejectedWith("OR: INV_NONCE");
+    })
+    return
+
 
     it("manager cannot withdraw an amount larger than the staking rewards w/ report event", async () => {
         const deposit = web3.utils.toWei("120", "ether");
@@ -864,7 +933,7 @@ contract('InactivityCover', accounts => {
 
     it("non-whitelisted collator cannot make a deposit", async () => {
         const deposit = web3.utils.toWei("10", "ether");
-        await expect(ic.depositCover(member1, { from: member1, value: deposit })).to.be.rejectedWith('NOT_WLISTED');
+        await expect(ic.depositCover(member1, { from: member1, value: deposit })).to.be.rejectedWith('N_COLLATOR_PROXY');
         await expect(await getDeposit(member1)).to.be.bignumber.equal("0");
         await expect(await getIsMember(member1)).to.be.equal(false);
         await expect(await getMaxDefault(member1)).to.be.bignumber.equal(zero);
@@ -899,7 +968,7 @@ contract('InactivityCover', accounts => {
         await ic.whitelist(member1, member1, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit });
         await ic.whitelist(member1, false, { from: manager });
-        await expect(ic.depositCover(member1, { from: member1, value: deposit })).to.be.rejectedWith('NOT_WLISTED');
+        await expect(ic.depositCover(member1, { from: member1, value: deposit })).to.be.rejectedWith('N_COLLATOR_PROXY');
     })*/
 
     it("member schedules a cover decrease; check that deposit is not affected", async () => {

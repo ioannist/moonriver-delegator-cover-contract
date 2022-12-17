@@ -94,17 +94,18 @@ contract Oracle {
         // iterate on all report variants we already have, limited by the oracle members maximum
         while (i < _length && currentReportVariants[i].isDifferent(variant))
             ++i;
-        bool vetoed = currentVetoReportVariant != 0 &&
-            currentReportVariants[i].isDifferent(currentVetoReportVariant);
         if (i < _length) {
-            if (currentReportVariants[i].getCount() + 1 >= _quorum && !vetoed) {
-                _push(_eraId, _staking, _oracle);
+            if (currentReportVariants[i].getCount() + 1 >= _quorum) {
+                bool vetoed = currentVetoReportVariant != 0 && currentReportVariants[i].isDifferent(currentVetoReportVariant);
+                if (!vetoed) {
+                    _push(_eraId, _staking, _oracle);
+                }
             } else {
                 ++currentReportVariants[i];
                 // increment variant counter, see ReportUtils for details
             }
         } else {
-            if (_quorum == 1 && !vetoed) {
+            if (_quorum == 1) {
                 _push(_eraId, _staking, _oracle);
             } else {
                 currentReportVariants.push(variant + 1);

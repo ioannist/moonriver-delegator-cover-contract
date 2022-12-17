@@ -12,7 +12,7 @@ contract DepositStaking {
         uint256 amount;
     }
 
-    event ScheduleRevokeEvent(uint128 eraId, address collator);
+    event ForceRevokeEvent(uint128 eraId, address collator);
     event DelegatorBondMoreEvent(address collator, uint256 amount);
     event DelegatorBondLessEvent(address collator, uint256 amount);
     event RevokeEvent(address collator);
@@ -200,7 +200,7 @@ contract DepositStaking {
         }
         require(lowestDelegationCandidate != address(0), "NO_CANDIDATE");
         _scheduleDelegatorRevoke(lowestDelegationCandidate);
-        emit ScheduleRevokeEvent(lastForcedUndelegationEra, lowestDelegationCandidate);
+        emit ForceRevokeEvent(lastForcedUndelegationEra, lowestDelegationCandidate);
     }
 
     /// ***************** GETTERS *****************

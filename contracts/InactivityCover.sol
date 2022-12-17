@@ -170,7 +170,7 @@ contract InactivityCover is IPushable {
      @param _member The collator address the deposit is for.
     */
     function depositCover(address _member) external payable {
-        require(whitelisted[_member] != address(0), "NOT_WLISTED");
+        require(_isMemberAuth(msg.sender, _member), "N_COLLATOR_PROXY");
         require(msg.value >= MIN_DEPOSIT, "BEL_MIN_DEP"); // avoid spam deposits
         require(msg.value >= members[_member].maxDefaulted, "BEL_MAX_DEFAULT");
         require(_member != address(0), "ZERO_ADDR");
@@ -255,6 +255,11 @@ contract InactivityCover is IPushable {
             _noZeroPtsCoverAfterEra,
             _noActiveSetCoverAfterEra
         );
+    }
+
+    function transferProxy(address _member, address proxyAccount) external {
+        require(_isMemberAuth(msg.sender, _member), "N_COLLATOR_PROXY");
+        whitelisted[_member] = proxyAccount;
     }
 
     /// ***************** MEMBER FUNCS THAT CAN BE CALLED BY ANYBODY *****************
@@ -342,6 +347,13 @@ contract InactivityCover is IPushable {
         }
     }
 
+    function executeDelegationRequest(
+        address delegator,
+        address candidate
+    ) external {
+        staking.executeDelegationRequest(delegator, candidate);
+    }
+
     /// ***************** MANAGEMENT FUNCTIONS *****************
 
     /** @dev Allows the manager to withdraw any contract balance that is above the total deposits balance.
@@ -372,18 +384,6 @@ contract InactivityCover is IPushable {
     ) external auth(ROLE_MANAGER) {
         require(whitelisted[_member] == address(0), "ALREADY_WHITELISTED");
         whitelisted[_member] = proxyAccount;
-    }
-
-    function transferProxy(address _member, address proxyAccount) external {
-        require(whitelisted[_member] == msg.sender, "UNAUTH");
-        whitelisted[_member] = proxyAccount;
-    }
-
-    function executeDelegationRequest(
-        address delegator,
-        address candidate
-    ) external {
-        staking.executeDelegationRequest(delegator, candidate);
     }
 
     /// @dev Set the minimum member deposit allowed

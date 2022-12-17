@@ -104,10 +104,12 @@ contract('DepositStaking', accounts => {
             _stake_unit_cover,
             _min_payout,
             _max_era_member_payout,
-            _eras_between_forced_undelegation
+            _eras_between_forced_undelegation,
         );
 
     });
+
+    return
 
     it("manager cannot delegate if a delegator was not paid", async () => {
         const candidate = member1;
