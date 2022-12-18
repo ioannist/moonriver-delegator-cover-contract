@@ -262,7 +262,7 @@
 					"parameterSlots": 1,
 					"returnSlots": 0
 				},
-				"@setExecuteDelay_4113": {
+				"@setErasCovered_4113": {
 					"entryPoint": 8142,
 					"id": 4113,
 					"parameterSlots": 2,
@@ -24722,7 +24722,7 @@
 				"schedule_delegator_bond_less(address,uint256)": "infinite",
 				"scheduledDecreasesMap(address)": "5215",
 				"setErasBetweenForcedUndelegations(uint128)": "infinite",
-				"setExecuteDelay(uint128,address)": "infinite",
+				"setErasCovered(uint128,address)": "infinite",
 				"setMaxDepositTotal(uint256)": "infinite",
 				"setMinDeposit(uint256)": "infinite",
 				"setMinPayout(uint256)": "infinite",
@@ -24772,7 +24772,7 @@
 			"schedule_delegator_bond_less(address,uint256)": "00043acf",
 			"scheduledDecreasesMap(address)": "edaba84d",
 			"setErasBetweenForcedUndelegations(uint128)": "0a74522b",
-			"setExecuteDelay(uint128,address)": "4ff7cde7",
+			"setErasCovered(uint128,address)": "4ff7cde7",
 			"setMaxDepositTotal(uint256)": "70062c7f",
 			"setMinDeposit(uint256)": "8fcc9cfb",
 			"setMinPayout(uint256)": "081b9da4",
@@ -25643,7 +25643,7 @@
 					"type": "address"
 				}
 			],
-			"name": "setExecuteDelay",
+			"name": "setErasCovered",
 			"outputs": [],
 			"stateMutability": "nonpayable",
 			"type": "function"

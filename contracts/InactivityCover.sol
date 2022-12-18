@@ -100,6 +100,8 @@ contract InactivityCover is IPushable {
     mapping(address => uint256) public totalPayouts;
     // If not 0, the oracle is credited with the tx cost for caclulating the cover payments
     uint256 refundOracleGasPrice;
+    // If set to true, collators don't need whitelisting and can join/deposit funds from a Governance proxy
+    bool noManualWhitelistingRequired;
 
     /* If a collator cannot withdraw their funds due to the funds being locked in staking, their address is
     recorded in memberNotPaid .This will prohibit the manager from bonding more until that collator is paid
@@ -132,7 +134,8 @@ contract InactivityCover is IPushable {
     }
 
     /**
-     * @notice Initialize contract.
+     @notice Initialize contract.
+     @dev Can only be called once and should be called right after contract deployment
      */
     function initialize(
         address _auth_manager,
@@ -164,10 +167,18 @@ contract InactivityCover is IPushable {
 
     /// ***************** MEMBER (COLLATOR) FUNCS *****************
 
-    /** @dev Deposit cover funds for a member collator. Anybody can deposit funds for a collator, but only
-    the collator can withdraw. The collator must be whitelisted. If the collator is at default (out of
-    funds and not recording missed rounds), this method will cause the collator to resume cover.
-     @param _member The collator address the deposit is for.
+    /**
+    @notice Deposit cover funds for a member collator
+    @dev Collators can start offering cover to their delegators by making a cover deposit larger than the MIN_DEPOSIT.
+    The covererage period offered (ad advertised at stakemovr.com and stakeglmr.com) is calculated based on the size of the deposit.
+    Collators can deposit more funds or schedule a withdrawal at any time.
+    If noManualWhitelistingRequired  is true, then the caller must be a Gov proxy of the collator member address.
+    If noManualWhitelistingRequired is false, i.e. whitelisting IS required, then the caller must be already whitelisted by the contract manager.
+    If the collator has defaulted in making a cover payment, then they must deposit at least the defualetd amount.
+    A succesful deposit will enroll the collator (member.isMember=true) but it will only activate cover (member.active=true) if the total deposit is larger than MIN_DEPOSIT.
+    @param _member The collator address the deposit is for. The caller of the depositCover method is not the member/collator address
+    (the collator address should be kept in cold storage and not sued for contract interactions). The caller is wither manually whitelisted address,
+    or a Gov proxy of the collator address. This is why the method has to provider the collator address in the _member field.
     */
     function depositCover(address _member) external payable {
         require(_isMemberAuth(msg.sender, _member), "N_COLLATOR_PROXY");
@@ -188,33 +199,54 @@ contract InactivityCover is IPushable {
             _updateErasCovered(_member, members[_member].lastDelegationsTotall);
         }
 
-        members[_member].active = true;
         members[_member].deposit += msg.value;
+        if (members[_member].deposit >= MIN_DEPOSIT) {
+            members[_member].active = true;
+        }
         delete members[_member].maxDefaulted;
         membersDepositTotal += msg.value;
         emit DepositEvent(_member, msg.value);
     }
 
-    /** @dev A member can request to withdraw its cover funds. The member has to wait for a number of rounds
+    /**
+    @notice Schedule a deposit decrease that can be executed in the future
+    @dev A member can request to withdraw its cover funds. The member has to wait for a number of rounds
     until they can withdraw. During this waiting time, their funds continue to cover their delegators.
-     @param amount How much to decrease the cover by.
+    @param _member the collator member the calling address represents. Do not use the collator account to interact with this contract.
+    @param _amount how much to decrease the cover by.
     */
-    function scheduleDecreaseCover(address _member, uint256 amount) external {
+    function scheduleDecreaseCover(address _member, uint256 _amount) external {
         require(_isMemberAuth(msg.sender, _member), "N_COLLATOR_PROXY");
-        _scheduleDecreaseCover(amount, _member);
+        _scheduleDecreaseCover(_amount, _member);
     }
 
-    /// @dev Cancel a scheduled cover decrease (withdrawal)
+    /**
+    @notice Cancel a scheduled cover decrease (withdrawal)
+    @dev Members can cancel a scheduled deposit decrease while it is still pending.
+    The cancellation will take effect immediately, which will result in changes in the advertised cover offering at stakemovr.com
+    */
     function cancelDecreaseCover(address _member) external {
         require(_isMemberAuth(msg.sender, _member), "N_COLLATOR_PROXY");
         require(members[_member].deposit > 0, "NO_DEP");
         require(scheduledDecreasesMap[_member].amount > 0, "DECR_N_EXIST");
+        // Reset memberNotPaid to 0 if it was set to this collator, otherwise leave as is.
+        // Anybody can execute a scheduled member withdrawal on their behalf, but only the member can cancel its request.
+        // Therefore, it is necessary to reset memberNotPaid on cancellation, to avoid a stuck non-zero membernotPaid value.
+        if (memberNotPaid == _member) {
+            memberNotPaid = address(0);
+        }
         delete scheduledDecreasesMap[_member];
         emit CancelDecreaseCoverEvent(_member);
     }
 
-    /// @dev Members can choose to protect delegations up to a specific amount (this might incentivize delegators to spread their stake among collators)
-    /// @param _max_covered the max delegation that is covered (any amount above that will not receive rewards cover)
+    /**
+    @notice Set the maximum delegation that this collator covers (per single delegation). Any amount above this will only be covered up to the max.
+    @dev Members can choose to protect delegations up to a specific amount (this might incentivize delegators to spread their stake among collators)
+    A delegator can circumvent this by using multiple delegator addresses if they really want to delegate all their funds with one collator and sitll be covered.
+    Member must be active to edit this parameter. Memebr are not allowed to set a max below 500 to avoid abuse. To disable this limit, the member
+    can set maxCoveredDelegation to a very high number.
+    @param _max_covered the max delegation that is covered (any amount above that will not receive cover only up to the max amount)
+    */
     function memberSetMaxCoveredDelegation(
         address _member,
         uint256 _max_covered
@@ -227,9 +259,16 @@ contract InactivityCover is IPushable {
         emit MemberSetMaxCoveredDelegationEvent(_member, _max_covered);
     }
 
-    /// @dev Members can protect their delegators against them going down (zero points) or out (not in active set) or both. At least one cover type is required.
-    /// @param _noZeroPtsCoverAfterEra true if you want to cover being down, false otherwise
-    /// @param _noActiveSetCoverAfterEra true if you want to cover being out, false otherwise
+    /**
+    @notice Memebrs can set the type of cover offered to their delegators
+    @dev Members can protect their delegators against them going down (zero points) or out (not in active set) or both.
+    At least one cover type is required. The change becomes effective after a number of eras have passed to protect delegators.
+    The delay period is different for each member and it depends on the cover duration, i.e. erasCovered (which depends on deposit).
+    The method stores the era in which a type of cover was disabled and applies it (or not) in future eras based on what the
+    erasCovered value is for that member on that era.
+    @param _noZeroPtsCoverAfterEra false if you want to cover zero-point rounds (down), true if you want to disbale that cover type
+    @param _noActiveSetCoverAfterEra false if you want to cover being kicked out of the active set (out), true if you want to disable that cover type
+    */
     function memberSetCoverTypes(
         address _member,
         bool _noZeroPtsCoverAfterEra,
@@ -257,20 +296,37 @@ contract InactivityCover is IPushable {
         );
     }
 
-    function transferProxy(address _member, address proxyAccount) external {
+    /**
+    @notice A member can authorize the transfer of its collator cover managerment rights to another address
+    @dev A member might want to use a different address to manage its collator cover. This method allows
+    to tarnsfer the management rights which also immediately removes those rights from the previous address (caller).
+    A Gov proxy account can also use this method to authorize another addres (not a Gov proxy) to manage its collator cover.
+    Only one such authorized address can exist for a collator at a time. However, obviously multiple Gov proxy addresses can exist,
+    with the same access rights to managing cover. Authorizing the 0x0 address, disables non-proxy authorization
+    for that member, and can only be undone by the manager by whitelisting again.
+     */
+    function transferMemberAuth(address _member, address proxyAccount) external {
         require(_isMemberAuth(msg.sender, _member), "N_COLLATOR_PROXY");
         whitelisted[_member] = proxyAccount;
     }
 
     /// ***************** MEMBER FUNCS THAT CAN BE CALLED BY ANYBODY *****************
 
-    /// @dev Execute a scheduled cover decrease (withdrawal) by a member
-    /// @param _member The collator member whose scheduled withdrawal we are executing (anybody can execute it)
+    /**
+    @notice Execute a scheduled cover decrease (withdrawal) by a member
+    @dev Anybody can execute a matured deposit decrease request of a member.
+    For the request to be mature/executable, a number of eras must have passed since the request was made.
+    This "delay period" is different for every member and depends on that memebrs total deposit (the larger the deposit, the longer the period).
+    Since a deposit can be increase, it can be the case that a matured decrease request becomes imature again if it is not executed.
+    The method also records defaults in paying members by updating the memberNotPaid value. Should a default be recorded,
+    no other default will be recorded until that default is resolved. A default limits the staking manager's ability
+    to delegate or bondMore of the contract's liquid funds.
+    @param _member The collator member whose scheduled withdrawal we are executing (anybody can execute it)
+    */
     function executeScheduled(address payable _member) external {
         require(scheduledDecreasesMap[_member].amount != 0, "DECR_N_EXIST");
         require(
             // The current era must be after the era the decrease is scheduled for
-            // The manager can change the EXECUTE_DELAY after the decrease was scheduled by the member, so the "scheduled date" is not fixed
             scheduledDecreasesMap[_member].era + erasCovered[_member] <=
                 _getEra(),
             "NOT_EXEC"
@@ -280,7 +336,8 @@ contract InactivityCover is IPushable {
         // Check if contract has enough reducible balance (may be locked in staking)
         if (address(this).balance < amount) {
             // Only update if not already set
-            // This means that memberNotPaid will always store the first member that was not paid and only that member, until they are paid
+            // This means that memberNotPaid will always store the first member that was not paid and only that member,
+            // until they are paid (anybody can execute payment if funds are liquid) or until they cancel their decrease
             if (memberNotPaid == address(0)) {
                 memberNotPaid = _member;
                 emit MemberNotPaidEvent(_member, amount);
@@ -304,13 +361,20 @@ contract InactivityCover is IPushable {
         require(sent, "TRANSF_FAIL");
     }
 
-    /** @dev Pays out the accumulated delegator rewards claims to the given delegators.
-        The method can be called by anybody (similar to Moonbeam's execute delegation decrease).
-        This is required, so that (for example), the manager can initiate a previously defaulted payment
-        to reset the notPaid flag and disable forceScheduleRevoke.
-        @param delegators The delegators to pay cover claims to. These are accumulated claims and could even be from multiple collators.
+    /** 
+    @notice Pays out the accumulated delegator rewards claims to the given delegators.
+    @dev Calling this method will result to the supplied delegators being paid the cover claims balance they are owed.
+    A positive balance may have resulted from multiple roun covers, or even from multiple collators.
+    If a payment default is recorded, the delegatorNotPaid state variable is set. Subsequent defaults will not update that value.
+    Therefore, the delegator that was not paid must be paid for the variable to clear and to unblock the staking manager from
+    delegating or bonding more. A default does not block other delegators from getting payouts.
+    The method can be called by anybody (similar to Moonbeam's execute delegation decrease).
+    This is required, so that (for example), the manager can initiate a previously defaulted payment to reset delegatorNotPaid and disable forceScheduleRevoke.
+    The function can be called with multiple delegators for saving gas costs.
+    @param delegators The delegators to pay cover claims to. These are accumulated claims and could even be from multiple collators.
     */
     function payOutCover(address payable[] calldata delegators) external {
+        uint256 toPayTotal;
         for (uint256 i = 0; i < delegators.length; i++) {
             address delegator = delegators[i];
             require(delegator != address(0), "ZERO_ADDR");
@@ -337,29 +401,42 @@ contract InactivityCover is IPushable {
 
             // delete payout entry from delegator
             delete payoutAmounts[delegator];
-            // remove collator from addresses that owe cover to this delegator
-            coverOwedTotal -= toPay; // debit the total cover owed
+            toPayTotal += toPay;
             totalPayouts[delegator] += toPay;
             emit PayoutEvent(delegator, toPay);
 
             (bool sent, ) = delegator.call{value: toPay}("");
             require(sent, "TRANSF_FAIL");
         }
+        coverOwedTotal -= toPayTotal; // debit the total cover owed
     }
 
+    /**
+    @dev Anybody can execute anybody's delegation request in Moonbeam/Moonriver, so this method is not required.
+    However, we include this method in case Moonbeam changes the execute permissions in the future.
+    @param candidate the collator that the contract is revoking from or decreasing its delegation to
+    */
     function executeDelegationRequest(
-        address delegator,
         address candidate
     ) external {
-        staking.executeDelegationRequest(delegator, candidate);
+        staking.executeDelegationRequest(address(this), candidate);
     }
 
     /// ***************** MANAGEMENT FUNCTIONS *****************
 
-    /** @dev Allows the manager to withdraw any contract balance that is above the total deposits balance.
-        This includes contract staking rewards or other funds that were sent to the contract outside the deposit function.
-        @param amount How much to withdraw
-        @param receiver Who to send the withdrawal to
+    /**
+    @dev Allows the manager to withdraw any contract balance that is above the total deposits balance.
+    This includes contract staking rewards or other funds that were sent to the contract outside the deposit function.
+    The method checks that the funds are over and above total deposits by keeping track of 4 values:
+    A) contract balance, that is the reducible balance visible to the EVM (this is maintained automatically)
+    B) totalStaked, that is the amount currently staked and NOT pending decrease or revoke (mainteined by the contract logic)
+    C) membersDepositTotal, this is the total deposits of all members that have NOT been claimed;
+    any pending deposit decreases (not executed) do not reduce total deposits (vs. totalStaked decereases that DO reduce totalStaked)
+    D) coverOwedTotal this are the member deposits that have been moved to the delegator payables account, i.e. funds owed to the delegators due to cover claims
+    The manager can then withdraw any amount < (A + B) - (C + D), i.e. any extra funds that now owed to delegators or members.
+    Since A + B does not include funds pending decrease or revoke (let that be E), the manager's capcity to withdraw is reduced by E
+    @param amount How much to withdraw
+    @param receiver Who to send the withdrawal to
     */
     function withdrawRewards(
         uint256 amount,
@@ -367,9 +444,7 @@ contract InactivityCover is IPushable {
     ) external auth(ROLE_MANAGER) {
         // The contract must have enough non-locked funds
         require(address(this).balance > amount, "NO_FUNDS");
-        // The remaining funds after the withdrawal must exceed the deposited funds + the owed funds, i.e. cannot withdraw member funds, but only staking rewards;
-        // because _get_free_balance does not include contract funds in unlocking (understated), this check might fail (false negative) to withdraw if a contract undelegation is pending
-        // however, the check will never allow withdrawal of member funds (no false positives)
+        // The check below may result in a false negative (reject withdrawal even though there are extra funds) for E > 0 (see @dev\Vv)
         require(
             _getFreeBalance() - amount > membersDepositTotal + coverOwedTotal,
             "NO_REWARDS"
@@ -378,6 +453,18 @@ contract InactivityCover is IPushable {
         require(sent, "TRANSF_FAIL");
     }
 
+    /**
+    @notice Manager can whitelist collators to allow them to deposit funds and activate cover
+    @dev The method saves a proxy account (representative account) and a collator account that the proxy represents.
+    Collators cannot authorize actions with their collator account for security reasons, i.e. they should not use their
+    collator account to interact with any smart contracts.
+    If noManualWhitelistingRequired is true, then collators will be able to authorize actions using a Gov proxy of their collator.
+    We say "WILL be able" because, currently, smart contracts cannot access the proxy precompile, so proxy authorization does not work.
+    If noManualWhitelistingRequired is false, then the address MUST be whitelisted to authorize actions on behalf of the collator.
+    A collator must be whitelisted to make a deposit and to start offering cover.
+    @param _member the collator address that this account will represent
+    @param proxyAccount the proxy or representative account that represents the collator; this is not to be confused with the Gov proxy
+    */
     function whitelist(
         address _member,
         address proxyAccount
@@ -386,33 +473,50 @@ contract InactivityCover is IPushable {
         whitelisted[_member] = proxyAccount;
     }
 
-    /// @dev Set the minimum member deposit allowed
-    /// @param _min_deposit The min deposit
+    /**
+    @notice Set the minimum member deposit required
+    @dev if a collator has not deposited the minimum ammount, then its active flag is false. Inactive collators cannot execute several member methods.
+    @param _min_deposit the min total deposit that is needed to activate cover offering
+    */
     function setMinDeposit(uint256 _min_deposit) external auth(ROLE_MANAGER) {
         MIN_DEPOSIT = _min_deposit;
     }
 
-    /// @dev Set the maximum total deposit. Member collators cannot deposit more than this total amount.
-    /// @param _max_deposit_total The max deposit allowed
+    /**
+    @notice Set the maximum total deposit. Member collators cannot deposit more than this total amount.
+    @dev Setting a max total deposit puts a limit to how many days worth of cover collators can provide to their delegators.
+    This is to avoid a never-ending competition of increasing cover offerings that don't offer real world value.
+    @param _max_deposit_total The max deposit allowed
+    */
     function setMaxDepositTotal(
         uint256 _max_deposit_total
     ) external auth(ROLE_MANAGER) {
         MAX_DEPOSIT_TOTAL = _max_deposit_total;
     }
 
-    /// @dev Manager can override execute delay (this is temporary and will be overwritten in next pushData)
-    /// @param _execute_delay The decrease execution delay
-    function setExecuteDelay(
-        uint128 _execute_delay,
+    /**
+    @dev Manager can override the erasCovered value of a member temporarilly. This is temporary, because the
+    value will be overwritten again in the next pushData or member deposit.
+    @param _erasCovered The decrease execution delay
+    */
+    function setErasCovered(
+        uint128 _erasCovered,
         address member
     ) external auth(ROLE_MANAGER) {
         // Cannot set delay to longer than 3 months (12 rounds per day * 30 * 3)
-        require(_execute_delay <= 1080, "HIGH");
-        erasCovered[member] = _execute_delay;
+        require(_erasCovered <= 1080, "HIGH");
+        erasCovered[member] = _erasCovered;
     }
 
-    /// @dev Sets the cover refund given to delegators for every 1 MOVR staked per round
-    /// @param _stake_unit_cover the unit cover
+    /**
+    @notice Sets the cover refund (in Wei) given to delegators for every 1 ETH (MOVR) staked per round
+    @dev The cover contract offers the same cover for every token delegated, for all collators. This means that collators pay the same
+    amount per delegated token to their delegators. The more delegations a collator has, the more they will have to pay out.
+    The manager is responsible for setting the stake unit cover to a value based on the average APR and updaitng it from time to time.
+    If a collator is offering above average APR, then its delegators will be underpaid; and vice versa.
+    This should not be a problem as most collators tend to offer similar APRs with the exception of some whale-backed collators.
+    @param _stake_unit_cover the unit cover
+    */
     function setStakeUnitCover(
         uint256 _stake_unit_cover
     ) external auth(ROLE_MANAGER) {
@@ -428,16 +532,27 @@ contract InactivityCover is IPushable {
         STAKE_UNIT_COVER = _stake_unit_cover;
     }
 
-    /// @dev Sets the minimum amount that a delegator can claim form accumulated covers
-    /// @param _min_payout the min payout amount
+    /**
+    @notice Sets the minimum amount that a delegator can claim from accumulated covers
+    @dev Delegation cover rewards can be very low if the delegaiton amount is low. This method allows to set a minimum
+    claimable cover so as to help delegators execute reasonable claim transactions.
+    @param _min_payout the min payout amount
+    */
     function setMinPayout(uint256 _min_payout) external auth(ROLE_MANAGER) {
         // Protect delegators from having to wait forever to get paid due to an unresonable min payment
-        require(_min_payout <= 10 ether, "HIGH");
+        require(_min_payout <= 1 ether, "HIGH");
         MIN_PAYOUT = _min_payout;
     }
 
-    /// @dev When covers must be calculated and transfered to delegators, the respective collator can refund the oracle that pushedData the tx fees for that calculation
-    /// @param _refundOracleGasPrice The gas price used to calculate the refund
+    /**
+    @notice When covers must be calculated and transfered to delegators, the respective collator can refund the oracle that pushedData the tx fees for that calculation
+    @dev Contarct transaciton fees are relatively low when there are no claims to compute. This means that, most of the time, oracles
+    can agree that there is nothing to do, for little gas. However, when a collators misses a round, the oracle that happens to complete the quorum,
+    has to pay for calculating all the delegator claims. This is a loop that can run up to 300 times, resulting to higher gas costs.
+    In those cases, the gas costs for the loop are refunded to the oracle by the collator that missed that round.
+    The refund is not transfered but rather, credited to the oracle's delegator cover account. The oracle can then request a payout.
+    @param _refundOracleGasPrice The gas price used to calculate the refund
+    */
     function setRefundOracleGasPrice(
         uint256 _refundOracleGasPrice
     ) external auth(ROLE_MANAGER) {
@@ -446,8 +561,15 @@ contract InactivityCover is IPushable {
         refundOracleGasPrice = _refundOracleGasPrice;
     }
 
-    /// @dev ForceUndelegate can only be called on a limited frequency to avoid spamming the contract and liquidating all funds unecessarilly
-    /// @param _eras_between_forced_undelegation the number of rounds that must pass to be able to call forceUndelegate again
+    /**
+    @notice Set how often forced revokes can take place
+    @dev forceScheduleRevoke can only be called on a limited frequency to avoid spamming the contract and liquidating all funds unecessarilly.
+    Anybody can call forceScheduleRevoke if the contract has defaults in making a payment to a member or delegator. Defaults are possible
+    because the contract may stake its funds, thereby reducing its reducible balance that is available to make payments. Forcing a revoke
+    will allow funds to be returned to the reducible balance after N rounds. Therefore, the manager should set ERAS_BETWEEN_FORCED_UNDELEGATION
+    to a value that is > N to allow for the unstaked funds to clear the defaults.
+    @param _eras_between_forced_undelegation the number of rounds that must pass to be able to call forceUndelegate again
+    */
     function setErasBetweenForcedUndelegations(
         uint128 _eras_between_forced_undelegation
     ) external auth(ROLE_MANAGER) {
@@ -456,8 +578,24 @@ contract InactivityCover is IPushable {
         ERAS_BETWEEN_FORCED_UNDELEGATION = _eras_between_forced_undelegation;
     }
 
-    function setMaxEraPayout(uint256 _max_era_member_payout) external auth(ROLE_MANAGER) {
+    /**
+    @notice Set a limit to how much cover can be credited to delegators for a collator for one missed round
+    @dev Cover amounts are calculated based on the values provided by the oracle quorum. Therefore, a malicious quorum could direct funds
+    to addresses that are not entitled to any cover. This is unlikely as it requires a large number of collator orcales colluding, and that StakeBaby
+    fails to exercise its veto power on quorum reports. In any case, MAX_ERA_MEMBER_PAYOUT is a last-defense security measure, should everything else fail.
+    By placing a sensical limit to the max round payout, we can limit the damage done by limiting the rate of funds outflow and giving the
+    manager the opportunity to detect the situaiton and pause oracle reporting.
+    */
+    function setMaxEraMemberPayout(uint256 _max_era_member_payout) external auth(ROLE_MANAGER) {
         MAX_ERA_MEMBER_PAYOUT = _max_era_member_payout;
+    }
+
+    /**
+    @notice See deposit cover and whitelist for an explanation of noManualWhitelistingRequired
+    @param _noManualWhitelistingRequired true when we want to allow members to manage their accounts using a Gov proxy, false when we require manual whitelisting
+    */
+    function setNoManualWhitelistingRequired(bool _noManualWhitelistingRequired) external auth(ROLE_MANAGER) {
+        noManualWhitelistingRequired = _noManualWhitelistingRequired;
     }
 
     /// ***************** GETTERS *****************
@@ -510,11 +648,18 @@ contract InactivityCover is IPushable {
 
     /// ***************** FUNCTIONS CALLABLE ONLY BY OTHERS CONTRACTS *****************
 
-    /// @dev The method is used by the oracle to push data into the contract and calculate potential cover claims.
-    /// Cover claims are not transfered to delegators; instea, they are credited as sums to a mapping and can be transfered later in a separate tx.
-    /// This is necessary to keep the method under the gas limit and to also save tx costs by not executing imaterial transfers.
-    /// @param _eraId The round number
-    /// @param _report The collator data, including authored block counts, delegators, etc.
+    /**
+    @notice The method is used by the oracle to push data into the contract and calculate potential cover claims.
+    @dev Cover claims are not transfered to delegators; instead, they are credited as sums to a mapping and can be transfered later in a separate tx.
+    Cover claims are credited only if the collator offers the appropriate type of cover for the occation. For example, a collator that
+    offers only active-set cover, will not credit its delegators if it has missed a rounf because its server was down.
+    The method also:
+    A) updates the coveredEras value for a collator, given the latest total backing.
+    B) sets the delegatoNotPaid flag if a default happens
+    C) credits a gas fee refund to the oracle if claim covers are clculated
+    @param _eraId The round number
+    @param _report The collator data, including authored block counts, delegators, etc.
+    */
     function pushData(
         uint128 _eraId,
         Types.OracleData calldata _report,
@@ -719,6 +864,16 @@ contract InactivityCover is IPushable {
         return _getEra() - _eraId == 1;
     }
 
+    /**
+    @dev The eras covered value signifies several things:
+    A) how many eras it takes to change the cover duration, after a change is requested (via deposit withdrawal request)
+    B) how many eras it takes to apply any cover type changes
+    C) how many eras it takes to be able to execute a member deposit withdrawal
+    The reason these values are equivalent, is that the cover period is deduced directly from the total deposit amount,i.e.
+    the larger the deposit, the more eras/days are covered, and the loonger the cover period is.
+    @param _member the member that we are setting erasCovered for
+    @param _delegationsTotal the last known value of total backing for that member
+    */
     function _updateErasCovered(
         address _member,
         uint256 _delegationsTotal
@@ -727,21 +882,32 @@ contract InactivityCover is IPushable {
             erasCovered[_member] = 8;
             return;
         }
-        // the larger the deposit, the longer the waiting period for decreasing it
+        // The larger the total backing (delegationsTotal), the more cover the collator will owe if it misses a round (refundPerEra)
         uint256 refundPerEra = (_delegationsTotal * STAKE_UNIT_COVER) / 1 ether;
+        // The more the collator must pay (refundPerEra), the shorter the cover period.
+        // The larger the deposit, the longer the cover period.
         uint128 erasCov = uint128(members[_member].deposit / refundPerEra);
         erasCovered[_member] = erasCov <= 1080 ? erasCov : 1080; // max 3 months TODO change for Moonbeam
     }
 
+    /**
+    @dev A member can be authorized in two ways
+    A) manually whitelisted by the manager, and
+    B) by being a Gov proxy of the collator it represents (requires that noManualWhitelistingRequired = true, and Moonbeam to enable smart contract calls to proxy precompile)
+    */
     function _isMemberAuth(
         address _caller,
         address _member
     ) internal view returns (bool) {
         return
             whitelisted[_member] == _caller ||
-            _isProxyOfSelectedCandidate(_caller, _member);
+            (noManualWhitelistingRequired && _isProxyOfSelectedCandidate(_caller, _member));
     }
 
+    /**
+    @notice Returns true if the signer is a Gov proxy of the collator, and the collator is a selected candidate
+    @dev used by auth method to check if the caller has been authorized as a proxy by an active-set collator
+    */
     function _isProxyOfSelectedCandidate(
         address _signer,
         address _collator

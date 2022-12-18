@@ -864,7 +864,7 @@
 						"type": "address"
 					}
 				],
-				"name": "setExecuteDelay",
+				"name": "setErasCovered",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -1039,7 +1039,7 @@
 						"member": "The member to refund their deposit to."
 					}
 				},
-				"setExecuteDelay(uint128,address)": {
+				"setErasCovered(uint128,address)": {
 					"details": "Manager can override execute delay (this is temporary and will be overwritten in next pushData)",
 					"params": {
 						"_execute_delay": "The decrease execution delay"

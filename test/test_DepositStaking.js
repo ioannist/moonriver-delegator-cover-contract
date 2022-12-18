@@ -106,10 +106,8 @@ contract('DepositStaking', accounts => {
             _max_era_member_payout,
             _eras_between_forced_undelegation,
         );
-
+        await ic.setSimulateNoProxySupportMock(true);
     });
-
-    return
 
     it("manager cannot delegate if a delegator was not paid", async () => {
         const candidate = member1;
@@ -151,6 +149,32 @@ contract('DepositStaking', accounts => {
         await expect(await ds.getDelegation(candidate, { from: stakingManager })).to.be.bignumber.equal(new BN(amount));
         await expect(await ds.getCollatorsDelegated(0, { from: stakingManager })).to.be.equal(candidate);
         await expect(await web3.eth.getBalance(ic.address)).to.be.bignumber.equal(icBalanceExpected);
+    })
+
+    it("manager cannot delegate more than max percent set by manager", async () => {
+        const deposit = web3.utils.toWei("200", "ether");
+        const candidate = member1;
+        const amount = web3.utils.toWei("101", "ether");
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
+        const maxPercent = "50";
+        await ic.whitelist(member1, member1, { from: manager });
+        await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
+        await ds.setMaxPercentStaked(maxPercent, { from: manager});
+        expect(ds.delegate(candidate, amount, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager })).to.be.rejectedWith('EXCEEDS_MAX_PERCENT');
+    })
+
+    it("manager can delegate less than max percent set by manager", async () => {
+        const deposit = web3.utils.toWei("200", "ether");
+        const candidate = member1;
+        const amount = web3.utils.toWei("99", "ether");
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
+        const maxPercent = "50";
+        await ic.whitelist(member1, member1, { from: manager });
+        await ic.depositCover(member1, { from: member1, value: deposit }); // ic gets 200 ether
+        await ds.setMaxPercentStaked(maxPercent, { from: manager});
+        await ds.delegate(candidate, amount, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
     })
 
     it("manager can bond more and delegation is recorded", async () => {

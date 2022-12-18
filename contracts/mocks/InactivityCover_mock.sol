@@ -3,6 +3,10 @@ pragma solidity ^0.8.2;
 import "../InactivityCover.sol";
 
 contract InactivityCover_mock is InactivityCover {
+
+    bool private isProxyOfSelectedCandidateMock = true;
+    bool private simulateNoProxySupportMock = false;
+
     function timetravel(uint64 eras) external {
         eraId += eras;
     }
@@ -76,6 +80,17 @@ contract InactivityCover_mock is InactivityCover {
         address _oracle,
         address _collator
     ) internal view override returns (bool) {
-        return true;
+        if (simulateNoProxySupportMock) {
+            revert("CANNOT_CALL_PROXY_PRECOMP_FROM_SC");
+        }
+        return isProxyOfSelectedCandidateMock;
+    }
+
+    function setIsProxySelectedCandidateMock(bool _is) external {
+        isProxyOfSelectedCandidateMock = _is;
+    }
+
+    function setSimulateNoProxySupportMock(bool _sim) external {
+        simulateNoProxySupportMock = _sim;
     }
 }
