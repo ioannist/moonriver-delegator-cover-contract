@@ -103,7 +103,7 @@ module.exports = async (deployer, network, accounts) => {
     _inactivity_cover,
     _quorum,
   );
-  await OM.addOracleMember(oracleMember, { from: oracleMembersManager, gas: 10000000 });
+  await OM.addOracleMember(oracleMember, oracleMember, { from: oracleMembersManager, gas: 10000000 });
 
   console.log(`Initializing Oracle`);
   await OR.initialize(_oracle_master, _inactivity_cover); // TODO, change first pushed eraId
