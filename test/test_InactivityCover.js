@@ -159,7 +159,7 @@ contract('InactivityCover', accounts => {
             _eras_between_forced_undelegation,
         );
         await ic.setMinPayout(0, { from: manager });
-        await ic.setSimulateNoProxySupportMock(true);
+        await ic.setSimulateNoProxySupport_mock(true);
     });
 
     async function getDeposit(member) {
@@ -210,7 +210,7 @@ contract('InactivityCover', accounts => {
         expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
     })
 
-    it("oracle reports ar enot pushed due to veto (2)", async () => {
+    it("oracle reports are not pushed due to veto (2)", async () => {
         const newEra = new BN("222");
         const oracleData1 = {
             ...oracleData,
@@ -233,7 +233,7 @@ contract('InactivityCover', accounts => {
         expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
     })
 
-    it("oracle reports are pushed because veto comes after quorum was reached", async () => {
+    it("oracle reports are not pushed even though veto comes after quorum was reached (waiting for veto address to report)", async () => {
         const newEra = new BN("222");
         const oracleData1 = {
             ...oracleData,
@@ -252,7 +252,27 @@ contract('InactivityCover', accounts => {
         expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
         await om.reportPara(member1, newEra, 0, oracleData1, { from: member1 });
         await om.reportPara(member2, newEra, 0, oracleData1, { from: member2 });
-        return expect(om.reportPara(manager, newEra, 0, oracleData2, { from: manager })).to.be.rejectedWith("OR: INV_NONCE");
+        await om.reportPara(manager, newEra, 0, oracleData2, { from: manager });
+        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
+    })
+
+    it("oracle reports are pushed because veto comes after quorum was reached and veto has not reported for 3 eras", async () => {
+        const newEra = new BN("222");
+        const oracleData1 = {
+            ...oracleData,
+            collators: [oracleData.collators[0]]
+        }
+        await om.setQuorum("2", { from: oracleManager })
+        await om.addOracleMember(member1, member1, { from: oracleManager });
+        await om.addOracleMember(member2, member2, { from: oracleManager });
+        await om.addOracleMember(manager, manager, { from: oracleManager });
+        await om.setVetoOracleMember(manager, { from: oracleManager });
+
+        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
+        await ic.setEra("226");
+        await om.reportPara(member1, newEra, 0, oracleData1, { from: member1 });
+        await om.reportPara(member2, newEra, 0, oracleData1, { from: member2 });
+        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("1")); // nonce increment means quorym was reached
     })
 
 
@@ -940,8 +960,8 @@ contract('InactivityCover', accounts => {
 
     it("non-whitelisted collator cannot make a deposit, with proxy precompile accesible", async () => {
         const deposit = web3.utils.toWei("10", "ether");
-        await ic.setIsProxySelectedCandidateMock(false);
-        await ic.setSimulateNoProxySupportMock(false);
+        await ic.setIsProxySelectedCandidate_mock(false);
+        await ic.setSimulateNoProxySupport_mock(false);
         await expect(ic.depositCover(member1, { from: member1, value: deposit })).to.be.rejectedWith('N_COLLATOR_PROXY');
         await expect(await getDeposit(member1)).to.be.bignumber.equal("0");
         await expect(await getIsMember(member1)).to.be.equal(false);
@@ -950,8 +970,8 @@ contract('InactivityCover', accounts => {
 
     it("non-whitelisted collator cannot make a deposit, with NoManualWhitelistingRequired=true and proxy precompile not accessible", async () => {
         const deposit = web3.utils.toWei("10", "ether");
-        await ic.setIsProxySelectedCandidateMock(false);
-        await ic.setSimulateNoProxySupportMock(true);
+        await ic.setIsProxySelectedCandidate_mock(false);
+        await ic.setSimulateNoProxySupport_mock(true);
         await ic.setNoManualWhitelistingRequired(true, { from: manager });
         await expect(ic.depositCover(member1, { from: member1, value: deposit })).to.be.rejectedWith('CANNOT_CALL_PROXY_PRECOMP_FROM_SC');
         await expect(await getDeposit(member1)).to.be.bignumber.equal("0");

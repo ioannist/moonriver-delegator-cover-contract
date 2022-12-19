@@ -106,7 +106,7 @@ contract('DepositStaking', accounts => {
             _max_era_member_payout,
             _eras_between_forced_undelegation,
         );
-        await ic.setSimulateNoProxySupportMock(true);
+        await ic.setSimulateNoProxySupport_mock(true);
     });
 
     it("manager cannot delegate if a delegator was not paid", async () => {
@@ -314,6 +314,24 @@ contract('DepositStaking', accounts => {
         await expect(await ds.getCollatorsDelegated(0, { from: stakingManager })).to.be.equal(ZERO_ADDR);
         await expect(await ds.stakedTotal({ from: dev })).to.be.bignumber.equal(stakedTotalExpected);
         await expect(await web3.eth.getBalance(ic.address)).to.be.bignumber.equal(icBalanceExpected);
+    })
+
+    it("trying to force, after memberNotPaid has cancelled its withdrawal, should throw", async () => {
+        const delegation = web3.utils.toWei("3", "ether");
+        const deposit = web3.utils.toWei("200", "ether");
+        const candidateDelegationCount = "100";
+        const delegatorDelegationCount = "100";
+        const withdrawal = web3.utils.toWei("30", "ether");
+
+        await ic.timetravel(100 + _eras_between_forced_undelegation);
+        await ic.whitelist(member2, member2, { from: manager });
+        await ic.depositCover(member2, { from: member2, value: deposit }); // ic gets 200 ether
+        await ic.scheduleDecreaseCover(member2, withdrawal, { from: member2, });
+
+        await ds.delegate(member1, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
+        await ic.setMemberNotPaid_mock(member2);
+        await ic.cancelDecreaseCover(member2, { from: member2 }); // should clear memberNotPaid
+        expect(ds.forceScheduleRevoke({ from: dev })).to.be.rejectedWith('FORBIDDEN');
     })
 
     it("force undelegate for a second time throws a zero staked error", async () => {

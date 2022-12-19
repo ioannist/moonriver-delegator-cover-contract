@@ -100,9 +100,9 @@ contract Oracle {
             ++i;
         if (i < _length) {
             if (currentReportVariants[i].getCount() + 1 >= _quorum) {
-                bool vetoAddressHasNotVotedYet = currentVetoReportVariant == 0;
-                bool vetoed = currentVetoReportVariant != 0 && currentReportVariants[i].isDifferent(currentVetoReportVariant);
-                if (vetoAddressHasNotVotedYet || !vetoed || vetoDisabled) {
+                bool vetoAddressHasVoted = currentVetoReportVariant == 0;
+                bool vetoed = currentReportVariants[i].isDifferent(currentVetoReportVariant);
+                if ((vetoAddressHasVoted && !vetoed) || vetoDisabled) {
                     _push(_eraId, _staking, _oracle);
                 }
             } else {

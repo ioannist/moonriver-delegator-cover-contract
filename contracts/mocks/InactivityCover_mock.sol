@@ -86,11 +86,11 @@ contract InactivityCover_mock is InactivityCover {
         return isProxyOfSelectedCandidateMock;
     }
 
-    function setIsProxySelectedCandidateMock(bool _is) external {
+    function setIsProxySelectedCandidate_mock(bool _is) external {
         isProxyOfSelectedCandidateMock = _is;
     }
 
-    function setSimulateNoProxySupportMock(bool _sim) external {
+    function setSimulateNoProxySupport_mock(bool _sim) external {
         simulateNoProxySupportMock = _sim;
     }
 }

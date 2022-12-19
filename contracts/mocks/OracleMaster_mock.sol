@@ -27,11 +27,11 @@ contract OracleMaster_mock is OracleMaster {
         return true;
     }
     
-    function setIsProxySelectedCandidateMock(bool _is) external {
+    function setIsProxySelectedCandidate_mock(bool _is) external {
         isProxyOfSelectedCandidateMock = _is;
     }
 
-    function setSimulateNoProxySupportMock(bool _sim) external {
+    function setSimulateNoProxySupport_mock(bool _sim) external {
         simulateNoProxySupportMock = _sim;
     }
 }
