@@ -198,8 +198,8 @@ contract('InactivityCover', accounts => {
             collators: [oracleData.collators[1]]
         }
         await om.setQuorum("2", { from: oracleManager })
-        await om.addOracleMember(member1, { from: oracleManager });
-        await om.addOracleMember(member2, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
+        await om.addOracleMember(member2, member2, { from: oracleManager });
         await om.addOracleMember(manager, { from: oracleManager });
         await om.setVetoOracleMember(manager, { from: oracleManager });
 
@@ -221,8 +221,8 @@ contract('InactivityCover', accounts => {
             collators: [oracleData.collators[1]]
         }
         await om.setQuorum("2", { from: oracleManager })
-        await om.addOracleMember(member1, { from: oracleManager });
-        await om.addOracleMember(member2, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
+        await om.addOracleMember(member2, member2, { from: oracleManager });
         await om.addOracleMember(manager, { from: oracleManager });
         await om.setVetoOracleMember(manager, { from: oracleManager });
 
@@ -244,8 +244,8 @@ contract('InactivityCover', accounts => {
             collators: [oracleData.collators[1]]
         }
         await om.setQuorum("2", { from: oracleManager })
-        await om.addOracleMember(member1, { from: oracleManager });
-        await om.addOracleMember(member2, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
+        await om.addOracleMember(member2, member2, { from: oracleManager });
         await om.addOracleMember(manager, { from: oracleManager });
         await om.setVetoOracleMember(manager, { from: oracleManager });
 
@@ -269,7 +269,7 @@ contract('InactivityCover', accounts => {
         // simulate staking rewards
         await web3.eth.sendTransaction({ to: ic.address, from: dev, value: rewards });
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(ic.withdrawRewards(new BN(rewards).add(new BN(extraAmount)), manager, { from: manager }))
             .to.be.rejectedWith("NO_REWARDS");
@@ -313,7 +313,7 @@ contract('InactivityCover', accounts => {
         await web3.eth.sendTransaction({ to: ic.address, from: dev, value: rewards });
         await ds.delegate(candidate, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         const balanceStart = new BN(await web3.eth.getBalance(dev));
         await ic.withdrawRewards(withdrawal, dev, { from: manager });
@@ -340,7 +340,7 @@ contract('InactivityCover', accounts => {
         await ds.delegate(candidate, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         console.log(`balance after delegate ${await web3.eth.getBalance(ic.address)}`)
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(ic.withdrawRewards(new BN(withdrawal), manager, { from: manager }))
             .to.be.rejectedWith("NO_FUNDS");
@@ -365,7 +365,7 @@ contract('InactivityCover', accounts => {
         await ds.delegate(candidate, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         console.log(`balance after delegate ${await web3.eth.getBalance(ic.address)}`)
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await ic.withdrawRewards(new BN(withdrawal), manager, { from: manager });
     })
@@ -388,7 +388,7 @@ contract('InactivityCover', accounts => {
         await ds.delegate(candidate, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ds.scheduleDelegatorRevoke(candidate, { from: stakingManager });
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(ic.withdrawRewards(new BN(withdrawal), manager, { from: manager }))
             .to.be.rejectedWith("NO_FUNDS");
@@ -413,7 +413,7 @@ contract('InactivityCover', accounts => {
         await ds.delegate(candidate, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ds.scheduleDelegatorBondLess(candidate, less, { from: stakingManager });
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(ic.withdrawRewards(new BN(withdrawal), manager, { from: manager }))
             .to.be.rejectedWith("NO_FUNDS");
@@ -438,7 +438,7 @@ contract('InactivityCover', accounts => {
         await ds.delegate(candidate, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ds.scheduleDelegatorBondLess(candidate, less, { from: stakingManager });
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(ic.withdrawRewards(new BN(withdrawal), manager, { from: manager }))
             .to.be.rejectedWith("NO_REWARDS");
@@ -447,8 +447,8 @@ contract('InactivityCover', accounts => {
     it("reducing quorum size results in softenQuorum and automatic pushing of report", async () => {
         const newEra = new BN("222");
         await om.setQuorum("3", { from: oracleManager })
-        await om.addOracleMember(member1, { from: oracleManager });
-        await om.addOracleMember(member2, { from: oracleManager }); 
+        await om.addOracleMember(member1, member1, { from: oracleManager });
+        await om.addOracleMember(member2, member2, { from: oracleManager }); 
         await om.addOracleMember(dev, { from: oracleManager });        
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
@@ -460,29 +460,29 @@ contract('InactivityCover', accounts => {
 
 
     it("manager can add oracle member while sudo is true", async () => {
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         expect(await om.members(0, { from: dev })).to.be.equal(member1);
     })
 
     it("manager can remove oracle member while sudo is true", async () => {
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.removeOracleMember(member1, { from: oracleManager });
         return await expect(om.members(0, { from: dev })).to.be.rejected;
     })
 
     it("manager cannot add oracle member twice", async () => {
-        await om.addOracleMember(member1, { from: oracleManager });
-        return await expect(om.addOracleMember(member1, { from: oracleManager })).to.be.rejectedWith("OM: MEMBER_EXISTS");
+        await om.addOracleMember(member1, member1, { from: oracleManager });
+        return await expect(om.addOracleMember(member1, member1, { from: oracleManager })).to.be.rejectedWith("OM: MEMBER_EXISTS");
     })
 
     it("manager cannot add oracle member after sudo is removed", async () => {
-        await om.removeSudo({ from: oracleManager });
-        return await expect(om.addOracleMember(member1, { from: oracleManager })).to.be.rejectedWith("OM: N_SUDO");
+        await om.removeSudo("123456789", ONE_ADDR, TWO_ADDR, { from: oracleManager });
+        return await expect(om.addOracleMember(member1, member1, { from: oracleManager })).to.be.rejectedWith("OM: N_SUDO");
     })
 
     it("manager cannot remove oracle member after sudo is removed", async () => {
-        await om.addOracleMember(member1, { from: oracleManager });
-        await om.removeSudo({ from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
+        await om.removeSudo("123456789", ONE_ADDR, TWO_ADDR, { from: oracleManager });
         return await expect(om.removeOracleMember(member1, { from: oracleManager })).to.be.rejectedWith("OM: N_SUDO");
     })
 
@@ -551,7 +551,7 @@ contract('InactivityCover', accounts => {
         const coverOwedTotal = new BN(coverOwedTotal1).add(new BN(coverOwedTotal2));
         const depositExpected = new BN(deposit).sub(new BN(coverOwedTotal1)).sub(new BN(coverOwedTotal2));
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         const executeDelayB = await ic.getErasCovered(member1, { from: dev });
         console.log({executeDelayB: executeDelayB.toString()}) //  this is were we get the 138 from
@@ -586,7 +586,7 @@ contract('InactivityCover', accounts => {
         const coverOwedTotal = new BN(coverOwedTotal1).add(new BN(coverOwedTotal2));
         const depositExpected = new BN(deposit).sub(new BN(coverOwedTotal1)).sub(new BN(coverOwedTotal2));
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member1 });
         const executeDelayB = await ic.getErasCovered(member1, { from: dev });
         console.log({executeDelayB: executeDelayB.toString()}) //  this is were we get the 138 from
@@ -619,7 +619,7 @@ contract('InactivityCover', accounts => {
         const coverOwedTotal = new BN(coverOwedTotal1).add(new BN(coverOwedTotal2));
         const depositExpected = new BN(deposit).sub(new BN(coverOwedTotal1)).sub(new BN(coverOwedTotal2));
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(coverOwedTotal1);
         await expect(await ic.payoutAmounts(delegator2)).to.be.bignumber.equal(coverOwedTotal2);
@@ -647,7 +647,7 @@ contract('InactivityCover', accounts => {
         const coverOwedTotal = new BN(coverOwedTotal1).add(new BN(coverOwedTotal2));
         const depositExpected = new BN(deposit).sub(new BN(coverOwedTotal1)).sub(new BN(coverOwedTotal2));
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         const executeDelayB = await ic.getErasCovered(member1, { from: dev });
         console.log({executeDelayB: executeDelayB.toString()}) //  we get 138, and we make sure 20 < 138
@@ -682,7 +682,7 @@ contract('InactivityCover', accounts => {
         const coverOwedTotal = new BN(coverOwedTotal1);
         const depositExpected = new BN(deposit).sub(new BN(coverOwedTotal1));
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member1 });
         const executeDelayB = await ic.getErasCovered(member2, { from: dev });
         console.log({executeDelayB: executeDelayB.toString()}) //  we get 138, and we make sure 20 < 138
@@ -700,8 +700,8 @@ contract('InactivityCover', accounts => {
             collators: [oracleData.collators[0]]
         }
         await om.setQuorum("2", { from: oracleManager })
-        await om.addOracleMember(member1, { from: oracleManager });
-        await om.addOracleMember(member2, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
+        await om.addOracleMember(member2, member2, { from: oracleManager });
         await ic.whitelist(TWO_ADDR, member1, { from: manager });
         await ic.depositCover(TWO_ADDR, { from: member1, value: deposit });
         await ic.whitelist(THREE_ADDR, member2, { from: manager });
@@ -723,7 +723,7 @@ contract('InactivityCover', accounts => {
             ...oracleData,
             collators: [oracleData.collators[1]]
         }
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member1 });
         await om.reportPara(ONE_ADDR, newEra, 1, oracleData2, { from: member1 });
         return expect(await om.eraId()).to.be.bignumber.equal(newEra);
@@ -735,7 +735,7 @@ contract('InactivityCover', accounts => {
             ...oracleData,
             collators: [oracleData.collators[0]]
         }
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member1 });
         return await expect(om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member1 })).to.be.rejectedWith('OR: INV_NONCE');
     })
@@ -746,7 +746,7 @@ contract('InactivityCover', accounts => {
             ...oracleData,
             collators: [oracleData.collators[0]]
         }
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member1 });
         return await expect(om.reportPara(ONE_ADDR, newEra, 1, oracleData1, { from: member1 })).to.be.rejectedWith('OLD_MEMBER_ERA');
     })
@@ -760,7 +760,7 @@ contract('InactivityCover', accounts => {
             collators: [oracleData.collators[0]]
         }
         await om.setQuorum("2", { from: oracleManager })
-        await om.addOracleMember(member1, { from: oracleManager });        
+        await om.addOracleMember(member1, member1, { from: oracleManager });        
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member1 });
         return await expect(om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member1 })).to.be.rejectedWith('OR: ALREADY_SUBMITTED');
     })
@@ -773,8 +773,8 @@ contract('InactivityCover', accounts => {
             collators: [oracleData.collators[0]]
         }
         await om.setQuorum("2", { from: oracleManager })
-        await om.addOracleMember(member1, { from: oracleManager });
-        await om.addOracleMember(member2, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
+        await om.addOracleMember(member2, member2, { from: oracleManager });
 
         expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member1 });
@@ -797,8 +797,8 @@ contract('InactivityCover', accounts => {
             collators: [oracleData.collators[1]]
         }
         await om.setQuorum("2", { from: oracleManager })
-        await om.addOracleMember(member1, { from: oracleManager });
-        await om.addOracleMember(member2, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
+        await om.addOracleMember(member2, member2, { from: oracleManager });
 
         expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member1 });
@@ -826,7 +826,7 @@ contract('InactivityCover', accounts => {
             collators: [oracleData.collators[1]]
         }
         await om.setQuorum("2", { from: oracleManager })
-        await om.addOracleMember(member1, { from: oracleManager });        
+        await om.addOracleMember(member1, member1, { from: oracleManager });        
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member1 });
         return await expect(om.reportPara(ONE_ADDR, newEra, 1, oracleData2, { from: member1 })).to.be.rejectedWith('OR: ALREADY_SUBMITTED');
     })
@@ -842,7 +842,7 @@ contract('InactivityCover', accounts => {
             ...oracleData,
             collators: [oracleData.collators[1]]
         }
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData1, { from: member1 });
         await om.reportPara(ONE_ADDR, newEra, 1, oracleData2, { from: member1 });
         await expect(await om.eraId()).to.be.bignumber.equal(newEra);
@@ -871,7 +871,7 @@ contract('InactivityCover', accounts => {
             collators: collators300
         }
 
-        await om.addOracleMember(member2, { from: oracleManager });
+        await om.addOracleMember(member2, member2, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleDataThis, { from: member2, gas: "10000000" });
         await expect(await ic.payoutAmounts(member2)).to.be.bignumber.equal(new BN("0"));
     })
@@ -897,7 +897,7 @@ contract('InactivityCover', accounts => {
             collators: collators300
         }
 
-        await om.addOracleMember(member2, { from: oracleManager });
+        await om.addOracleMember(member2, member2, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleDataThis, { from: member2, gas: "10000000" });
         await expect(await ic.payoutAmounts(member2)).to.be.bignumber.above(new BN("0"));
     })
@@ -1209,7 +1209,7 @@ contract('InactivityCover', accounts => {
 
     it("oracle data can be pushed and era is updated", async () => {
         const newEra = new BN("222");
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(await om.eraId()).to.be.bignumber.equal(newEra);
     })
@@ -1231,7 +1231,7 @@ contract('InactivityCover', accounts => {
         const coverOwedTotal = new BN(coverOwedTotal1).add(new BN(coverOwedTotal2));
         const depositExpected = new BN(deposit).sub(new BN(coverOwedTotal1)).sub(new BN(coverOwedTotal2));
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(coverOwedTotal1);
         await expect(await ic.payoutAmounts(delegator2)).to.be.bignumber.equal(coverOwedTotal2);
@@ -1253,7 +1253,7 @@ contract('InactivityCover', accounts => {
         await ic.depositCover(member1, { from: member1, value: deposit });
         await ic.setMaxEraMemberPayout(maxMemberPayout, { from: manager });
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         expect(om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 })).to.be.rejectedWith('EXCEEDS_MAX');
     })
 
@@ -1261,7 +1261,7 @@ contract('InactivityCover', accounts => {
         const newEra = new BN("222");
 
         await ic.whitelist(member1, member1, { from: manager });
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(zero);
         await expect(await ic.payoutAmounts(delegator2)).to.be.bignumber.equal(zero);
@@ -1285,7 +1285,7 @@ contract('InactivityCover', accounts => {
         const coverOwedTotal = new BN(coverOwedTotal1).add(new BN(coverOwedTotal2));
         const depositExpected = new BN(deposit).sub(new BN(coverOwedTotal1)).sub(new BN(coverOwedTotal2));
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await ic.whitelist(member1, false, { from: manager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(coverOwedTotal1);
@@ -1312,7 +1312,7 @@ contract('InactivityCover', accounts => {
         const coverOwedTotal = new BN(coverOwedTotal1).add(new BN(coverOwedTotal2));
         const depositExpected = new BN(deposit).sub(new BN(coverOwedTotal1)).sub(new BN(coverOwedTotal2));
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(coverOwedTotal1);
         await expect(await ic.payoutAmounts(delegator2)).to.be.bignumber.equal(coverOwedTotal2);
@@ -1353,7 +1353,7 @@ contract('InactivityCover', accounts => {
             collators: collatorsOK
         }
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleDataThis, { from: member1 });
         await expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(zero);
         await expect(await ic.payoutAmounts(delegator2)).to.be.bignumber.equal(zero);
@@ -1390,7 +1390,7 @@ contract('InactivityCover', accounts => {
             collators: collatorsNotActive
         }
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleDataThis, { from: member1 });
         await expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(coverOwedTotal1);
         await expect(await ic.payoutAmounts(delegator2)).to.be.bignumber.equal(coverOwedTotal2);
@@ -1407,7 +1407,7 @@ contract('InactivityCover', accounts => {
         await ic.depositCover(member1, { from: member1, value: deposit });
         await ic.transfer_mock(dev, deposit); // send all the funds away 
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await ic.payOutCover([delegator1]);
         await expect(await ic.delegatorNotPaid()).to.be.equal(delegator1);
@@ -1423,7 +1423,7 @@ contract('InactivityCover', accounts => {
         await ic.setDelegatorNotPaid_mock(delegator2);
         await ic.transfer_mock(dev, deposit); // send all the funds away
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await ic.payOutCover([delegator1]);
         await expect(await ic.delegatorNotPaid()).to.be.equal(delegator2);
@@ -1437,7 +1437,7 @@ contract('InactivityCover', accounts => {
         await ic.depositCover(member1, { from: member1, value: deposit });
         await ic.setDelegatorNotPaid_mock(delegator1);
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await ic.payOutCover([delegator1]);
         await expect(await ic.delegatorNotPaid()).to.be.equal(ZERO_ADDR);
@@ -1452,7 +1452,7 @@ contract('InactivityCover', accounts => {
         await ic.removeDeposit_mock(member1, deposit); // delete that member's deposit
         await expect(await getDeposit(member1)).to.be.bignumber.equal(zero);
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(await ic.delegatorNotPaid()).to.be.equal(ZERO_ADDR); // delegatorNotPaid is not affected by collator default
         await expect(await getMaxDefault(member1)).to.be.bignumber.gt(zero);
@@ -1468,7 +1468,7 @@ contract('InactivityCover', accounts => {
 
         await ic.removeDeposit_mock(member1, deposit); // delete that member's deposit to force default
         await ic.default_mock(member1, defaultAmount); // set max default to a higher mocked value
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(zero);
         await expect(await ic.payoutAmounts(delegator2)).to.be.bignumber.equal(zero);
@@ -1488,7 +1488,7 @@ contract('InactivityCover', accounts => {
         await ic.depositCover(member1, { from: member1, value: deposit });
         await ic.removeDeposit_mock(member1, deposit); // delete that member's deposit;
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(zero);
         await expect(await ic.payoutAmounts(delegator2)).to.be.bignumber.equal(zero);
@@ -1516,7 +1516,7 @@ contract('InactivityCover', accounts => {
         await ic.depositCover(member1, { from: member1, value: deposit });
         await ic.removeDeposit_mock(member1, deposit); // delete that member's deposit;
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleDataThis, { from: member1 });
         await expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(zero);
         await expect(await ic.payoutAmounts(delegator2)).to.be.bignumber.equal(zero);
@@ -1542,7 +1542,7 @@ contract('InactivityCover', accounts => {
         const delegator1BalanceExpected = delegator1BalanceStart.add(new BN(coverOwedTotal1));
         const delegator2BalanceExpected = delegator2BalanceStart.add(new BN(coverOwedTotal2));
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await ic.payOutCover([delegator1, delegator2]);
         await expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(zero);
@@ -1571,7 +1571,7 @@ contract('InactivityCover', accounts => {
         const depositExpected = new BN(deposit).sub(new BN(coverOwedTotal1)).sub(new BN(coverOwedTotal2));
         const delegator1BalanceExpected = delegator1BalanceStart.add(new BN(coverOwedTotal1));
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await ic.payOutCover([delegator1]);
         await expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(zero);
@@ -1603,7 +1603,7 @@ contract('InactivityCover', accounts => {
         const depositExpected = new BN(deposit).sub(new BN(coverOwedTotal1)).sub(new BN(coverOwedTotal2));
         const delegator1BalanceExpected = delegator1BalanceStart.add(new BN(coverOwedTotal1));
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await om.reportPara(ONE_ADDR, newEra2, 1, oracleData, { from: member1 }); // second
         await ic.payOutCover([delegator1]);
@@ -1647,7 +1647,7 @@ contract('InactivityCover', accounts => {
             collators: collatorsOK
         }
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await om.reportPara(ONE_ADDR, newEra2, 1, oracleDataSecond, { from: member1 }); // second
         await ic.payOutCover([delegator1]);
@@ -1677,7 +1677,7 @@ contract('InactivityCover', accounts => {
         const depositExpected = new BN(deposit).sub(new BN(coverOwedTotal1)).sub(new BN(coverOwedTotal2));
         const delegator1BalanceExpected = delegator1BalanceStart.add(new BN(coverOwedTotal1));
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await ic.payOutCover([delegator1]);
         await ic.payOutCover([delegator1]);
@@ -1709,7 +1709,7 @@ contract('InactivityCover', accounts => {
 
         const newMinPayout = coverOwedTotal.add(new BN(web3.utils.toWei("1", "ether"))); // an amount bigger than both covers owed
         await ic.setMinPayout(newMinPayout, { from: manager });
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await ic.payOutCover([delegator1, delegator2]);
         await expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(coverOwedTotal1); // not paid out
@@ -1739,7 +1739,7 @@ contract('InactivityCover', accounts => {
         const depositExpected = new BN(deposit).sub(new BN(coverOwedTotal1)).sub(new BN(coverOwedTotal2));
 
         await ic.transfer_mock(dev, deposit); // move funds away
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await ic.payOutCover([delegator1, delegator2]);
         await expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(coverOwedTotal1); // not paid out
@@ -1766,7 +1766,7 @@ contract('InactivityCover', accounts => {
         const membersDepositTotalexpected = new BN(membersDepositTotalStart).sub(new BN(coverOwedTotal1)).sub(new BN(coverOwedTotal2));
         const depositExpected = new BN(deposit).sub(new BN(coverOwedTotal1)).sub(new BN(coverOwedTotal2));
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await ic.whitelist(member1, false, { from: manager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await ic.payOutCover([delegator1, delegator2]);
@@ -1785,7 +1785,7 @@ contract('InactivityCover', accounts => {
         await ic.whitelist(member1, member1, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit });
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await ic.payOutCover([delegator1, delegator2]);
         await expect(ic.scheduleDecreaseCover(member1, deposit, { from: member1 })).to.be.rejectedWith('EXC_DEP');
@@ -1804,7 +1804,7 @@ contract('InactivityCover', accounts => {
         await ic.whitelist(member1, member1, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit });
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await ic.payOutCover([delegator1, delegator2]);
         await ic.scheduleDecreaseCover(member1, possibleDecreaseExpected, { from: member1 }); // should not throw
@@ -1822,7 +1822,7 @@ contract('InactivityCover', accounts => {
         await ic.whitelist(member1, member1, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit });
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(await ic.getErasCovered(member1, { from: dev })).to.be.bignumber.equal(erasCoveredExpected);
     })
@@ -1836,7 +1836,7 @@ contract('InactivityCover', accounts => {
         await ic.whitelist(member1, member1, { from: manager });
         await ic.depositCover(member1, { from: member1, value: deposit });
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await expect(await ic.getErasCovered(member1, { from: dev })).to.be.bignumber.equal(erasCoveredExpected);
     })
@@ -1861,7 +1861,7 @@ contract('InactivityCover', accounts => {
         const depositExpected = new BN(deposit).sub(new BN(coverOwedTotal1)).sub(new BN(coverOwedTotal2));
         const delegator1BalanceExpected = delegator1BalanceStart.add(new BN(coverOwedTotal1));
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
 
         await expect(await getMaxDefault(member1)).to.be.bignumber.equal(coverOwedTotal1.gtn(coverOwedTotal2) ? coverOwedTotal1 : coverOwedTotal2);
@@ -1996,7 +1996,7 @@ contract('InactivityCover', accounts => {
         const delegator1BalanceExpected = delegator1BalanceStart.add(new BN(coverOwedTotal1));
         const delegator2BalanceExpected = delegator2BalanceStart.add(new BN(coverOwedTotal2));
 
-        await om.addOracleMember(member1, { from: oracleManager });
+        await om.addOracleMember(member1, member1, { from: oracleManager });
         await om.reportPara(ONE_ADDR, newEra, 0, oracleData, { from: member1 });
         await ic.payOutCover([delegator1, delegator2]);
         await expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(zero);

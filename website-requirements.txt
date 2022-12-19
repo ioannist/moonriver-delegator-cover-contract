@@ -63,6 +63,10 @@ rounds pass, member executes payout, it defaults
 member cancels withdrawal requests
 default must be cleared
 
+force veto to be considered, else dont push
+
+test veto not voting for 3 rounds
+
 check how malformatted json input can affect computations
 change random revoke collator to lowest delegated collator
 

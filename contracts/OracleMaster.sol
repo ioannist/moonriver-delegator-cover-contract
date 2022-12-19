@@ -13,6 +13,7 @@ contract OracleMaster is Pausable {
     event MemberAdded(address member);
     event MemberRemoved(address member);
     event QuorumChanged(uint8 QUORUM);
+    event SudoRemoved();
 
     ParachainStaking public staking;
     IProxy public proxy;
@@ -34,7 +35,7 @@ contract OracleMaster is Pausable {
     uint8 public QUORUM;
 
     /// Maximum number of oracle committee members
-    uint256 public constant MAX_MEMBERS = 100;
+    uint256 public constant MAX_MEMBERS = 100; 
 
     // Missing member index
     uint256 internal constant MEMBER_N_FOUND = type(uint256).max;
@@ -66,8 +67,10 @@ contract OracleMaster is Pausable {
     // This address can veto a quorum decission; this means that:
     // 1) the address cannot vote in a report by itself, but
     // 2) the quorum-voted report must match this addresse's report for it to pass
-    // If the address does not push a report, then its veto ability is not exercised during that round nonce
+    // 3) the address must vote for a report to pass, unless the address has not voted for the last 3 rounds
     address public vetoOracleMember;
+    // the last era when the veto oracle submitted a vote
+    uint128 lastEraVetoOracleVoted;
 
     // Allows function calls only from member with specific role
     modifier auth(bytes32 role) {
@@ -85,8 +88,8 @@ contract OracleMaster is Pausable {
     }
 
     /**
-     * @notice Initialize oracle master contract, allowed to call only once
-     * @param _quorum inital quorum threshold
+     @notice Initialize oracle master contract, allowed to call only once
+     @param _quorum inital quorum threshold
      */
     function initialize(
         address _auth_manager,
@@ -110,9 +113,8 @@ contract OracleMaster is Pausable {
     /// ***************** ORACLE MANAGER FUNCTIONS *****************
 
     /**
-    * @notice Set the number of exactly the same reports needed to finalize the era
-              allowed to call only by ROLE_ORACLE_QUORUM_MANAGER
-    * @param _quorum new value of quorum threshold
+    @notice Set the number of exactly the same reports needed to finalize the era
+    @param _quorum new value of quorum threshold
     */
     function setQuorum(
         uint8 _quorum
@@ -124,7 +126,7 @@ contract OracleMaster is Pausable {
         uint8 oldQuorum = QUORUM;
         QUORUM = _quorum;
 
-        // If the QUORUM value lowered, check existing reports whether it is time to push
+        // If the QUORUM value was lowered, check existing reports whether it is time to push
         if (oldQuorum > _quorum) {
             IOracle(ORACLE).softenQuorum(_quorum, eraId);
         }
@@ -132,36 +134,63 @@ contract OracleMaster is Pausable {
     }
 
     /**
-     * @notice Add new member to the oracle member committee list, allowed to call only by ROLE_ORACLE_MEMBERS_MANAGER
-     * @param _oracleMember proposed member address
+     @notice Add new member to the oracle member committee list
+     @dev The manager can register a collator - oracleMember pair, i.e. an oracle address that represents a collator.
+     This method can be called by the manager while sudo is still true, to add oracle members. Both provided
+     collator and oracleMember addresses must be unique. If already used, manager must first remove member.
+     Oracle members are responsible for reporting delegator and collator data, which means they have the power to
+     move debit collators and credit delegators. Sudo power allows the manager to control the oracles and therefore,
+     control debits/credits. However, sudo is also needed in order to bootstrap the initial set of oracles. Moreover,
+     sudo is required until Moonbeam enables access to the proxy precompile. The precompile will allow collators to be
+     able to self-register and create one oracle each, effectively outsourcing member management to the active set
+     selection algorithm.
+     @param _collator the collator that this oracle will represent. This value becomes significant after sudo is removed.
+     Before sudo, the collator parameter can take any value and submitting reports will still work. After sudo is removed,
+     the collator address must be a valid, active-set, collator address or else reporting will not work.
+     @param _oracleMember proposed member address
      */
     function addOracleMember(
+        address _collator,
         address _oracleMember
     ) external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
         require(sudo, "OM: N_SUDO");
-        require(_oracleMember != address(0), "OM: BAD_ARGUMENT");
+        require(_oracleMember != address(0), "OM: ORACLE_EXISTS");
         require(
             _getMemberId(_oracleMember) == MEMBER_N_FOUND,
             "OM: MEMBER_EXISTS"
         );
         require(members.length < MAX_MEMBERS, "OM: MEMBERS_TOO_MANY");
+        require(
+            collatorsToOracles[_collator]  == address(0),
+            "OM: COLLATOR_EXISTS"
+        );
 
         members.push(_oracleMember);
+        collatorsToOracles[_collator] = _oracleMember;
         emit MemberAdded(_oracleMember);
     }
 
     /**
-     * @notice Remove `_member` from the oracle member committee list, allowed to call only by ROLE_ORACLE_MEMBERS_MANAGER
+     @notice Remove collator and oracleMember pair from oracles
+     @dev Provided collator and oracleMember must already be registered and paired. Removal will remove the capacity of that
+     oracle to submit reports. This method, like addOracleMember, is disabled after sudo is removed.
      */
     function removeOracleMember(
+        address _collator,
         address _oracleMember
     ) external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
         require(sudo, "OM: N_SUDO");
         uint256 index = _getMemberId(_oracleMember);
         require(index != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
+        require(
+            collatorsToOracles[_collator] == _oracleMember,
+            "OM: N_COLLATOR"
+        );
+
         uint256 last = members.length - 1;
         if (index != last) members[index] = members[last];
         members.pop();
+        delete collatorsToOracles[_collator];
         emit MemberRemoved(_oracleMember);
     }
 
@@ -176,20 +205,54 @@ contract OracleMaster is Pausable {
     }
 
     /**
-     * @notice Delete interim data for current Era, free storage memory for each oracle; can be used by manager to troublesoot a contested era
+     @notice Delete data for current era nonce, can be used by manager to troublesoot a contested era
+     @dev Results in incrementing the era nonce and thus skipping the current era nonce forever
      */
     function clearReporting() external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
         require(sudo, "OM: N_SUDO");
         IOracle(ORACLE).clearReporting();
     }
 
-    function removeSudo() external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
+    /**
+    @notice While sudo is true, the manager can add and remove oracle members at will
+    @dev Sudo allows the manager to control oracle membership. Removal of sudo is one-way and cannot be undone.
+    After sudo is removed, only active-set collators will be able to register and run oracles (one each).
+    Previous, manager-added oracles, will not work, unless they are Gov proxies of their collators.
+    The manager should remove sudo as soon as
+    A) the proxy precompile becomes accessible by the contract (runtime upgrade required), and
+    B) there are enough Gov proxy (self-registered) oracles running
+    @param code A code=123456789 to avoid accidental calling of the method
+    @param _someCollator provide any random active-set collator; used to confirm the proxy precompile is accessible
+    @param _itsProxy provide a governance proxy o that collator; used to confirm the proxy precompile is accessible
+    */
+    function removeSudo(uint256 code, address _itsProxy, address _someCollator) external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
+        require(code == 123456789, "INV_CODE");
+        // the following check is used to make sure the proxy precompile has become accessible
+        // this is necessary, as removal od sudo and a non-accessible proxy precompile, would brick the contract from reporting
+        require(
+            _isProxyOfSelectedCandidate(_itsProxy, _someCollator),
+            "OM: PROXY_NOT_ENABLED"
+        );
         sudo = false;
+        emit SudoRemoved();
     }
 
+    /**
+    @notice Set the veto oracle address; this address has the ability to veto a quorum decission
+    @dev In order to guard against the quorum being overtaken by malicious collators that then submit false reports,
+    we allow one address, controlled by StakeBaby, to be able to veto the quorum-agreed report.
+    veto-ing means rejecting a quorum-agreed report. Veto power does not allow voting in a report, just voting it out.
+    Veto is applied automatically when this address votes, i.e. the quorum-voted report must be the same as the report
+    submitted by the veto address, for it to pass. If the veto address has not voted yet and a quorum has been reached,
+    the report will not be pushed until the veto address also votes. To guard against a failing veto oracle, the requirement
+    for a veto address to vote is removed if the veto address does not vote for 3 rounds. If the veto oracle returns,
+    the round counter is reset and veto capacity resumes.
+    @param _vetoOracleMember the veto oracle member. Set to zero address to disable.
+    */
     function setVetoOracleMember(
         address _vetoOracleMember
     ) external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
+        require(_getMemberId(_vetoOracleMember) != MEMBER_N_FOUND || _vetoOracleMember == address(0), "OM: MEMBER_N_FOUND");
         vetoOracleMember = _vetoOracleMember;
     }
 
@@ -210,10 +273,16 @@ contract OracleMaster is Pausable {
     /// ***************** ORACLE MEMBER FUNCTIONS *****************
 
     /**
-     * @notice Each active collator can register one address with oracle privileges. The address must be a Governance proxy of the collator at the time of registration, to prove that it is owned by that collator.
-     * @param _collator the collator that the caller represents (each collator can operate one oracle)
+     @notice Each active collator can register one address with oracle privileges. The address must be a Governance proxy of the collator at the time of registration, to prove that it is owned by that collator.
+     @dev Collators that want to run an oracle, can call this function to register their intention and be able to push reports.
+     The oracle must remain a Gov proxy of the collator, and the collator must remain in the active set, to be able to continue submitting reports.
+     Each collator can register only one oracle. Non-collators cannot register oracle addresses. This allows for a decentralized management
+     of the oracle set that can function without the need for an oracle member manager. Not all collators are likely to run oracles, but those offering cover should run an oracle
+     to protect their assets. The method can be called after sudo is removed, and member management has passed to the collator active set.
+     @param _collator the collator that the caller represents (each collator can operate one oracle)
      */
     function registerAsOracleMember(address _collator) external {
+        require(!sudo, "OM: SUDO");
         require(
             _getMemberId(msg.sender) == MEMBER_N_FOUND,
             "OM: MEMBER_EXISTS"
@@ -234,13 +303,16 @@ contract OracleMaster is Pausable {
     }
 
     /**
-     * @notice Remove _oracleMember from the oracle member committee list
-     * @param _collator the collator that the caller represents
+     @notice Remove _oracleMember from the oracle member committee list
+     @dev By removing the account, the oracle can no longer submit reports. May be used by collators that want to unregister
+     an oracle address to register a new one. Can be called only after sudo is removed.
+     @param _collator the collator that the caller represents
      */
     function unregisterOracleMember(
         address _oracleMember,
         address _collator
     ) external {
+        require(!sudo, "OM: SUDO");
         // Any address that is a Gov proxy of this collator can remove that collator's oracle
         // This allows collators that lost their oracle's private key to recover and create a new oracle
         require(
@@ -253,20 +325,29 @@ contract OracleMaster is Pausable {
             collatorsToOracles[_collator] == _oracleMember,
             "OM: N_COLLATOR"
         );
+
         uint256 last = members.length - 1;
         if (index != last) members[index] = members[last];
-
         members.pop();
         delete collatorsToOracles[_collator];
         emit MemberRemoved(_oracleMember);
     }
 
     /**
-     * @notice Accept oracle committee member reports
-     * @param _collator The collator that this oracle represents (each collator can run one oracle - each oracle is represented by at most one collator)
-     * @param _eraId parachain round
-     * @param _eraNonce era nonce
-     * @param _report collator status/points data report
+     @notice Submit oracle reports
+     @dev Oracle reports containe information about collators and delegators. Each report includes information for a specific round
+     and for specific collator/s and their delegators. The report does not have to include all the collator+delegator data for a specific
+     round. For example, a report may include information for only one collator and its delegators. A subsequent report (for the same round)
+     may include information about another collator and its delegators (cannot be the same collator). This allows oracles to break
+     up reports in multiple parts and avoid maxing out on gas. Oracles break up reports in a deterministic way so that their reports can match.
+     To identify which report a collator must send, for a specific round, it checks the current eraNonce and submits a report for that nonce.
+     In the example we just mentioned, the first report sent by oracle A was for nonce 777 and the second report sent by the same oracle
+     was for nonce 778. Oracles always send reports for the current nonce. This means that ab oracle may skip a nonce if a quorum has already
+     been reached for that nonce.
+     @param _collator The collator that this oracle represents (each collator can run one oracle - each oracle is represented by at most one collator)
+     @param _eraId parachain round
+     @param _eraNonce era nonce
+     @param _report collator status/points data report
      */
     function reportPara(
         address _collator,
@@ -280,7 +361,13 @@ contract OracleMaster is Pausable {
         // After sudo is removed, every oracle must be a Gov proxy of an active collator to be able to push reports.
         // This means that ONLY collators can run oracles (one each) and by extension the manager can also run only one oracle.
         uint256 memberIndex = _getMemberId(msg.sender);
-        require((sudo && memberIndex != MEMBER_N_FOUND) || _isProxyOfSelectedCandidate(msg.sender, _collator), "OM: MEMBER_N_FOUND");
+        require(memberIndex != MEMBER_N_FOUND && (sudo || _isProxyOfSelectedCandidate(msg.sender, _collator)), "OM: MEMBER_N_FOUND");
+        require(
+            collatorsToOracles[_collator] == msg.sender,
+            "OM: N_COLLATOR"
+        );
+        // Oracles always report the last completed era (round)
+        // Is a quorum of the previous era is not reached during the current era, the opportunity to process cover claims for the previous era is lost forever
         require(_isLastCompletedEra(_eraId), "OM: INV_ERA");
         require(_isConsistent(_report), "OM: INCORRECT_REPORT");
 
@@ -289,6 +376,12 @@ contract OracleMaster is Pausable {
         }
         reportCounts[_collator]++;
         bool veto = vetoOracleMember == msg.sender;
+        if (veto) {
+            lastEraVetoOracleVoted = _eraId;
+        }
+        // if the veto address has not reported for the last 3 rounds, then disable vetoing
+        bool vetoDisabled = _eraId - lastEraVetoOracleVoted > 3;
+
         IOracle(ORACLE).reportPara(
             memberIndex,
             QUORUM,
@@ -296,18 +389,19 @@ contract OracleMaster is Pausable {
             _eraNonce,
             _report,
             msg.sender,
-            veto
+            veto,
+            vetoDisabled
         );
     }
 
     /// ***************** FUNCTIONS CALLABLE BY ANYBODY *****************
 
     /**
-     * @notice Return last reported era and oracle is already reported indicator
-     * @param _oracleMember - oracle member address
-     * @return lastEra - last reported era
-     * @return lastPart - last reported era part
-     * @return isReported - true if oracle member already reported for given stash, else false
+     @notice Return last reported era and oracle is already reported indicator
+     @param _oracleMember - oracle member address
+     @return lastEra - last reported era
+     @return lastPart - last reported era part
+     @return isReported - true if oracle member already reported for given stash, else false
      */
     function isReportedLastEra(
         address _oracleMember
@@ -372,6 +466,10 @@ contract OracleMaster is Pausable {
         return MEMBER_N_FOUND;
     }
 
+    /**
+    @notice Returns true if the oracleMember is a Gov proxy of the collator, and the collator is a selected candidate
+    @dev used by auth method to check if the caller has been authorized as a proxy by an active-set collator
+    */
     function _isProxyOfSelectedCandidate(
         address _oracleMember,
         address _collator

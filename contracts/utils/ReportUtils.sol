@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
+// From LIDO liquid KSM contract
 library ReportUtils {
     // last bytes used to count votes
     uint256 internal constant COUNT_OUTMASK =

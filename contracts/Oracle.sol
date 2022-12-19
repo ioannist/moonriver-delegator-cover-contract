@@ -58,11 +58,14 @@ contract Oracle {
     /// ***************** FUNCTIONS CALLABLE BY ORACLE MASTER *****************
 
     /**
-     * @notice Accept oracle report data, allowed to call only by oracle master contract
-     * @param _index oracle member index
-     * @param _quorum the minimum number of voted oracle members to accept a variant
-     * @param _eraId current era id
-     * @param _staking report data
+    @notice Accept oracle report data, allowed to call only by oracle master contract
+    @dev A report is considered and final and is pushed to the cover contract when
+    A) Q number of oracles have reported exactly the same report, where Q = quorum
+    B) the veto account has submitted a report and it agrees with the quorum report (immediately or when quorum is reached), OR the veto account is disabled
+     @param _index oracle member index
+     @param _quorum the minimum number of voted oracle members to accept a variant
+     @param _eraId current era id
+     @param _staking report data
      */
     function reportPara(
         uint256 _index,
@@ -71,7 +74,8 @@ contract Oracle {
         uint128 _eraNonce,
         Types.OracleData calldata _staking,
         address _oracle,
-        bool veto
+        bool veto,
+        bool vetoDisabled
     ) external onlyOracleMaster {
         {
             uint256 mask = 1 << _index;
@@ -96,8 +100,9 @@ contract Oracle {
             ++i;
         if (i < _length) {
             if (currentReportVariants[i].getCount() + 1 >= _quorum) {
+                bool vetoAddressHasNotVotedYet = currentVetoReportVariant == 0;
                 bool vetoed = currentVetoReportVariant != 0 && currentReportVariants[i].isDifferent(currentVetoReportVariant);
-                if (!vetoed) {
+                if (vetoAddressHasNotVotedYet || !vetoed || vetoDisabled) {
                     _push(_eraId, _staking, _oracle);
                 }
             } else {
@@ -210,7 +215,8 @@ contract Oracle {
     }
 
     /**
-     * @notice Return whether the `_quorum` is reached and the final report can be pushed
+     @notice Return whether the `_quorum` is reached and the final report can be pushed
+     @dev From LIDO liquid KSM contract
      */
     function _getQuorumReport(
         uint256 _quorum
