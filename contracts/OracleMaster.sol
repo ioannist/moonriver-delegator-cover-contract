@@ -414,7 +414,10 @@ contract OracleMaster is Pausable {
         // Every time an oracle member submits a report, we shift the points bitmap to the left and add a 1 at index 0
         // This has the effect of gradually "filling" the points bitmap with 1's
         // An oracle may not get a chance to submit a report for a specific era nonce, if, for example the quorum was already reached, or it was down
-        // This is OK, i.e. oracle members are not required to report for every nonce to qualify the collators for zero-fee cover service
+        // This is OK because oracle members only need to report for 1 eraNonce to qualify their collators as oracle-running members
+        // This also means that an oracle may miss all reports out of bad luck. The manager will ensure that the quorum
+        // is large enough to minimize this probability; however, it cannot be zeroed out. Fortunately, the only effect that it will
+        // have is that, on rare occasions, the oracle-running member will pay the non-oracle-running member fee.
         uint16 tempBitmap = oraclePointBitmaps[_collator];
         tempBitmap = tempBitmap << 1;
         tempBitmap = tempBitmap | (1 << 0);

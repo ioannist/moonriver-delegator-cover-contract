@@ -23,7 +23,6 @@ contract InactivityCover is IPushable {
         bool isMember; // once a member, always a member
         bool active; // starts active, can go inactive by reducing deposit to less than minimum deposit
         uint256 deposit; // deposit
-        uint256 maxDefaulted; // the max cover payment that has defaulted and is pending
         uint256 maxCoveredDelegation; // any amount of this limit is not covered (used to incentivize splitting large delegations among multiple collators)
         uint128 lastPushedEra; // the last era that was pushed and processed for this member; oracles may agree to not report an era for a member if there is no effect (no cover claims)
         uint256 lastDelegationsTotall; // total backing of this collator the last time a report was pushed
@@ -48,6 +47,7 @@ contract InactivityCover is IPushable {
         bool noZeroPtsCoverAfterEra,
         bool noActiveSetCoverAfterEra
     );
+    event MembersInvoicedEvent(uint128 eraId, uint256 amount);
 
     /// The ParachainStaking wrapper at the known pre-compile address. This will be used to make all calls
     /// to the underlying staking solution
@@ -112,7 +112,7 @@ contract InactivityCover is IPushable {
     address public delegatorNotPaid;
 
     //
-    uint256 memberFee;
+    uint256 memberFee; // default is zero
     //
     uint128 membersInvoicedLastEra;
 
@@ -188,7 +188,6 @@ contract InactivityCover is IPushable {
     function depositCover(address _member) external payable {
         require(_isMemberAuth(msg.sender, _member), "N_COLLATOR_PROXY");
         require(msg.value >= MIN_DEPOSIT, "BEL_MIN_DEP"); // avoid spam deposits
-        require(msg.value >= members[_member].maxDefaulted, "BEL_MAX_DEFAULT");
         require(_member != address(0), "ZERO_ADDR");
         require(
             members[_member].deposit + msg.value <= MAX_DEPOSIT_TOTAL,
@@ -208,7 +207,6 @@ contract InactivityCover is IPushable {
         if (members[_member].deposit >= MIN_DEPOSIT) {
             members[_member].active = true;
         }
-        delete members[_member].maxDefaulted;
         membersDepositTotal += msg.value;
         emit DepositEvent(_member, msg.value);
     }
@@ -430,8 +428,8 @@ contract InactivityCover is IPushable {
     /**
     @notice Invoices active members and credits oracles
     @dev Cover members are charged a fee every 84 rounds (1 week). Members can wave this fee by running an oracle.
-    The collected fees from all non-oracle running members, are equally split and credited to oracle-running members.
-    We directly debit the deposits of the oracle-running members, which means that the deposits of oracle-running members
+    The collected fees, from all non-oracle-running members, are equally split and credited to oracle-running members.
+    We directly credit the deposits of the oracle-running members, which means that the deposits of oracle-running members
     will grow over time (assuming zero cover claims).
     The purpose of the fee is to incentivize collators to run oracles, thereby increasing the security of the contract.
     The manager will experiment with setting the fee to a value that incentivizes enough collators to run oracles,
@@ -441,6 +439,10 @@ contract InactivityCover is IPushable {
         uint128 eraNow = _getEra();
         require(eraNow > membersInvoicedLastEra, "ALREADY_INVOICED");
         require(eraNow % 84 == 0, "ERA_INV"); // can only charge fee every 84 eras, TODO change in Moonbeam
+        if (memberFee == 0) {
+            return;
+        }
+
         uint256 length = memberAddresses.length;
         uint256 totalFee;
         uint256 membersWithOracles; // a bitmap with 1's in the members indices of members that have oracle points getOraclePointBitmap(memberAddress) > 0
@@ -454,7 +456,6 @@ contract InactivityCover is IPushable {
                 if (IOracleMaster(ORACLE_MASTER).getOraclePointBitmap(memberAddress) == 0) {
                     if ( members[memberAddress].deposit < memberFee) {
                         // by setting active = false, we force the collator to have to meet MIN_DEPOSIT again to reactivate (should be enough to cover memberFee)
-                        // we don't set maxDefaulted to memberFee, because maxDefaulted is meant for delegator payment defaults that are more important and nearly always larger
                         // defaulted amounts are written off and not paid even if the member becomes active again
                         members[memberAddress].active = false;
                         continue;
@@ -478,6 +479,7 @@ contract InactivityCover is IPushable {
         }
         // because all we are doing is moving deposits around, we don't need to update membersDepositTotal or payoutsOwedTotal
         membersInvoicedLastEra = eraNow;
+        emit MembersInvoicedEvent(eraNow, totalFee);
     }
 
     /// ***************** MANAGEMENT FUNCTIONS *****************
@@ -674,7 +676,6 @@ contract InactivityCover is IPushable {
             bool,
             uint256,
             uint256,
-            uint256,
             uint128,
             uint128,
             uint128
@@ -685,7 +686,6 @@ contract InactivityCover is IPushable {
             m.isMember,
             m.active,
             m.deposit,
-            m.maxDefaulted,
             m.maxCoveredDelegation,
             m.lastPushedEra,
             m.noZeroPtsCoverAfterEra,
@@ -820,9 +820,6 @@ contract InactivityCover is IPushable {
                     : (STAKE_UNIT_COVER * delegationData.amount) / 1 ether;
 
                 if (members[collatorData.collatorAccount].deposit < toPay) {
-                    // delegations are sorted lowest->highest, so tha max default is the last delegation
-                    members[collatorData.collatorAccount].maxDefaulted =
-                        collatorData.topActiveDelegations[collatorData.topActiveDelegations.length - 1].amount;
                     // because delegations are sorted lowest-> highest, we know that we have paid as many delegators as possible before defaulting
                     members[collatorData.collatorAccount].active = false;
                     // defaulted amounts are written off and not paid if the member becomes active again
@@ -846,7 +843,6 @@ contract InactivityCover is IPushable {
                 uint256 refund = gasUsed * refundOracleGasPrice;
                 if (members[collatorData.collatorAccount].deposit < refund) {
                     // by setting active= false, the member has to reach the MIN_DEPOSIT again to reactive which is more than enough to cover the refund
-                    // we don't see maxDefaulted value here, cause this is meant for delegator payment defaults that are more important
                     members[collatorData.collatorAccount].active = false;
                     // defaulted amounts are written off and not paid if the member becomes active again
                     continue;

@@ -31,10 +31,6 @@ contract InactivityCover_mock is InactivityCover {
         memberNotPaid = member;
     }
 
-    function default_mock(address member, uint256 amount) external {
-        members[member].maxDefaulted = amount;
-    }
-
     function setPayoutsOwedTotal_mock(uint256 amount) external {
         payoutsOwedTotal = amount;
     }
