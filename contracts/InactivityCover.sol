@@ -101,9 +101,9 @@ contract InactivityCover is IPushable {
     // map of total payouts to delegators
     mapping(address => uint256) public totalPayouts;
     // If not 0, the oracle is credited with the tx cost for caclulating the cover payments
-    uint256 refundOracleGasPrice;
+    uint256 public refundOracleGasPrice;
     // If set to true, collators don't need whitelisting and can join/deposit funds from a Governance proxy
-    bool noManualWhitelistingRequired;
+    bool public noManualWhitelistingRequired;
 
     /* If a collator cannot withdraw their funds due to the funds being locked in staking, their address is
     recorded in memberNotPaid .This will prohibit the manager from bonding more until that collator is paid
@@ -113,10 +113,10 @@ contract InactivityCover is IPushable {
     // Same as above for delegators who cannot claims their cover due to funds being locked
     address public delegatorNotPaid;
 
-    //
-    uint256 memberFee; // default is zero
-    //
-    uint128 membersInvoicedLastEra;
+    // How much does a member (who does not run an oracle) get charged every time they are invvoiced
+    uint256 public memberFee; // default is zero
+    // The least era when members were successfulyl invoiced
+    uint128 public membersInvoicedLastEra;
 
     // Manager role
     bytes32 internal constant ROLE_MANAGER = keccak256("ROLE_MANAGER");

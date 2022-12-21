@@ -69,10 +69,10 @@ contract OracleMaster is Pausable {
     // 3) the address must vote for a report to pass, unless the address has not voted for the last 3 rounds
     address public vetoOracleMember;
     // the last era when the veto oracle submitted a vote
-    uint128 lastEraVetoOracleVoted;
+    uint128 public lastEraVetoOracleVoted;
 
     // Allows the oracle manager to add/remove oracles at will
-    bool sudo = true;
+    bool public sudo = true;
 
     // Allows function calls only from member with specific role
     modifier auth(bytes32 role) {
