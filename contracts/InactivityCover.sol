@@ -48,7 +48,8 @@ contract InactivityCover is IPushable {
         bool noZeroPtsCoverAfterEra,
         bool noActiveSetCoverAfterEra
     );
-    event MembersInvoicedEvent(uint128 eraId, uint256 amount);
+    event MemberInvoicedEvent(address member, uint256 amount, uint128 eraId);
+    event OraclePaidEvent(address member, uint256 amount, uint128 eraId);
 
     /// The ParachainStaking wrapper at the known pre-compile address. This will be used to make all calls
     /// to the underlying staking solution
@@ -440,10 +441,13 @@ contract InactivityCover is IPushable {
     function invoiceMembers() external {
         uint128 eraNow = _getEra();
         require(eraNow > membersInvoicedLastEra, "ALREADY_INVOICED");
-        require(eraNow % 84 == 0, "ERA_INV"); // can only charge fee every 84 eras, TODO change in Moonbeam
-        if (memberFee == 0) {
-            return;
-        }
+        // can only charge fee every 32 eras. We use 32 eras to match the uint32 oracle points bitmap.
+        // The bitmap bits get shifts on era nonces (not eras), and sometimes, twice on the same era nonce (and sometimes zero)
+        // However, on average, we expect most eras to last one era nonce (no claims). The idea is that, invoicing should
+        // decide if a member qualifies for a fee waiver by checking its oracle activity since the last time invoicing ran
+        require(eraNow % 32 == 0, "ERA_INV");
+        require(memberFee > 0, "ZERO_FEE");
+        membersInvoicedLastEra = eraNow;
 
         uint256 length = memberAddresses.length;
         uint256 totalFee;
@@ -455,7 +459,7 @@ contract InactivityCover is IPushable {
             address memberAddress = memberAddresses[i];
             // If the collator is active AND it is not participating as an oracle, then charge it
             if (members[memberAddress].active) {
-                if (IOracleMaster(ORACLE_MASTER).getOraclePointBitmap(memberAddress) == 0) {
+                if (IOracleMaster(ORACLE_MASTER).getOraclePointBitmap(memberAddress) == 0) { // this is a uint32
                     if ( members[memberAddress].deposit < memberFee) {
                         // by setting active = false, we force the collator to have to meet MIN_DEPOSIT again to reactivate (should be enough to cover memberFee)
                         // defaulted amounts are written off and not paid even if the member becomes active again
@@ -465,6 +469,7 @@ contract InactivityCover is IPushable {
                     }
                     members[memberAddress].deposit -= memberFee;
                     totalFee += memberFee;
+                    emit MemberInvoicedEvent(memberAddress, memberFee, eraNow);
                 } else {
                     // Set the bitmap's bit to 1 so we don't have to call getOraclePointBitmap again in the next iteration for crediting oracles
                     membersWithOracles = membersWithOracles | (1 << i);
@@ -472,17 +477,26 @@ contract InactivityCover is IPushable {
                 }
             }
         }
-
-        // credit oracle-running members
-        uint256 oraclePayment = totalFee / membersWithOraclesCount;
-        for(uint256 i; i < length; i++) {
-            if (membersWithOracles & (1 << i) == 1) {
-                members[memberAddresses[i]].deposit += oraclePayment;
-            }
+        // if there are zero non-racle-running members, return
+        if (totalFee == 0) {
+            return;
         }
-        // because all we are doing is moving deposits around, we don't need to update membersDepositTotal or payoutsOwedTotal
-        membersInvoicedLastEra = eraNow;
-        emit MembersInvoicedEvent(eraNow, totalFee);
+        // if there are no oracle-running members, credit the manager
+        if (membersWithOraclesCount == 0) {
+            membersDepositTotal -= totalFee; // decrease the total members deposit
+            // the totalFee amount can now be withdrawn with withdrawRewards (C + D, in withdrawRewards, are decreased by totalFee)
+        } else {
+        // else, credit the oracle-running members
+            uint256 oraclePayment = totalFee / membersWithOraclesCount;
+            for(uint256 i; i < length; i++) {
+                if (membersWithOracles & (1 << i) > 0) {
+                    address memberAddress = memberAddresses[i];
+                    members[memberAddress].deposit += oraclePayment;
+                    emit OraclePaidEvent(memberAddress, oraclePayment, eraNow);
+                }
+            }
+            // because all we are doing is moving deposits around, we don't need to update membersDepositTotal or payoutsOwedTotal
+        }
     }
 
     /// ***************** MANAGEMENT FUNCTIONS *****************

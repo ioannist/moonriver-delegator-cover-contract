@@ -57,12 +57,11 @@ contract OracleMaster is Pausable {
 
     // Collators to oracle representatives (each collator can have one oracle rep)
     mapping(address => address) public collatorsToOracles;
+    // reverse of above
+    mapping(address => address) public oraclesToCollators;
 
     // Collator bitmaps of nonces they submitted
-    mapping(address => uint16) public oraclePointBitmaps;
-
-    // Bitwise left shift on oracle points bitmaps
-    uint8 oraclePointShift;
+    mapping(address => uint32) public oraclePointBitmaps;
 
     // This address can veto a quorum decission; this means that:
     // 1) the address cannot vote in a report by itself, but
@@ -137,13 +136,6 @@ contract OracleMaster is Pausable {
         emit QuorumChanged(_quorum);
     }
 
-    function setOraclePointShift(uint8 _oraclePointShift)
-        external
-        auth(ROLE_ORACLE_QUORUM_MANAGER)
-    {
-        oraclePointShift = _oraclePointShift;
-    }
-
     /**
      @notice Add new member to the oracle member committee list
      @dev The manager can register a collator - oracleMember pair, i.e. an oracle address that represents a collator.
@@ -178,6 +170,7 @@ contract OracleMaster is Pausable {
 
         members.push(_oracleMember);
         collatorsToOracles[_collator] = _oracleMember;
+        oraclesToCollators[_oracleMember] = _collator;
         emit MemberAdded(_oracleMember);
     }
 
@@ -202,6 +195,7 @@ contract OracleMaster is Pausable {
         if (index != last) members[index] = members[last];
         members.pop();
         delete collatorsToOracles[_collator];
+        delete oraclesToCollators[_oracleMember];
         emit MemberRemoved(_oracleMember);
     }
 
@@ -319,6 +313,7 @@ contract OracleMaster is Pausable {
 
         members.push(msg.sender);
         collatorsToOracles[_collator] = msg.sender;
+        oraclesToCollators[msg.sender] = _collator;
         emit MemberAdded(msg.sender);
     }
 
@@ -349,12 +344,13 @@ contract OracleMaster is Pausable {
         if (index != last) members[index] = members[last];
         members.pop();
         delete collatorsToOracles[_collator];
+        delete oraclesToCollators[_oracleMember];
         emit MemberRemoved(_oracleMember);
     }
 
     /**
      @notice Submit oracle reports
-     @dev Oracle reports containe information about collators and delegators. Each report includes information for a specific round
+     @dev Oracle reports contain information about collators and delegators. Each report includes information for a specific round
      and for specific collator/s and their delegators. The report does not have to include all the collator+delegator data for a specific
      round. For example, a report may include information for only one collator and its delegators. A subsequent report (for the same round)
      may include information about another collator and its delegators (cannot be the same collator). This allows oracles to break
@@ -393,36 +389,32 @@ contract OracleMaster is Pausable {
 
         if (_eraId > eraId) {
             eraId = _eraId;
-
-            // ORACLE POINTS EMPTYING - runs once every members.length rounds, for every oracle member
-            // each era chooses a different collator to shift left its points bitmap
-            // adding oracle members may result in a collator getting its points bitmap shifted twice; this is ok and will not have any material consequences
-            address oracleMemberToShiftPoints = members[
-                _eraId % members.length
-            ];
-            if (oracleMemberToShiftPoints != address(0)) {
-                // By shifting the points bitmap to the left by "oraclePointShift" bits, we are gradually shifting the 1's off the uint16 cliff
-                // and getting rid of the "oldest" 1's that were filled in older eras
-                // If the collator does not "refill" its points bitmap with 1's, then, eventually, all 1's will be shifted out and only 0's will be left
-                oraclePointBitmaps[oracleMemberToShiftPoints] =
-                    oraclePointBitmaps[oracleMemberToShiftPoints] <<
-                    oraclePointShift;
-            }
         }
 
-        // ORACLE POINTS FILLING - runs every time an oracle member successfully submits a report (quorum-agreed or not)
+        // ORACLE POINTS EMPTYING (left shift)
+        // By shifting the points bitmap to the left by 1, we are gradually pushing the 1's off the uint32 cliff
+        // If the collator does not "refill" its points bitmap with 1's, then, eventually, all 1's will be shifted out and only 0's will be left
+        // On each era nonce and memberIndex, we choose a different collator to shift its points bitmap (collators are chosen on a rolling basis)
+        // Our goal is that all collators are bit-shited the same, on average, over many era nonces
+        // To do this, we mod the sum of the eraNonce and memberIndex; thus, even if a collator is not shifted in this era nonce,
+        // (because the oracle that had the right memberIndex did not make it into the quorum) chances are it will be shifted in the next nonce
+        address oracleMemberToShiftPoints = members[(_eraNonce + memberIndex) % members.length];
+        address collatorMemberToShiftPoints = oraclesToCollators[oracleMemberToShiftPoints];
+        oraclePointBitmaps[collatorMemberToShiftPoints] = oraclePointBitmaps[collatorMemberToShiftPoints] << 1;
+
+        // ORACLE POINTS FILLING (left shift + 1 at 0)
         // Every time an oracle member submits a report, we shift the points bitmap to the left and add a 1 at index 0
-        // This has the effect of gradually "filling" the points bitmap with 1's
+        // This has the effect of gradually "filling" the points bitmap with 1's (from the right to the left)
         // An oracle may not get a chance to submit a report for a specific era nonce, if, for example the quorum was already reached, or it was down
         // This is OK because oracle members only need to report for 1 eraNonce to qualify their collators as oracle-running members
         // This also means that an oracle may miss all reports out of bad luck. The manager will ensure that the quorum
         // is large enough to minimize this probability; however, it cannot be zeroed out. Fortunately, the only effect that it will
         // have is that, on rare occasions, the oracle-running member will pay the non-oracle-running member fee.
-        uint16 tempBitmap = oraclePointBitmaps[_collator];
+        uint32 tempBitmap = oraclePointBitmaps[_collator];
         tempBitmap = tempBitmap << 1;
         tempBitmap = tempBitmap | (1 << 0);
         oraclePointBitmaps[_collator] = tempBitmap;
-
+ 
         bool veto = vetoOracleMember == msg.sender;
         if (veto) {
             lastEraVetoOracleVoted = _eraId;
@@ -478,7 +470,7 @@ contract OracleMaster is Pausable {
         return ORACLE;
     }
 
-    function getOraclePointBitmap(address _oracleMember) external view returns(uint16) {
+    function getOraclePointBitmap(address _oracleMember) external view returns(uint32) {
         return oraclePointBitmaps[_oracleMember];
     }
 
@@ -501,8 +493,7 @@ contract OracleMaster is Pausable {
             report.totalStaked > 0 &&
             report.totalSelected > 0 &&
             report.awarded > 0 &&
-            report.blockNumber > 0 &&
-            report.collators.length > 0;
+            report.blockNumber > 0;
     }
 
     /**
