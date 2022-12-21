@@ -443,7 +443,7 @@ contract InactivityCover is IPushable {
         require(eraNow % 84 == 0, "ERA_INV"); // can only charge fee every 84 eras, TODO change in Moonbeam
         uint256 length = memberAddresses.length;
         uint256 totalFee;
-        uint256 membersWithOracles;
+        uint256 membersWithOracles; // a bitmap with 1's in the members indices of members that have oracle points getOraclePointBitmap(memberAddress) > 0
         uint256 membersWithOraclesCount;
 
         // debit non-oracle-running members
@@ -453,9 +453,9 @@ contract InactivityCover is IPushable {
             if (members[memberAddress].active) {
                 if (IOracleMaster(ORACLE_MASTER).getOraclePointBitmap(memberAddress) == 0) {
                     if ( members[memberAddress].deposit < memberFee) {
-                        // by setting active = false, we force the collator to have to meet MIN_DEPOSIT again to reactivate
+                        // by setting active = false, we force the collator to have to meet MIN_DEPOSIT again to reactivate (should be enough to cover memberFee)
                         // we don't set maxDefaulted to memberFee, because maxDefaulted is meant for delegator payment defaults that are more important and nearly always larger
-                        // defaulted amounts are written off and not paid if the member becomes active again
+                        // defaulted amounts are written off and not paid even if the member becomes active again
                         members[memberAddress].active = false;
                         continue;
                     }
