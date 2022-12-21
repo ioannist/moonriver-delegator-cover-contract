@@ -437,7 +437,7 @@ contract InactivityCover is IPushable {
     The manager will experiment with setting the fee to a value that incentivizes enough collators to run oracles,
     without discouraging the collators that cannot run oracles from using the contract.
     */
-    function invoiceCollators() external {
+    function invoiceMembers() external {
         uint128 eraNow = _getEra();
         require(eraNow > membersInvoicedLastEra, "ALREADY_INVOICED");
         require(eraNow % 84 == 0, "ERA_INV"); // can only charge fee every 84 eras, TODO change in Moonbeam
@@ -654,6 +654,12 @@ contract InactivityCover is IPushable {
     */
     function setNoManualWhitelistingRequired(bool _noManualWhitelistingRequired) external auth(ROLE_MANAGER) {
         noManualWhitelistingRequired = _noManualWhitelistingRequired;
+    }
+
+    function setMemberFee(uint256 _memberFee) external auth(ROLE_MANAGER) {
+        // _memberFee should be well below 3 MOVR (per week, or 84 rounds) but we set the max to 3 to allow for increases in round duration
+        require(_memberFee <= 3 ether, "FEE_INV");
+        memberFee = _memberFee;
     }
 
     /// ***************** GETTERS *****************
