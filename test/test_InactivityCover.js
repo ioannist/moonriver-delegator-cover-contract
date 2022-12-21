@@ -176,13 +176,8 @@ contract('InactivityCover', accounts => {
         return active;
     }
 
-    async function getMaxDefault(member) {
-        const { 3: maxDefaulted } = await ic.getMember(member);
-        return maxDefaulted;
-    }
-
     async function getMaxCoveredDelegation(member) {
-        const { 4: maxCoveredDelegation } = await ic.getMember(member);
+        const { 3: maxCoveredDelegation } = await ic.getMember(member);
         return maxCoveredDelegation;
     }
 

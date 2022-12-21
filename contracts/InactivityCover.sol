@@ -28,6 +28,7 @@ contract InactivityCover is IPushable {
         uint256 lastDelegationsTotall; // total backing of this collator the last time a report was pushed
         uint128 noZeroPtsCoverAfterEra; // if positive (non-zero), then the member does not offer 0-point cover after this era
         uint128 noActiveSetCoverAfterEra; // if positive (non-zero), the member does not offer out-of-active-set cover after this era
+        uint128 defaultCount; // how many time this member has defaulted
     }
 
     event DepositEvent(address member, uint256 amount);
@@ -355,6 +356,7 @@ contract InactivityCover is IPushable {
         members[_member].deposit -= amount;
         if (members[_member].deposit < MIN_DEPOSIT) {
             members[_member].active = false;
+            members[_member].defaultCount++;
         }
         membersDepositTotal -= amount;
         delete scheduledDecreasesMap[_member];
@@ -458,6 +460,7 @@ contract InactivityCover is IPushable {
                         // by setting active = false, we force the collator to have to meet MIN_DEPOSIT again to reactivate (should be enough to cover memberFee)
                         // defaulted amounts are written off and not paid even if the member becomes active again
                         members[memberAddress].active = false;
+                        members[memberAddress].defaultCount++;
                         continue;
                     }
                     members[memberAddress].deposit -= memberFee;
@@ -822,6 +825,7 @@ contract InactivityCover is IPushable {
                 if (members[collatorData.collatorAccount].deposit < toPay) {
                     // because delegations are sorted lowest-> highest, we know that we have paid as many delegators as possible before defaulting
                     members[collatorData.collatorAccount].active = false;
+                    members[collatorData.collatorAccount].defaultCount++;
                     // defaulted amounts are written off and not paid if the member becomes active again
                     break;
                 }
@@ -844,6 +848,7 @@ contract InactivityCover is IPushable {
                 if (members[collatorData.collatorAccount].deposit < refund) {
                     // by setting active= false, the member has to reach the MIN_DEPOSIT again to reactive which is more than enough to cover the refund
                     members[collatorData.collatorAccount].active = false;
+                    members[collatorData.collatorAccount].defaultCount++;
                     // defaulted amounts are written off and not paid if the member becomes active again
                     continue;
                 }
