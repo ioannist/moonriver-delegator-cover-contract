@@ -264,7 +264,7 @@
 			},
 			{
 				"inputs": [],
-				"name": "coverOwedTotal",
+				"name": "payoutsOwedTotal",
 				"outputs": [
 					{
 						"internalType": "uint256",

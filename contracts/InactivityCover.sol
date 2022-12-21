@@ -35,7 +35,7 @@ contract InactivityCover is IPushable {
     event DecreaseCoverScheduledEvent(address member, uint256 amount);
     event DecreaseCoverEvent(address member, uint256 amount);
     event CancelDecreaseCoverEvent(address member);
-    event ReportPushedEvent(uint128 eraId, address oracle);
+    event ReportPushedEvent(uint128 eraId, address oracleCollator);
     event MemberNotActiveEvent(address member, uint128 eraId);
     event MemberHasZeroPointsEvent(address member, uint128 eraId);
     event PayoutEvent(address delegator, uint256 amount);
@@ -90,7 +90,7 @@ contract InactivityCover is IPushable {
     mapping(address => ScheduledDecrease) public scheduledDecreasesMap;
     // Toal amount owed to delegators to pay all pending cover claims
     // Τhe contract's balance can grow through staking so we need to cover the deposited amount separately
-    uint256 public coverOwedTotal;
+    uint256 public payoutsOwedTotal;
     // The number of eras each member covers (forecast)
     // this is also the number of eras a member must wait to execute a decrease request
     mapping(address => uint128) public erasCovered;
@@ -110,6 +110,11 @@ contract InactivityCover is IPushable {
     address public memberNotPaid;
     // Same as above for delegators who cannot claims their cover due to funds being locked
     address public delegatorNotPaid;
+
+    //
+    uint256 memberFee;
+    //
+    uint128 membersInvoicedLastEra;
 
     // Manager role
     bytes32 internal constant ROLE_MANAGER = keccak256("ROLE_MANAGER");
@@ -408,7 +413,7 @@ contract InactivityCover is IPushable {
             (bool sent, ) = delegator.call{value: toPay}("");
             require(sent, "TRANSF_FAIL");
         }
-        coverOwedTotal -= toPayTotal; // debit the total cover owed
+        payoutsOwedTotal -= toPayTotal; // debit the total cover owed
     }
 
     /**
@@ -422,6 +427,59 @@ contract InactivityCover is IPushable {
         staking.executeDelegationRequest(address(this), candidate);
     }
 
+    /**
+    @notice Invoices active members and credits oracles
+    @dev Cover members are charged a fee every 84 rounds (1 week). Members can wave this fee by running an oracle.
+    The collected fees from all non-oracle running members, are equally split and credited to oracle-running members.
+    We directly debit the deposits of the oracle-running members, which means that the deposits of oracle-running members
+    will grow over time (assuming zero cover claims).
+    The purpose of the fee is to incentivize collators to run oracles, thereby increasing the security of the contract.
+    The manager will experiment with setting the fee to a value that incentivizes enough collators to run oracles,
+    without discouraging the collators that cannot run oracles from using the contract.
+    */
+    function invoiceCollators() external {
+        uint128 eraNow = _getEra();
+        require(eraNow > membersInvoicedLastEra, "ALREADY_INVOICED");
+        require(eraNow % 84 == 0, "ERA_INV"); // can only charge fee every 84 eras, TODO change in Moonbeam
+        uint256 length = memberAddresses.length;
+        uint256 totalFee;
+        uint256 membersWithOracles;
+        uint256 membersWithOraclesCount;
+
+        // debit non-oracle-running members
+        for(uint256 i; i < length; i++) {
+            address memberAddress = memberAddresses[i];
+            // If the collator is active AND it is not participating as an oracle, then charge it
+            if (members[memberAddress].active) {
+                if (IOracleMaster(ORACLE_MASTER).getOraclePointBitmap(memberAddress) == 0) {
+                    if ( members[memberAddress].deposit < memberFee) {
+                        // by setting active = false, we force the collator to have to meet MIN_DEPOSIT again to reactivate
+                        // we don't set maxDefaulted to memberFee, because maxDefaulted is meant for delegator payment defaults that are more important and nearly always larger
+                        // defaulted amounts are written off and not paid if the member becomes active again
+                        members[memberAddress].active = false;
+                        continue;
+                    }
+                    members[memberAddress].deposit -= memberFee;
+                    totalFee += memberFee;
+                } else {
+                    // Set the bitmap's bit to 1 so we don't have to call getOraclePointBitmap again in the next iteration for crediting oracles
+                    membersWithOracles = membersWithOracles | (1 << i);
+                    membersWithOraclesCount++;
+                }
+            }
+        }
+
+        // credit oracle-running members
+        uint256 oraclePayment = totalFee / membersWithOraclesCount;
+        for(uint256 i; i < length; i++) {
+            if (membersWithOracles & (1 << i) == 1) {
+                members[memberAddresses[i]].deposit += oraclePayment;
+            }
+        }
+        // because all we are doing is moving deposits around, we don't need to update membersDepositTotal or payoutsOwedTotal
+        membersInvoicedLastEra = eraNow;
+    }
+
     /// ***************** MANAGEMENT FUNCTIONS *****************
 
     /**
@@ -432,7 +490,7 @@ contract InactivityCover is IPushable {
     B) totalStaked, that is the amount currently staked and NOT pending decrease or revoke (mainteined by the contract logic)
     C) membersDepositTotal, this is the total deposits of all members that have NOT been claimed;
     any pending deposit decreases (not executed) do not reduce total deposits (vs. totalStaked decereases that DO reduce totalStaked)
-    D) coverOwedTotal this are the member deposits that have been moved to the delegator payables account, i.e. funds owed to the delegators due to cover claims
+    D) payoutsOwedTotal this are the member deposits that have been moved to the delegator payables account, i.e. funds owed to the delegators due to cover claims
     The manager can then withdraw any amount < (A + B) - (C + D), i.e. any extra funds that now owed to delegators or members.
     Since A + B does not include funds pending decrease or revoke (let that be E), the manager's capcity to withdraw is reduced by E
     @param amount How much to withdraw
@@ -446,7 +504,7 @@ contract InactivityCover is IPushable {
         require(address(this).balance > amount, "NO_FUNDS");
         // The check below may result in a false negative (reject withdrawal even though there are extra funds) for E > 0 (see @dev\Vv)
         require(
-            _getFreeBalance() - amount > membersDepositTotal + coverOwedTotal,
+            _getFreeBalance() - amount > membersDepositTotal + payoutsOwedTotal,
             "NO_REWARDS"
         );
         (bool sent, ) = receiver.call{value: amount}("");
@@ -663,7 +721,7 @@ contract InactivityCover is IPushable {
     function pushData(
         uint128 _eraId,
         Types.OracleData calldata _report,
-        address _oracle
+        address _oracleCollator
     ) external onlyOracle {
         // we allow reporting the same era more than once, because oracles may split the report to pieces if many collators miss rounds
         // this is required because each pushData cannot handle more than 500 delegator payouts
@@ -738,7 +796,7 @@ contract InactivityCover is IPushable {
                 continue;
             }
 
-            // this loop may run for 300 times so it must stay optimized and light
+            // this loop may run for 300 times so it must be optimized
             uint256 toPayTotal;
             for (
                 uint128 j = 0;
@@ -756,12 +814,13 @@ contract InactivityCover is IPushable {
                     : (STAKE_UNIT_COVER * delegationData.amount) / 1 ether;
 
                 if (members[collatorData.collatorAccount].deposit < toPay) {
-                    members[collatorData.collatorAccount].maxDefaulted = toPay >
-                        members[collatorData.collatorAccount].maxDefaulted
-                        ? toPay
-                        : members[collatorData.collatorAccount].maxDefaulted;
-                    continue; // TODO change to break
-                    // we could, potentially, make more smaller payments, but this risks the TX reversing due to high gas cost
+                    // delegations are sorted lowest->highest, so tha max default is the last delegation
+                    members[collatorData.collatorAccount].maxDefaulted =
+                        collatorData.topActiveDelegations[collatorData.topActiveDelegations.length - 1].amount;
+                    // because delegations are sorted lowest-> highest, we know that we have paid as many delegators as possible before defaulting
+                    members[collatorData.collatorAccount].active = false;
+                    // defaulted amounts are written off and not paid if the member becomes active again
+                    break;
                 }
 
                 payoutAmounts[delegationData.ownerAccount] += toPay; // credit the delegator
@@ -770,22 +829,28 @@ contract InactivityCover is IPushable {
             }
             require(toPayTotal <= MAX_ERA_MEMBER_PAYOUT, "EXCEEDS_MAX_ERA_MEMBER_PAYOUT");
             membersDepositTotal -= toPayTotal; // decrease the total members deposit
-            coverOwedTotal += toPayTotal; // current total (not paid out)
+            payoutsOwedTotal += toPayTotal; // current total (not paid out)
 
             // Refund oracle for gas costs. Calculating cover claims for every delegator can get expensive for 300 delegators.
             // Oracles pay some minor tx fees when they submit a report, but they get reimusrsed for the calculation of the claims when that happens.
             // This is not only fair but also necessary because only 1 oracle will have to run pushData per eraNonce (the oracle that happens to be the Nth one in an N-quorum)
             // If the oracle is not reimbursed, then there is an incentive to not be the Nth oracle to avoid the fee.
-            if (refundOracleGasPrice > 0 && _oracle != address(0)) {
+            if (refundOracleGasPrice > 0 && _oracleCollator != address(0)) {
                 uint256 gasUsed = startGas - gasleft();
                 uint256 refund = gasUsed * refundOracleGasPrice;
-                if (members[collatorData.collatorAccount].deposit > refund) {
-                    members[collatorData.collatorAccount].deposit -= refund;
-                    payoutAmounts[_oracle] += refund;
+                if (members[collatorData.collatorAccount].deposit < refund) {
+                    // by setting active= false, the member has to reach the MIN_DEPOSIT again to reactive which is more than enough to cover the refund
+                    // we don't see maxDefaulted value here, cause this is meant for delegator payment defaults that are more important
+                    members[collatorData.collatorAccount].active = false;
+                    // defaulted amounts are written off and not paid if the member becomes active again
+                    continue;
                 }
+                members[collatorData.collatorAccount].deposit -= refund;
+                members[_oracleCollator].deposit += refund;
+                // because we are only moving funds from one deposit to another, we don't need to update membersDepositTotal or payoutsOwedTotal
             }
         }
-        emit ReportPushedEvent(eraId, _oracle);
+        emit ReportPushedEvent(eraId, _oracleCollator);
     }
 
     function delegate(

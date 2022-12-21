@@ -7,4 +7,6 @@ interface IOracleMaster {
 
     function eraId() view external returns (uint128);
 
+    function getOraclePointBitmap(address _oracleMember) external view returns(uint16);
+
 }

@@ -11,7 +11,7 @@ contract InactivityCover_mock is InactivityCover {
         eraId += eras;
     }
 
-    function setEra(uint64 _era) external {
+    function setEra_mock(uint64 _era) external {
         eraId = _era;
     }
 
@@ -35,8 +35,8 @@ contract InactivityCover_mock is InactivityCover {
         members[member].maxDefaulted = amount;
     }
 
-    function setCoverOwedTotal_mock(uint256 amount) external {
-        coverOwedTotal = amount;
+    function setPayoutsOwedTotal_mock(uint256 amount) external {
+        payoutsOwedTotal = amount;
     }
 
     /// The dev env provides only one active collator (member1 0xf24FF3a9CF04c71Dbc94D0b566f7A27B94566cac) which is ok for most test cases.

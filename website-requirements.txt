@@ -58,19 +58,6 @@ memberSetCoverTypes(bool _noZeroPtsCoverAfterEra, bool _noActiveSetCoverAfterEra
 370315ce28812b5ed0f9767d920a57a1da17cc04d68ac87361c770f929acf48d
 
 
-member requests withdrawal
-rounds pass, member executes payout, it defaults
-member cancels withdrawal requests
-default must be cleared
-
-force veto to be considered, else dont push
-
-test veto not voting for 3 rounds
-
-check how malformatted json input can affect computations
-change random revoke collator to lowest delegated collator
-
-
 --------------------------------
 
 delegate(

@@ -112,7 +112,7 @@
 					"parameterSlots": 0,
 					"returnSlots": 0
 				},
-				"@coverOwedTotal_3015": {
+				"@payoutsOwedTotal_3015": {
 					"entryPoint": 4511,
 					"id": 3015,
 					"parameterSlots": 0,
@@ -24697,7 +24697,7 @@
 				"ORACLE_MASTER()": "2626",
 				"STAKE_UNIT_COVER()": "2475",
 				"cancelDecreaseCover()": "35293",
-				"coverOwedTotal()": "2519",
+				"payoutsOwedTotal()": "2519",
 				"delegate(address,uint256,uint256,uint256)": "infinite",
 				"delegatorNotPaid()": "2646",
 				"delegator_bond_more(address,uint256)": "infinite",
@@ -24747,7 +24747,7 @@
 			"ORACLE_MASTER()": "3fd2c16a",
 			"STAKE_UNIT_COVER()": "7a8c9c6b",
 			"cancelDecreaseCover()": "9018a5b1",
-			"coverOwedTotal()": "2f433ab1",
+			"payoutsOwedTotal()": "2f433ab1",
 			"delegate(address,uint256,uint256,uint256)": "829f5ee3",
 			"delegatorNotPaid()": "faf5b40e",
 			"delegator_bond_more(address,uint256)": "f8331108",
@@ -25043,7 +25043,7 @@
 		},
 		{
 			"inputs": [],
-			"name": "coverOwedTotal",
+			"name": "payoutsOwedTotal",
 			"outputs": [
 				{
 					"internalType": "uint256",

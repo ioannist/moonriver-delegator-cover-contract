@@ -73,7 +73,7 @@ contract Oracle {
         uint128 _eraId,
         uint128 _eraNonce,
         Types.OracleData calldata _staking,
-        address _oracle,
+        address _oracleCollator,
         bool veto,
         bool vetoDisabled
     ) external onlyOracleMaster {
@@ -103,7 +103,7 @@ contract Oracle {
                 bool vetoAddressHasVoted = currentVetoReportVariant == 0;
                 bool vetoed = currentReportVariants[i].isDifferent(currentVetoReportVariant);
                 if ((vetoAddressHasVoted && !vetoed) || vetoDisabled) {
-                    _push(_eraId, _staking, _oracle);
+                    _push(_eraId, _staking, _oracleCollator);
                 }
             } else {
                 ++currentReportVariants[i];
@@ -111,13 +111,13 @@ contract Oracle {
             }
         } else {
             if (_quorum == 1) {
-                _push(_eraId, _staking, _oracle);
+                _push(_eraId, _staking, _oracleCollator);
             } else {
                 currentReportVariants.push(variant + 1);
                 currentReports.push(_staking);
             }
         }
-        emit ReportSubmitted(_eraId, _eraNonce, _oracle);
+        emit ReportSubmitted(_eraId, _eraNonce, _oracleCollator);
     }
 
     /**
@@ -203,13 +203,13 @@ contract Oracle {
     function _push(
         uint128 _eraId,
         Types.OracleData memory report,
-        address oracle
+        address _oracleCollator
     ) internal {
         for (uint256 i = 0; i < PUSHABLES.length; i++) {
             if (PUSHABLES[i] == address(0)) {
                 continue;
             }
-            IPushable(PUSHABLES[i]).pushData(_eraId, report, oracle);
+            IPushable(PUSHABLES[i]).pushData(_eraId, report, _oracleCollator);
         }
         _clearReporting();
     }

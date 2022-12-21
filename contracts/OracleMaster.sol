@@ -35,7 +35,7 @@ contract OracleMaster is Pausable {
     uint8 public QUORUM;
 
     /// Maximum number of oracle committee members
-    uint256 public constant MAX_MEMBERS = 100; 
+    uint256 public constant MAX_MEMBERS = 100;
 
     // Missing member index
     uint256 internal constant MEMBER_N_FOUND = type(uint256).max;
@@ -58,11 +58,11 @@ contract OracleMaster is Pausable {
     // Collators to oracle representatives (each collator can have one oracle rep)
     mapping(address => address) public collatorsToOracles;
 
-    // Collator report counts
-    mapping(address => uint256) public reportCounts;
+    // Collator bitmaps of nonces they submitted
+    mapping(address => uint16) public oraclePointBitmaps;
 
-    // Allows the oracle manager to add/remove oracles at will
-    bool sudo = true;
+    // Bitwise left shift on oracle points bitmaps
+    uint8 oraclePointShift;
 
     // This address can veto a quorum decission; this means that:
     // 1) the address cannot vote in a report by itself, but
@@ -71,6 +71,9 @@ contract OracleMaster is Pausable {
     address public vetoOracleMember;
     // the last era when the veto oracle submitted a vote
     uint128 lastEraVetoOracleVoted;
+
+    // Allows the oracle manager to add/remove oracles at will
+    bool sudo = true;
 
     // Allows function calls only from member with specific role
     modifier auth(bytes32 role) {
@@ -116,9 +119,10 @@ contract OracleMaster is Pausable {
     @notice Set the number of exactly the same reports needed to finalize the era
     @param _quorum new value of quorum threshold
     */
-    function setQuorum(
-        uint8 _quorum
-    ) external auth(ROLE_ORACLE_QUORUM_MANAGER) {
+    function setQuorum(uint8 _quorum)
+        external
+        auth(ROLE_ORACLE_QUORUM_MANAGER)
+    {
         require(
             _quorum > 0 && _quorum < MAX_MEMBERS,
             "OM: QUORUM_WONT_BE_MADE"
@@ -131,6 +135,13 @@ contract OracleMaster is Pausable {
             IOracle(ORACLE).softenQuorum(_quorum, eraId);
         }
         emit QuorumChanged(_quorum);
+    }
+
+    function setOraclePointShift(uint8 _oraclePointShift)
+        external
+        auth(ROLE_ORACLE_QUORUM_MANAGER)
+    {
+        oraclePointShift = _oraclePointShift;
     }
 
     /**
@@ -149,10 +160,10 @@ contract OracleMaster is Pausable {
      the collator address must be a valid, active-set, collator address or else reporting will not work.
      @param _oracleMember proposed member address
      */
-    function addOracleMember(
-        address _collator,
-        address _oracleMember
-    ) external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
+    function addOracleMember(address _collator, address _oracleMember)
+        external
+        auth(ROLE_ORACLE_MEMBERS_MANAGER)
+    {
         require(sudo, "OM: N_SUDO");
         require(_oracleMember != address(0), "OM: ORACLE_EXISTS");
         require(
@@ -161,7 +172,7 @@ contract OracleMaster is Pausable {
         );
         require(members.length < MAX_MEMBERS, "OM: MEMBERS_TOO_MANY");
         require(
-            collatorsToOracles[_collator]  == address(0),
+            collatorsToOracles[_collator] == address(0),
             "OM: COLLATOR_EXISTS"
         );
 
@@ -175,10 +186,10 @@ contract OracleMaster is Pausable {
      @dev Provided collator and oracleMember must already be registered and paired. Removal will remove the capacity of that
      oracle to submit reports. This method, like addOracleMember, is disabled after sudo is removed.
      */
-    function removeOracleMember(
-        address _collator,
-        address _oracleMember
-    ) external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
+    function removeOracleMember(address _collator, address _oracleMember)
+        external
+        auth(ROLE_ORACLE_MEMBERS_MANAGER)
+    {
         require(sudo, "OM: N_SUDO");
         uint256 index = _getMemberId(_oracleMember);
         require(index != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
@@ -197,10 +208,10 @@ contract OracleMaster is Pausable {
     /**
      * @notice Oracle data can be pushed to other contracts in the future, although care must be taken to not exceed max tx gas
      */
-    function addRemovePushable(
-        address payable _pushable,
-        bool _toAdd
-    ) external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
+    function addRemovePushable(address payable _pushable, bool _toAdd)
+        external
+        auth(ROLE_ORACLE_MEMBERS_MANAGER)
+    {
         IOracle(ORACLE).addRemovePushable(_pushable, _toAdd);
     }
 
@@ -225,7 +236,11 @@ contract OracleMaster is Pausable {
     @param _someCollator provide any random active-set collator; used to confirm the proxy precompile is accessible
     @param _itsProxy provide a governance proxy o that collator; used to confirm the proxy precompile is accessible
     */
-    function removeSudo(uint256 code, address _itsProxy, address _someCollator) external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
+    function removeSudo(
+        uint256 code,
+        address _itsProxy,
+        address _someCollator
+    ) external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
         require(code == 123456789, "INV_CODE");
         // the following check is used to make sure the proxy precompile has become accessible
         // this is necessary, as removal od sudo and a non-accessible proxy precompile, would brick the contract from reporting
@@ -249,10 +264,15 @@ contract OracleMaster is Pausable {
     the round counter is reset and veto capacity resumes.
     @param _vetoOracleMember the veto oracle member. Set to zero address to disable.
     */
-    function setVetoOracleMember(
-        address _vetoOracleMember
-    ) external auth(ROLE_ORACLE_MEMBERS_MANAGER) {
-        require(_getMemberId(_vetoOracleMember) != MEMBER_N_FOUND || _vetoOracleMember == address(0), "OM: MEMBER_N_FOUND");
+    function setVetoOracleMember(address _vetoOracleMember)
+        external
+        auth(ROLE_ORACLE_MEMBERS_MANAGER)
+    {
+        require(
+            _getMemberId(_vetoOracleMember) != MEMBER_N_FOUND ||
+                _vetoOracleMember == address(0),
+            "OM: MEMBER_N_FOUND"
+        );
         vetoOracleMember = _vetoOracleMember;
     }
 
@@ -308,10 +328,9 @@ contract OracleMaster is Pausable {
      an oracle address to register a new one. Can be called only after sudo is removed.
      @param _collator the collator that the caller represents
      */
-    function unregisterOracleMember(
-        address _oracleMember,
-        address _collator
-    ) external {
+    function unregisterOracleMember(address _oracleMember, address _collator)
+        external
+    {
         require(!sudo, "OM: SUDO");
         // Any address that is a Gov proxy of this collator can remove that collator's oracle
         // This allows collators that lost their oracle's private key to recover and create a new oracle
@@ -361,11 +380,12 @@ contract OracleMaster is Pausable {
         // After sudo is removed, every oracle must be a Gov proxy of an active collator to be able to push reports.
         // This means that ONLY collators can run oracles (one each) and by extension the manager can also run only one oracle.
         uint256 memberIndex = _getMemberId(msg.sender);
-        require(memberIndex != MEMBER_N_FOUND && (sudo || _isProxyOfSelectedCandidate(msg.sender, _collator)), "OM: MEMBER_N_FOUND");
         require(
-            collatorsToOracles[_collator] == msg.sender,
-            "OM: N_COLLATOR"
+            memberIndex != MEMBER_N_FOUND &&
+                (sudo || _isProxyOfSelectedCandidate(msg.sender, _collator)),
+            "OM: MEMBER_N_FOUND"
         );
+        require(collatorsToOracles[_collator] == msg.sender, "OM: N_COLLATOR");
         // Oracles always report the last completed era (round)
         // Is a quorum of the previous era is not reached during the current era, the opportunity to process cover claims for the previous era is lost forever
         require(_isLastCompletedEra(_eraId), "OM: INV_ERA");
@@ -373,8 +393,33 @@ contract OracleMaster is Pausable {
 
         if (_eraId > eraId) {
             eraId = _eraId;
+
+            // ORACLE POINTS EMPTYING - runs once every members.length rounds, for every oracle member
+            // each era chooses a different collator to shift left its points bitmap
+            // adding oracle members may result in a collator getting its points bitmap shifted twice; this is ok and will not have any material consequences
+            address oracleMemberToShiftPoints = members[
+                _eraId % members.length
+            ];
+            if (oracleMemberToShiftPoints != address(0)) {
+                // By shifting the points bitmap to the left by "oraclePointShift" bits, we are gradually shifting the 1's off the uint16 cliff
+                // and getting rid of the "oldest" 1's that were filled in older eras
+                // If the collator does not "refill" its points bitmap with 1's, then, eventually, all 1's will be shifted out and only 0's will be left
+                oraclePointBitmaps[oracleMemberToShiftPoints] =
+                    oraclePointBitmaps[oracleMemberToShiftPoints] <<
+                    oraclePointShift;
+            }
         }
-        reportCounts[_collator]++;
+
+        // ORACLE POINTS FILLING - runs every time an oracle member successfully submits a report (quorum-agreed or not)
+        // Every time an oracle member submits a report, we shift the points bitmap to the left and add a 1 at index 0
+        // This has the effect of gradually "filling" the points bitmap with 1's
+        // An oracle may not get a chance to submit a report for a specific era nonce, if, for example the quorum was already reached, or it was down
+        // This is OK, i.e. oracle members are not required to report for every nonce to qualify the collators for zero-fee cover service
+        uint16 tempBitmap = oraclePointBitmaps[_collator];
+        tempBitmap = tempBitmap << 1;
+        tempBitmap = tempBitmap | (1 << 0);
+        oraclePointBitmaps[_collator] = tempBitmap;
+
         bool veto = vetoOracleMember == msg.sender;
         if (veto) {
             lastEraVetoOracleVoted = _eraId;
@@ -388,7 +433,7 @@ contract OracleMaster is Pausable {
             _eraId,
             _eraNonce,
             _report,
-            msg.sender,
+            _collator,
             veto,
             vetoDisabled
         );
@@ -403,12 +448,14 @@ contract OracleMaster is Pausable {
      @return lastPart - last reported era part
      @return isReported - true if oracle member already reported for given stash, else false
      */
-    function isReportedLastEra(
-        address _oracleMember
-    )
+    function isReportedLastEra(address _oracleMember)
         external
         view
-        returns (uint128 lastEra, uint128 lastPart, bool isReported)
+        returns (
+            uint128 lastEra,
+            uint128 lastPart,
+            bool isReported
+        )
     {
         lastEra = eraId;
         uint256 memberIdx = _getMemberId(_oracleMember);
@@ -428,12 +475,18 @@ contract OracleMaster is Pausable {
         return ORACLE;
     }
 
+    function getOraclePointBitmap(address _oracleMember) external view returns(uint16) {
+        return oraclePointBitmaps[_oracleMember];
+    }
+
     /// ***************** INTERNAL FUNCTIONS *****************
 
     /// @notice Return true if report is consistent
-    function _isConsistent(
-        Types.OracleData memory report
-    ) internal pure returns (bool) {
+    function _isConsistent(Types.OracleData memory report)
+        internal
+        pure
+        returns (bool)
+    {
         uint256 collatorsWithZeroPoints = 0;
         for (uint256 i = 0; i < report.collators.length; i++) {
             if (report.collators[i].points == 0) {
@@ -454,9 +507,11 @@ contract OracleMaster is Pausable {
      * @param _oracleMember member address
      * @return member index
      */
-    function _getMemberId(
-        address _oracleMember
-    ) internal view returns (uint256) {
+    function _getMemberId(address _oracleMember)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 length = members.length;
         for (uint256 i = 0; i < length; ++i) {
             if (members[i] == _oracleMember) {
@@ -488,9 +543,12 @@ contract OracleMaster is Pausable {
         return uint128(staking.round());
     }
 
-    function _isLastCompletedEra(
-        uint128 _eraId
-    ) internal view virtual returns (bool) {
+    function _isLastCompletedEra(uint128 _eraId)
+        internal
+        view
+        virtual
+        returns (bool)
+    {
         return _getEra() - _eraId == 1;
     }
 }

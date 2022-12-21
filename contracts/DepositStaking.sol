@@ -230,17 +230,14 @@ contract DepositStaking {
         lastForcedUndelegationEra = _getEra();
 
         // Find the collator with the lowest delegation
-        uint256 lowestDelegation;
+        uint256 lowestDelegation = type(uint256).max;
         address lowestDelegationCandidate;
-        for (
-            uint256 collatorIndex = 0;
-            collatorIndex < collatorsDelegated.length;
-            collatorIndex++
-        ) {
-            address candidate = collatorsDelegated[collatorIndex];
-            if (candidate != address(0) && (lowestDelegation < delegations[candidate].amount || lowestDelegation == 0)) {
+        for (uint256 i; i < collatorsDelegated.length; i++) {
+            address candidate = collatorsDelegated[i];
+            if (candidate != address(0) && delegations[candidate].amount != 0 && delegations[candidate].amount < lowestDelegation) {
                 lowestDelegation = delegations[candidate].amount;
                 lowestDelegationCandidate = candidate;
+                emit DelegatorBondLessEvent(address(0), delegations[candidate].amount);
             }
         }
         require(lowestDelegationCandidate != address(0), "NO_CANDIDATE");

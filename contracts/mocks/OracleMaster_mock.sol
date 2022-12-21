@@ -7,6 +7,10 @@ contract OracleMaster_mock is OracleMaster {
     bool private isProxyOfSelectedCandidateMock = true;
     bool private simulateNoProxySupportMock = false;
 
+    function setEra_mock(uint64 _era) external {
+        eraId = _era;
+    }
+
     function _isProxyOfSelectedCandidate(
         address _oracle,
         address _collator
@@ -33,5 +37,9 @@ contract OracleMaster_mock is OracleMaster {
 
     function setSimulateNoProxySupport_mock(bool _sim) external {
         simulateNoProxySupportMock = _sim;
+    }
+
+    function setLastEraVetoOracleVoted_mock(uint128 era) external {
+        lastEraVetoOracleVoted = era;
     }
 }
