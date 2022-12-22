@@ -359,6 +359,10 @@ contract OracleMaster is Pausable {
      In the example we just mentioned, the first report sent by oracle A was for nonce 777 and the second report sent by the same oracle
      was for nonce 778. Oracles always send reports for the current nonce. This means that ab oracle may skip a nonce if a quorum has already
      been reached for that nonce.
+     The method also updates two oracle points bitmaps to keep track of oracle activity. Specifically, the metod fills one bit
+     in the bitmap of the provided _collator, and shifts one bit in the bitmap of a random collator (rolling selection).
+     In other words, the oracle records (repenishes) its own activity/points, and "ages" the activity of another oracle.
+     The result is that, if you are an oracle, you need to participate for your points bitmap to not be gradually zeroed out.
      @param _collator The collator that this oracle represents (each collator can run one oracle - each oracle is represented by at most one collator)
      @param _eraId parachain round
      @param _eraNonce era nonce
@@ -396,20 +400,24 @@ contract OracleMaster is Pausable {
         // If the collator does not "refill" its points bitmap with 1's, then, eventually, all 1's will be shifted out and only 0's will be left
         // On each era nonce and memberIndex, we choose a different collator to shift its points bitmap (collators are chosen on a rolling basis)
         // Our goal is that all collators are bit-shited the same, on average, over many era nonces
-        // To do this, we mod the sum of the eraNonce and memberIndex; thus, even if a collator is not shifted in this era nonce,
-        // (because the oracle that had the right memberIndex did not make it into the quorum) chances are it will be shifted in the next nonce
+        // To do this, we mod the sum of the eraNonce and memberIndex. For M = member count, and Q = quorum size,
+        // we will have N = M - Q number of oracles missing out on reporting an era nonce.
+        // Therefore, N members will also escape points bitmap shifting in every era. At the same time, only N members
+        // were able to set the rightmost bit to 1 (next section). Since the number of members that was shifted is equal to the number
+        // of members that filled (they are not the same members), the two forces balance each other out in the longterm.
+        // So, rate of emptying bitmaps = rate of filling bitmaps.
         address oracleMemberToShiftPoints = members[(_eraNonce + memberIndex) % members.length];
         address collatorMemberToShiftPoints = oraclesToCollators[oracleMemberToShiftPoints];
         oraclePointBitmaps[collatorMemberToShiftPoints] = oraclePointBitmaps[collatorMemberToShiftPoints] << 1;
 
-        // ORACLE POINTS FILLING (left shift + 1 at 0)
+        // ORACLE POINTS FILLING (left shift + set bit to 1 at 0)
         // Every time an oracle member submits a report, we shift the points bitmap to the left and add a 1 at index 0
         // This has the effect of gradually "filling" the points bitmap with 1's (from the right to the left)
         // An oracle may not get a chance to submit a report for a specific era nonce, if, for example the quorum was already reached, or it was down
         // This is OK because oracle members only need to report for 1 eraNonce to qualify their collators as oracle-running members
         // This also means that an oracle may miss all reports out of bad luck. The manager will ensure that the quorum
         // is large enough to minimize this probability; however, it cannot be zeroed out. Fortunately, the only effect that it will
-        // have is that, on rare occasions, the oracle-running member will pay the non-oracle-running member fee.
+        // have is that, on very rare occasions, the oracle-running member will pay the non-oracle-running member fee.
         uint32 tempBitmap = oraclePointBitmaps[_collator];
         tempBitmap = tempBitmap << 1;
         tempBitmap = tempBitmap | (1 << 0);
