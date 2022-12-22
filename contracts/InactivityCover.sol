@@ -195,7 +195,7 @@ contract InactivityCover is IPushable {
             members[_member].deposit + msg.value <= MAX_DEPOSIT_TOTAL,
             "EXC_MAX_DEP"
         );
-        require(members[_member].defaultCount <= 3, "TOO_MANY_DEFAULTS");
+        require(members[_member].defaultCount <= 3, "EXC_MAX_DEF");
 
         if (!members[_member].isMember) {
             memberAddresses.push(_member);
