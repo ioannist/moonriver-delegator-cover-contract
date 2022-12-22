@@ -434,7 +434,7 @@ contract InactivityCover is IPushable {
     @dev Cover members are charged a fee every 84 rounds (1 week). Members can wave this fee by running an oracle.
     The collected fees, from all non-oracle-running members, are equally split and credited to oracle-running members.
     We directly credit the deposits of the oracle-running members, which means that the deposits of oracle-running members
-    will grow over time (assuming zero cover claims).
+    will grow over time (assuming zero cover claims) while deposits of non-oracle-running members will decrease over time.
     The purpose of the fee is to incentivize collators to run oracles, thereby increasing the security of the contract.
     The manager will experiment with setting the fee to a value that incentivizes enough collators to run oracles,
     without discouraging the collators that cannot run oracles from using the contract.
@@ -443,9 +443,9 @@ contract InactivityCover is IPushable {
         uint128 eraNow = _getEra();
         require(eraNow > membersInvoicedLastEra, "ALREADY_INVOICED");
         // can only charge fee every 32 eras. We use 32 eras to match the uint32 oracle points bitmap.
-        // The bitmap bits get shifts on era nonces (not eras), and sometimes, twice on the same era nonce (and sometimes zero)
+        // The bitmap bits get shifted on era nonces (not eras), and sometimes, twice on the same era nonce (and sometimes zero)
         // However, on average, we expect most eras to last one era nonce (no claims). The idea is that, invoicing should
-        // decide if a member qualifies for a fee waiver by checking its oracle activity since the last time invoicing ran
+        // decide if a member qualifies for a fee waiver by checking its oracle activity since roughly the last time invoicing ran
         require(eraNow % 32 == 0, "ERA_INV");
         require(memberFee > 0, "ZERO_FEE");
         membersInvoicedLastEra = eraNow;
