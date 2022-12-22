@@ -195,6 +195,7 @@ contract InactivityCover is IPushable {
             members[_member].deposit + msg.value <= MAX_DEPOSIT_TOTAL,
             "EXC_MAX_DEP"
         );
+        require(members[_member].defaultCount <= 3, "TOO_MANY_DEFAULTS");
 
         if (!members[_member].isMember) {
             memberAddresses.push(_member);
@@ -583,6 +584,17 @@ contract InactivityCover is IPushable {
         // Cannot set delay to longer than 3 months (12 rounds per day * 30 * 3)
         require(_erasCovered <= 1080, "HIGH");
         erasCovered[member] = _erasCovered;
+    }
+
+    /**
+    @dev Manager can "forgive" a member that has been blocked from participating due to many defaults
+    @param _defaultCount the new default count
+    @param _member the member to update its default count
+    */
+    function setDefaultCount(uint128 _defaultCount, address _member) external auth(ROLE_MANAGER) {
+        // Canot increase the default count of a member
+        require(_defaultCount < members[_member].defaultCount, "INV_DEF_COUNT");
+        members[_member].defaultCount = _defaultCount;
     }
 
     /**
