@@ -939,7 +939,7 @@ contract InactivityCover is IPushable {
         require(amount > 0, "ZERO_DECR");
         require(members[member].deposit > 0, "NO_DEP");
         require(members[member].deposit >= amount, "EXC_DEP");
-        require(scheduledDecreasesMap[msg.sender].amount == 0, "DECR_EXIST");
+        require(scheduledDecreasesMap[member].amount == 0, "DECR_EXIST");
         scheduledDecreasesMap[member] = ScheduledDecrease(_getEra(), amount);
         emit DecreaseCoverScheduledEvent(member, amount);
     }

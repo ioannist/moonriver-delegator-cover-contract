@@ -24,12 +24,19 @@ const privateKeys = [
    process.env.MANAGER_KEY,
    process.env.MEMBER1_KEY,
    process.env.MEMBER2_KEY,
+   process.env.MEMBER3_KEY,
    process.env.DELEGATOR1_KEY,
    process.env.DELEGATOR2_KEY,
-   process.env.ORACLE_MANAGER_KEY
+   process.env.DELEGATOR3_KEY,
+   process.env.ORACLE_MANAGER_KEY,
+   process.env.AGENT007_KEY,
+   process.env.MEMBER1_PROXY_KEY,
+   process.env.MEMBER2_PROXY_KEY,
+   process.env.MEMBER3_PROXY_KEY,
+   process.env.ORACLE1_KEY,
+   process.env.ORACLE2_KEY,
+   process.env.ORACLE3_KEY
 ];
-
-
 
 module.exports = {
    networks: {
@@ -39,7 +46,7 @@ module.exports = {
             return new HDWalletProvider({
                privateKeys,
                providerOrUrl: 'http://localhost:9933/',
-               numberOfAddresses: 10,
+               numberOfAddresses: 17,
                //derivationPath: "m/44'/60'/0'/0"
             });
          },
