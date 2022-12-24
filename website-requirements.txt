@@ -76,3 +76,10 @@ delegate(
     3,185,000
 
 2,505,000
+
+
+stake unit cover, set from chain
+
+change erasCovered to calculate from start
+
+check for zeroes in calcs

@@ -270,8 +270,7 @@ contract InactivityCover is IPushable {
     @dev Members can protect their delegators against them going down (zero points) or out (not in active set) or both.
     At least one cover type is required. The change becomes effective after a number of eras have passed to protect delegators.
     The delay period is different for each member and it depends on the cover duration, i.e. erasCovered (which depends on deposit).
-    The method stores the era in which a type of cover was disabled and applies it (or not) in future eras based on what the
-    erasCovered value is for that member on that era.
+    The method stores the era in which a type of cover will be disabled based on the current erasCovered value.
     @param _noZeroPtsCoverAfterEra false if you want to cover zero-point rounds (down), true if you want to disbale that cover type
     @param _noActiveSetCoverAfterEra false if you want to cover being kicked out of the active set (out), true if you want to disable that cover type
     */
@@ -287,13 +286,12 @@ contract InactivityCover is IPushable {
             _noZeroPtsCoverAfterEra || _noActiveSetCoverAfterEra,
             "INV_COVER"
         );
-        // The eraIds signify the eras on which the cover stopped being advertised on the stakeX website.
-        // This is not the same as the era when the cover stopped protecting the delegators! That era equals eraId + erasCovered[msg.sender]
+        // The eraIds signify the eras on which the cover will stop providing that specific type
         members[_member].noZeroPtsCoverAfterEra = _noZeroPtsCoverAfterEra
-            ? _getEra()
+            ? _getEra() + erasCovered[_member]
             : 0;
         members[_member].noActiveSetCoverAfterEra = _noActiveSetCoverAfterEra
-            ? _getEra()
+            ? _getEra() + erasCovered[_member]
             : 0;
         emit MemberSetCoverTypesEvent(
             _member,
@@ -322,8 +320,8 @@ contract InactivityCover is IPushable {
     @notice Execute a scheduled cover decrease (withdrawal) by a member
     @dev Anybody can execute a matured deposit decrease request of a member.
     For the request to be mature/executable, a number of eras must have passed since the request was made.
-    This "delay period" is different for every member and depends on that memebrs total deposit (the larger the deposit, the longer the period).
-    Since a deposit can be increase, it can be the case that a matured decrease request becomes imature again if it is not executed.
+    This erasCovered "delay period" is different for every member and depends on that memebrs total deposit (the larger the deposit, the longer the period).
+    The delay period is set when the decrease is scheduled, and is based on the data at that era.
     The method also records defaults in paying members by updating the memberNotPaid value. Should a default be recorded,
     no other default will be recorded until that default is resolved. A default limits the staking manager's ability
     to delegate or bondMore of the contract's liquid funds.
@@ -333,8 +331,7 @@ contract InactivityCover is IPushable {
         require(scheduledDecreasesMap[_member].amount != 0, "DECR_N_EXIST");
         require(
             // The current era must be after the era the decrease is scheduled for
-            scheduledDecreasesMap[_member].era + erasCovered[_member] <=
-                _getEra(),
+            scheduledDecreasesMap[_member].era <= _getEra(),
             "NOT_EXEC"
         );
 
@@ -573,7 +570,7 @@ contract InactivityCover is IPushable {
     }
 
     /**
-    @dev Manager can override the erasCovered value of a member temporarilly. This is temporary, because the
+    @dev Manager can override the erasCovered value of a member temporarilly. This is temporary because the
     value will be overwritten again in the next pushData or member deposit.
     @param _erasCovered The decrease execution delay
     */
@@ -795,10 +792,7 @@ contract InactivityCover is IPushable {
             if (
                 // check that member is offering active-set cover;
                 // if noActiveSetCoverAfterEra is a positive number, then the member will stop offering cover after noActiveSetCoverAfterEra + erasCovered
-                (noActiveSetCoverAfterEra == 0 ||
-                    noActiveSetCoverAfterEra +
-                        erasCovered[collatorData.collatorAccount] >
-                    eraId) &&
+                (noActiveSetCoverAfterEra == 0 || noActiveSetCoverAfterEra > eraId) &&
                 // collator must not be in the active set
                 !collatorData.active
             ) {
@@ -812,10 +806,7 @@ contract InactivityCover is IPushable {
             if (
                 // check that member is offering zero-points cover;
                 // if noZeroPtsCoverAfterEra is a positive number, then the member will stop offering cover after noZeroPtsCoverAfterEra + erasCovered
-                (noZeroPtsCoverAfterEra == 0 ||
-                    noZeroPtsCoverAfterEra +
-                        erasCovered[collatorData.collatorAccount] >
-                    eraId) &&
+                (noZeroPtsCoverAfterEra == 0 || noZeroPtsCoverAfterEra > eraId) &&
                 // collator must be in the active set and have reported 0 points for this era
                 collatorData.active &&
                 collatorData.points == 0
@@ -932,16 +923,16 @@ contract InactivityCover is IPushable {
     proportional to the deposit. This is to protect delegators. For exaple, if a member's deposit provides cover
     for 3 months, delegators should be able to assume that even if that member schedules a decrease tomorrow,
     they would still be protected for enother 3 months.
-     @param amount The amount to decrease the cover deposit by.
-     @param member The member to refund their deposit to.
+     @param _amount The amount to decrease the cover deposit by.
+     @param _member The member to refund their deposit to.
     */
-    function _scheduleDecreaseCover(uint256 amount, address member) private {
-        require(amount > 0, "ZERO_DECR");
-        require(members[member].deposit > 0, "NO_DEP");
-        require(members[member].deposit >= amount, "EXC_DEP");
-        require(scheduledDecreasesMap[member].amount == 0, "DECR_EXIST");
-        scheduledDecreasesMap[member] = ScheduledDecrease(_getEra(), amount);
-        emit DecreaseCoverScheduledEvent(member, amount);
+    function _scheduleDecreaseCover(uint256 _amount, address _member) private {
+        require(_amount > 0, "ZERO_DECR");
+        require(members[_member].deposit > 0, "NO_DEP");
+        require(members[_member].deposit >= _amount, "EXC_DEP");
+        require(scheduledDecreasesMap[_member].amount == 0, "DECR_EXIST");
+        scheduledDecreasesMap[_member] = ScheduledDecrease(_getEra() + erasCovered[_member], _amount);
+        emit DecreaseCoverScheduledEvent(_member, _amount);
     }
 
     function _getFreeBalance() private view returns (uint256) {
