@@ -259,7 +259,7 @@ contract('DepositStaking', accounts => {
         await ic.depositCover(member1, { from: member1Proxy, value: deposit }); // ic gets 200 ether
         await ds.delegate(candidate, amount, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ds.delegate(candidate2, amount, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
-        return expect(await ds.stakedTotal({ from: dev })).to.be.bignumber.equal(stakedTotalExpected);
+        return expect(await ds.stakedTotal({ from: agent007 })).to.be.bignumber.equal(stakedTotalExpected);
     })
 
     it("one collator is removed from delegations, but the second one remains", async () => {
@@ -325,7 +325,7 @@ contract('DepositStaking', accounts => {
         expect(await ds.getIsDelegated(member1, { from: stakingManager })).to.be.false;
         expect(await ds.getDelegation(member1, { from: stakingManager })).to.be.bignumber.equal(delegationExpected);
         expect(await ds.getCollatorsDelegated(0, { from: stakingManager })).to.be.equal(ZERO_ADDR);
-        expect(await ds.stakedTotal({ from: dev })).to.be.bignumber.equal(stakedTotalExpected);
+        expect(await ds.stakedTotal({ from: agent007 })).to.be.bignumber.equal(stakedTotalExpected);
         return expect(await web3.eth.getBalance(ic.address)).to.be.bignumber.equal(icBalanceExpected);
     })
 
@@ -343,7 +343,7 @@ contract('DepositStaking', accounts => {
 
         await ds.delegate(member1, delegation, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ic.setMemberNotPaid_mock(member2);
-        await ic.cancelDecreaseCover(member2, { from: member2 }); // should clear memberNotPaid
+        await ic.cancelDecreaseCover(member2, { from: member2Proxy }); // should clear memberNotPaid
         return expect(ds.forceScheduleRevoke({ from: agent007 })).to.be.rejectedWith('FORBIDDEN');
     })
 
@@ -472,7 +472,7 @@ contract('DepositStaking', accounts => {
         expect(await ds.getDelegation(member1, { from: stakingManager })).to.be.bignumber.equal(delegationExpected);
         expect(await ds.getCollatorsDelegated(1, { from: stakingManager })).to.be.equal(ZERO_ADDR);
 
-        expect(await ds.stakedTotal({ from: dev })).to.be.bignumber.equal(stakedTotalExpected);
+        expect(await ds.stakedTotal({ from: agent007 })).to.be.bignumber.equal(stakedTotalExpected);
         expect(await web3.eth.getBalance(ic.address)).to.be.bignumber.equal(icBalanceExpected);
 
         await ic.timetravel(1 + _eras_between_forced_undelegation);
@@ -483,7 +483,7 @@ contract('DepositStaking', accounts => {
         expect(await ds.getDelegation(member2, { from: stakingManager })).to.be.bignumber.equal(delegationExpected);
         expect(await ds.getCollatorsDelegated(0, { from: stakingManager })).to.be.equal(ZERO_ADDR);
 
-         expect(await ds.stakedTotal({ from: dev })).to.be.bignumber.equal(stakedTotalExpected2);
+         expect(await ds.stakedTotal({ from: agent007 })).to.be.bignumber.equal(stakedTotalExpected2);
          expect(await web3.eth.getBalance(ic.address)).to.be.bignumber.equal(icBalanceExpected);
     })
 

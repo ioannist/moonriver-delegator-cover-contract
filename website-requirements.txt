@@ -80,6 +80,4 @@ delegate(
 
 stake unit cover, set from chain
 
-change erasCovered to calculate from start
-
-check for zeroes in calcs
+check for zeroes in calcs 
