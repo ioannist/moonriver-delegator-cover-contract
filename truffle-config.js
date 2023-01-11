@@ -83,7 +83,7 @@ module.exports = {
          settings: {
             optimizer: {
               enabled: true,
-              runs: 365*12*10*10
+              runs: 365*12*10*10,
             },
             viaIR: true
           }
