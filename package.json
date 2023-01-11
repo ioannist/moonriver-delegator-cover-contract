@@ -1,5 +1,5 @@
 {
-   "name": "moonbeam-truffle-box",
+   "name": "moonbeam-delegator-cover-contract",
    "version": "1.0.0",
    "dependencies": {
       "@openzeppelin/contracts": "^4.6.0",

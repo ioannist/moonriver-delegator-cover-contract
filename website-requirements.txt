@@ -73,11 +73,5 @@ delegate(
 
     scheduleDelegatorRevoke(address candidate)
 
-    3,185,000
-
-2,505,000
 
 
-stake unit cover, set from chain
-
-check for zeroes in calcs 
