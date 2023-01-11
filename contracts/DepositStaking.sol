@@ -43,6 +43,8 @@ contract DepositStaking {
     /// Max percentage of contract balance that can be staked; controlled by manager, imposed on staking-manager
     uint256 public maxPercentStaked = 100;
 
+    address contractV2;
+
     /// Manager role
     bytes32 internal constant ROLE_MANAGER = keccak256("ROLE_MANAGER");
 

@@ -118,6 +118,11 @@ contract InactivityCover is IPushable {
     // The least era when members were successfulyl invoiced
     uint128 public membersInvoicedLastEra;
 
+    // This is the address of the V2 of the contract; used for moving deposits when V2 is ready
+    address payable contractV2;
+    // a map of members that upgraded to V2
+    mapping(address => bool) upgraded;
+
     // Manager role
     bytes32 internal constant ROLE_MANAGER = keccak256("ROLE_MANAGER");
 
@@ -212,6 +217,18 @@ contract InactivityCover is IPushable {
         }
         membersDepositTotal += msg.value;
         emit DepositEvent(_member, msg.value);
+    }
+
+    /**
+    @dev Use this method to move your deposit balance to a new version of this contract. Works only
+    if the manager has set the addres of the V2 contract, and can only be initiated by the depositor/member.
+    */
+    function upgradeToV2(address _member) external {
+        require(_isMemberAuth(msg.sender, _member), "N_COLLATOR_PROXY");
+        require(contractV2 != address(0), "NO_V2");
+        upgraded[_member] = true;
+        (bool sent, ) = contractV2.call{value: members[_member].deposit}("");
+        require(sent, "TRANSF_FAIL");
     }
 
     /**
@@ -690,6 +707,10 @@ contract InactivityCover is IPushable {
         memberFee = _memberFee;
     }
 
+    function setContractV2(address payable _contractV2) external auth(ROLE_MANAGER) {
+        contractV2 = _contractV2;
+    }    
+
     /// ***************** GETTERS *****************
 
     function getMember(
@@ -734,6 +755,10 @@ contract InactivityCover is IPushable {
 
     function getBalance() public view returns (uint256) {
         return address(this).balance;
+    }
+
+    function isUpgraded(address _member) external view returns(bool) {
+        return upgraded[_member];
     }
 
     /// ***************** FUNCTIONS CALLABLE ONLY BY OTHERS CONTRACTS *****************

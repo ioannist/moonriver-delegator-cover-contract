@@ -12,7 +12,7 @@ interface IOracle {
 
     function clearReporting() external;
 
-    function isReported(uint256 index) external view returns (bool);
+    function isReported(uint256 index) external view returns (uint128, bool);
 
     function setInactivityCover(address _inactivity_cover) external;
 

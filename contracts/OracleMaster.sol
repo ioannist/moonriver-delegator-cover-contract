@@ -448,24 +448,25 @@ contract OracleMaster is Pausable {
      @notice Return last reported era and oracle is already reported indicator
      @param _oracleMember - oracle member address
      @return lastEra - last reported era
-     @return lastPart - last reported era part
-     @return isReported - true if oracle member already reported for given stash, else false
+     @return lastEraNonce - last reported era nonce
+     @return reported - true if oracle member already reported for given stash, else false
      */
     function isReportedLastEra(address _oracleMember)
         external
         view
         returns (
             uint128 lastEra,
-            uint128 lastPart,
-            bool isReported
+            uint128 lastEraNonce,
+            bool reported
         )
     {
         lastEra = eraId;
         uint256 memberIdx = _getMemberId(_oracleMember);
         if (memberIdx == MEMBER_N_FOUND) {
-            return (lastEra, lastPart, false);
+            return (lastEra, lastEraNonce, false);
         }
-        return (lastEra, lastPart, IOracle(ORACLE).isReported(memberIdx));
+        (lastEraNonce, reported) = IOracle(ORACLE).isReported(memberIdx);
+        return (lastEra, lastEraNonce, reported);
     }
 
     /// ***************** GETTERS *****************

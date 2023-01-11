@@ -160,8 +160,9 @@ contract Oracle {
      */
     function isReported(
         uint256 _index
-    ) external view onlyOracleMaster returns (bool) {
-        return (currentReportBitmask & (1 << _index)) != 0;
+    ) external view onlyOracleMaster returns (uint128, bool) {
+        bool reported = (currentReportBitmask & (1 << _index)) != 0;
+        return (eraNonce, reported);
     }
 
     /// ***************** INTERNAL FUNCTIONS *****************
