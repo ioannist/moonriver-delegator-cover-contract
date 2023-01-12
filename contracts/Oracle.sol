@@ -10,7 +10,7 @@ import "./utils/ReportUtils.sol";
 contract Oracle {
     using ReportUtils for uint256;
 
-    event NextEraNonce(uint128 eraNonce);
+    event ReportingCleared();
     event ReportSubmitted(uint128 eraId, uint128 eraNonce, address oracle);
 
     // Current era report  hashes
@@ -27,7 +27,7 @@ contract Oracle {
     // oracle master contract address
     address public ORACLE_MASTER;
 
-    // current part of the current era
+    // current era nonce
     uint128 public eraNonce;
 
     // Current report variant hash by veto oracle member
@@ -195,7 +195,7 @@ contract Oracle {
         delete currentReports;
         delete currentVetoReportVariant; // set to 0
         eraNonce++;
-        emit NextEraNonce(eraNonce);
+        emit ReportingCleared();
     }
 
     /**

@@ -20,6 +20,8 @@ contract OracleMaster is Pausable {
 
     // current era id
     uint128 public eraId;
+    // first eraNonce of current eraId
+    uint128 public firstEraNonce;
 
     // Oracle members
     address[] public members;
@@ -393,6 +395,7 @@ contract OracleMaster is Pausable {
 
         if (_eraId > eraId) {
             eraId = _eraId;
+            firstEraNonce = _eraNonce;
         }
 
         // ORACLE POINTS EMPTYING (left shift)
@@ -448,7 +451,8 @@ contract OracleMaster is Pausable {
      @notice Return last reported era and oracle is already reported indicator
      @param _oracleMember - oracle member address
      @return lastEra - last reported era
-     @return lastEraNonce - last reported era nonce
+     @return lastEraNonce - last reported era nonce (an era may have multiple nonces if more than 1 collators have 0 points)
+     @return lastFirstEraNonce - the first era nonce of the last reported era
      @return reported - true if oracle member already reported for given stash, else false
      */
     function isReportedLastEra(address _oracleMember)
@@ -457,16 +461,16 @@ contract OracleMaster is Pausable {
         returns (
             uint128 lastEra,
             uint128 lastEraNonce,
+            uint128 lastFirstEraNonce,
             bool reported
         )
     {
-        lastEra = eraId;
         uint256 memberIdx = _getMemberId(_oracleMember);
-        if (memberIdx == MEMBER_N_FOUND) {
-            return (lastEra, lastEraNonce, false);
-        }
+        require(memberIdx != MEMBER_N_FOUND, "OM: MEMBER_N_FOUND");
+        lastEra = eraId;
+        lastFirstEraNonce = firstEraNonce;
         (lastEraNonce, reported) = IOracle(ORACLE).isReported(memberIdx);
-        return (lastEra, lastEraNonce, reported);
+        return (lastEra, lastEraNonce, lastFirstEraNonce, reported);
     }
 
     /// ***************** GETTERS *****************

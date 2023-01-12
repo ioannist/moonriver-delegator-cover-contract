@@ -1663,7 +1663,7 @@ contract('InactivityCover', accounts => {
             .to.be.rejectedWith("NO_REWARDS");
     })
 
-    it("reducing quorum size results in softenQuorum and automatic pushing of report", async () => {
+    it("reducing quorum size results in softenQuorum and automatic pushing of report, and reporting-cleared event is fired", async () => {
         const newEra = new BN("222");
         await om.setQuorum("3", { from: oracleManager })
         await om.addOracleMember(member1, oracle1, { from: oracleManager });
@@ -1673,8 +1673,9 @@ contract('InactivityCover', accounts => {
         expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
         await om.reportPara(member2, newEra, 0, oracleData, { from: oracle2 });
         expect(await or.eraNonce()).to.be.bignumber.equal(new BN("0"));
-        await om.setQuorum("2", { from: oracleManager })
+        const tx = await om.setQuorum("2", { from: oracleManager })
         expect(await or.eraNonce()).to.be.bignumber.equal(new BN("1"));
+        assert.ok(tx.receipt.rawLogs.some(l => { return l.topics[0] == '0x' + sha3("ReportingCleared()") }), "Event not emitted");
     })
 
 
