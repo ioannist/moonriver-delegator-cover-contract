@@ -1,0 +1,435 @@
+{
+	"compiler": {
+		"version": "0.8.3+commit.8d00100c"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint128",
+						"name": "eraId",
+						"type": "uint128"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint128",
+						"name": "eraNonce",
+						"type": "uint128"
+					},
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "oracle",
+						"type": "address"
+					}
+				],
+				"name": "ReportSubmitted",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [],
+				"name": "ReportingCleared",
+				"type": "event"
+			},
+			{
+				"inputs": [],
+				"name": "ORACLE_MASTER",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "PUSHABLES",
+				"outputs": [
+					{
+						"internalType": "address payable",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address payable",
+						"name": "_pushable",
+						"type": "address"
+					},
+					{
+						"internalType": "bool",
+						"name": "_toAdd",
+						"type": "bool"
+					}
+				],
+				"name": "addRemovePushable",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "clearReporting",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "eraNonce",
+				"outputs": [
+					{
+						"internalType": "uint128",
+						"name": "",
+						"type": "uint128"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_oracleMaster",
+						"type": "address"
+					},
+					{
+						"internalType": "address payable",
+						"name": "_pushable",
+						"type": "address"
+					}
+				],
+				"name": "initialize",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_index",
+						"type": "uint256"
+					}
+				],
+				"name": "isReported",
+				"outputs": [
+					{
+						"internalType": "uint128",
+						"name": "",
+						"type": "uint128"
+					},
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_index",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_quorum",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint128",
+						"name": "_eraId",
+						"type": "uint128"
+					},
+					{
+						"internalType": "uint128",
+						"name": "_eraNonce",
+						"type": "uint128"
+					},
+					{
+						"components": [
+							{
+								"internalType": "uint256",
+								"name": "totalStaked",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint128",
+								"name": "totalSelected",
+								"type": "uint128"
+							},
+							{
+								"internalType": "uint128",
+								"name": "orbitersCount",
+								"type": "uint128"
+							},
+							{
+								"internalType": "uint128",
+								"name": "round",
+								"type": "uint128"
+							},
+							{
+								"internalType": "bytes32",
+								"name": "blockHash",
+								"type": "bytes32"
+							},
+							{
+								"internalType": "uint128",
+								"name": "blockNumber",
+								"type": "uint128"
+							},
+							{
+								"internalType": "uint128",
+								"name": "awarded",
+								"type": "uint128"
+							},
+							{
+								"components": [
+									{
+										"internalType": "address",
+										"name": "collatorAccount",
+										"type": "address"
+									},
+									{
+										"internalType": "uint128",
+										"name": "points",
+										"type": "uint128"
+									},
+									{
+										"internalType": "bool",
+										"name": "active",
+										"type": "bool"
+									},
+									{
+										"internalType": "uint256",
+										"name": "bond",
+										"type": "uint256"
+									},
+									{
+										"internalType": "uint256",
+										"name": "delegationsTotal",
+										"type": "uint256"
+									},
+									{
+										"components": [
+											{
+												"internalType": "address",
+												"name": "ownerAccount",
+												"type": "address"
+											},
+											{
+												"internalType": "uint256",
+												"name": "amount",
+												"type": "uint256"
+											}
+										],
+										"internalType": "struct Types.DelegationsData[]",
+										"name": "topActiveDelegations",
+										"type": "tuple[]"
+									}
+								],
+								"internalType": "struct Types.CollatorData[]",
+								"name": "collators",
+								"type": "tuple[]"
+							}
+						],
+						"internalType": "struct Types.OracleData",
+						"name": "_staking",
+						"type": "tuple"
+					},
+					{
+						"internalType": "address",
+						"name": "_oracleCollator",
+						"type": "address"
+					},
+					{
+						"internalType": "bool",
+						"name": "veto",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "vetoDisabled",
+						"type": "bool"
+					}
+				],
+				"name": "reportPara",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint8",
+						"name": "_quorum",
+						"type": "uint8"
+					},
+					{
+						"internalType": "uint128",
+						"name": "_eraId",
+						"type": "uint128"
+					}
+				],
+				"name": "softenQuorum",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {
+				"initialize(address,address)": {
+					"params": {
+						"_oracleMaster": "oracle master address"
+					}
+				},
+				"isReported(uint256)": {
+					"params": {
+						"_index": "oracle member index"
+					},
+					"returns": {
+						"_0": "is reported indicator"
+					}
+				},
+				"reportPara(uint256,uint256,uint128,uint128,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[]),address,bool,bool)": {
+					"details": "A report is considered and final and is pushed to the cover contract when A) Q number of oracles have reported exactly the same report, where Q = quorum B) the veto account has submitted a report and it agrees with the quorum report (immediately or when quorum is reached), OR the veto account is disabled",
+					"params": {
+						"_eraId": "current era id",
+						"_index": "oracle member index",
+						"_quorum": "the minimum number of voted oracle members to accept a variant",
+						"_staking": "report data"
+					}
+				},
+				"softenQuorum(uint8,uint128)": {
+					"details": "Method can trigger to pushing data to ledger if quorum threshold decreased and now for contract already reached new threshold.",
+					"params": {
+						"_eraId": "current era id",
+						"_quorum": "new quorum threshold"
+					}
+				}
+			},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {
+				"clearReporting()": {
+					"notice": "Clear data about current reporting, allowed to call only by oracle master contract"
+				},
+				"initialize(address,address)": {
+					"notice": "Initialize oracle contract"
+				},
+				"isReported(uint256)": {
+					"notice": "Returns true if member is already reported"
+				},
+				"reportPara(uint256,uint256,uint128,uint128,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[]),address,bool,bool)": {
+					"notice": "Accept oracle report data, allowed to call only by oracle master contract"
+				},
+				"softenQuorum(uint8,uint128)": {
+					"notice": "Change quorum threshold, allowed to call only by oracle master contract"
+				}
+			},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/Oracle.sol": "Oracle"
+		},
+		"evmVersion": "istanbul",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": true,
+			"runs": 9999
+		},
+		"remappings": []
+	},
+	"sources": {
+		"@openzeppelin/contracts/proxy/utils/Initializable.sol": {
+			"keccak256": "0x2a21b14ff90012878752f230d3ffd5c3405e5938d06c97a7d89c0a64561d0d66",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://3313a8f9bb1f9476857c9050067b31982bf2140b83d84f3bc0cec1f62bbe947f",
+				"dweb:/ipfs/Qma17Pk8NRe7aB4UD3jjVxk7nSFaov3eQyv86hcyqkwJRV"
+			]
+		},
+		"@openzeppelin/contracts/utils/Address.sol": {
+			"keccak256": "0xd6153ce99bcdcce22b124f755e72553295be6abcd63804cfdffceb188b8bef10",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://35c47bece3c03caaa07fab37dd2bb3413bfbca20db7bd9895024390e0a469487",
+				"dweb:/ipfs/QmPGWT2x3QHcKxqe6gRmAkdakhbaRgx3DLzcakHz5M4eXG"
+			]
+		},
+		"contracts/Oracle.sol": {
+			"keccak256": "0xeafb697ad39f8bb985899cde23bdfd2807c6799efb5d36fcae8e28cace75710e",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://ee2b217101855b5204d1a8046248d11d56f66ec8abddc751812bbf7cc2edeb85",
+				"dweb:/ipfs/QmXPBwawyaV64J3qSbBjgypjC6KernmTDdhbjcorUgiMJy"
+			]
+		},
+		"contracts/utils/ReportUtils.sol": {
+			"keccak256": "0xbd49fe54051b712f19255973235fe12df513d0e2f27ef0abf5fa40649b5cd608",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://0c73cfb790ceb9a434978dacf5d4167bb229ea947d4ea5ceeca7192c66c3c01a",
+				"dweb:/ipfs/QmebTCCXwV6XvZM945LZLFn38rUvQZ36cYxUD58X3GgDQC"
+			]
+		},
+		"interfaces/IOracleMaster.sol": {
+			"keccak256": "0xdcd3a7af19a7ec77876de13152f6ee0a182d529bb8383b9f8f66c2b245176d9d",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://91e8d29ec7a0d41d8ef85bd958e988c91cbc9e6322259cce2fa30454b4956263",
+				"dweb:/ipfs/Qme3M4dYMY1oakitieNpBocMzn2LTBqeB2S1zGruAf6j1c"
+			]
+		},
+		"interfaces/IPushable.sol": {
+			"keccak256": "0x7bb9f420dce2e76ec1a64821c67d3b697f13943f3341b3e222a26e1ec67dc7be",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://62bacf306266595b885c55bf350f48551792febb83a0f80c00d115bbd96b3b4d",
+				"dweb:/ipfs/QmQTww5Dipk33K2wSTcwcAjh25jYwkGEKnx2eJemGyuMRt"
+			]
+		},
+		"interfaces/Types.sol": {
+			"keccak256": "0x96f8c5e28906c66e24fd6a70a46c3bde6f268182592c8c38eac25622287fd907",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://defe674716172a599c7da65af4f6516bf0d78f9321803c4d5091ebb7868b2fae",
+				"dweb:/ipfs/Qmep3kry2H1Jvjacs6TakwBfnQ8KVfHccgRuM9o8of2cpZ"
+			]
+		}
+	},
+	"version": 1
+}

@@ -393,9 +393,11 @@ contract OracleMaster is Pausable {
         require(_isLastCompletedEra(_eraId), "OM: INV_ERA");
         require(_isConsistent(_report), "OM: INCORRECT_REPORT");
 
+        bool newEra;
         if (_eraId > eraId) {
             eraId = _eraId;
             firstEraNonce = _eraNonce;
+            newEra = true;
         }
 
         // ORACLE POINTS EMPTYING (left shift)
@@ -441,7 +443,8 @@ contract OracleMaster is Pausable {
             _report,
             _collator,
             veto,
-            vetoDisabled
+            vetoDisabled,
+            newEra
         );
     }
 

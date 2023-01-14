@@ -75,8 +75,14 @@ contract Oracle {
         Types.OracleData calldata _staking,
         address _oracleCollator,
         bool veto,
-        bool vetoDisabled
+        bool vetoDisabled,
+        bool newEra
     ) external onlyOracleMaster {
+
+        if (newEra) {
+            _clearReporting();
+        }
+
         {
             uint256 mask = 1 << _index;
             uint256 reportBitmask = currentReportBitmask;
