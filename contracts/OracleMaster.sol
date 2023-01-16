@@ -10,6 +10,14 @@ import "../interfaces/IProxy.sol";
 import "../interfaces/StakingInterface.sol";
 
 contract OracleMaster is Pausable {
+
+    // The following config properties are no used by the contract but they are loaded and used by the oracle binary
+    // We use the contact as a means for the oracle mamager to be able to update the config of all oracle binaries
+    struct OracleBinaryConfig {
+        uint128 MAX_DELEGATORS_IN_REPORT; // up to how many delegators should be included in topActiveDelegations for each collator
+        uint128 RUN_PERIOD_IN_SECONDS; // evert how many seconds should the oracle binary run (on average)
+    }
+
     event MemberAdded(address member);
     event MemberRemoved(address member);
     event QuorumChanged(uint8 QUORUM);
@@ -17,6 +25,8 @@ contract OracleMaster is Pausable {
 
     ParachainStaking public staking;
     IProxy public proxy;
+
+    OracleBinaryConfig public oracleBinaryConfig;
 
     // current era id
     uint128 public eraId;
@@ -115,6 +125,11 @@ contract OracleMaster is Pausable {
     }
 
     /// ***************** ORACLE MANAGER FUNCTIONS *****************
+
+    function setOracleBinaryConfig(uint128 maxDelegatorsInReport, uint128 runPeriodInSeconds) external auth(ROLE_ORACLE_QUORUM_MANAGER) {
+        oracleBinaryConfig.MAX_DELEGATORS_IN_REPORT = maxDelegatorsInReport;
+        oracleBinaryConfig.RUN_PERIOD_IN_SECONDS = runPeriodInSeconds;
+    }
 
     /**
     @notice Set the number of exactly the same reports needed to finalize the era
@@ -477,6 +492,10 @@ contract OracleMaster is Pausable {
     }
 
     /// ***************** GETTERS *****************
+
+    function getOracleBinaryConfig() external view returns(uint128, uint128) {
+        return (oracleBinaryConfig.MAX_DELEGATORS_IN_REPORT, oracleBinaryConfig.RUN_PERIOD_IN_SECONDS);
+    }
 
     /**
      * @notice Return oracle contract for the given ledger
