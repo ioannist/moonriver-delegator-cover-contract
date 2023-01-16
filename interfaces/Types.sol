@@ -82,7 +82,8 @@ interface Types {
         uint128 awarded;
         // collator data for all candidates
         CollatorData[] collators;
-
+        // if finalize is true, there are no more data to send for the included collator/s -> eraNonce++ 
+        bool finalize;
         /*
         bytes32 stashAccount;
         bytes32 controllerAccount;

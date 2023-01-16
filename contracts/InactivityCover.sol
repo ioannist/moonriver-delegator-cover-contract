@@ -25,6 +25,7 @@ contract InactivityCover is IPushable {
         uint256 deposit; // deposit
         uint256 maxCoveredDelegation; // any amount of this limit is not covered (used to incentivize splitting large delegations among multiple collators)
         uint128 lastPushedEra; // the last era that was pushed and processed for this member; oracles may agree to not report an era for a member if there is no effect (no cover claims)
+        uint256 delegatorsReportedInEra; // 
         uint256 lastDelegationsTotall; // total backing of this collator the last time a report was pushed
         uint128 noZeroPtsCoverAfterEra; // if positive (non-zero), then the member does not offer 0-point cover after this era
         uint128 noActiveSetCoverAfterEra; // if positive (non-zero), the member does not offer out-of-active-set cover after this era
@@ -723,6 +724,7 @@ contract InactivityCover is IPushable {
             bool,
             uint256,
             uint256,
+            uint256,
             uint128,
             uint128,
             uint128
@@ -734,6 +736,7 @@ contract InactivityCover is IPushable {
             m.active,
             m.deposit,
             m.maxCoveredDelegation,
+            m.delegatorsReportedInEra,
             m.lastPushedEra,
             m.noZeroPtsCoverAfterEra,
             m.noActiveSetCoverAfterEra
@@ -789,11 +792,15 @@ contract InactivityCover is IPushable {
         for (uint256 i = 0; i < _report.collators.length; i++) {
             uint256 startGas = gasleft();
             Types.CollatorData calldata collatorData = _report.collators[i];
-            // a member report may only be pushed once per era
-            require(
-                _eraId > members[collatorData.collatorAccount].lastPushedEra,
-                "OLD_MEMBER_ERA"
-            );
+            if (_eraId > members[collatorData.collatorAccount].lastPushedEra && !_report.finalize) {
+                // if this is the first report for this collator for this era, and it is not the last report
+                members[collatorData.collatorAccount].delegatorsReportedInEra = collatorData.topActiveDelegations.length;
+            } else if(_report.finalize) {
+                // else, if this is the last report for the collator/s, then reset
+                members[collatorData.collatorAccount].delegatorsReportedInEra = 0;
+            } else {
+                members[collatorData.collatorAccount].delegatorsReportedInEra += collatorData.topActiveDelegations.length;
+            }
             members[collatorData.collatorAccount].lastPushedEra = _eraId;
             members[collatorData.collatorAccount]
                 .lastDelegationsTotall = collatorData.delegationsTotal;

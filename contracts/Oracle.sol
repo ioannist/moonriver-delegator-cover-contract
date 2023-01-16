@@ -81,6 +81,7 @@ contract Oracle {
 
         if (newEra) {
             _clearReporting();
+            eraNonce++;
         }
 
         {
@@ -123,7 +124,7 @@ contract Oracle {
                 currentReports.push(_staking);
             }
         }
-        emit ReportSubmitted(_eraId, _eraNonce, _oracleCollator);
+        emit ReportSubmitted(_eraId,  _eraNonce, _oracleCollator);
     }
 
     /**
@@ -178,6 +179,7 @@ contract Oracle {
      */
     function clearReporting() external onlyOracleMaster {
         _clearReporting();
+        eraNonce++;
     }
 
     /**
@@ -199,8 +201,7 @@ contract Oracle {
         delete currentReportBitmask; // set to 0
         delete currentReportVariants;
         delete currentReports;
-        delete currentVetoReportVariant; // set to 0
-        eraNonce++;
+        delete currentVetoReportVariant; // set to 0        
         emit ReportingCleared();
     }
 
@@ -219,6 +220,9 @@ contract Oracle {
             IPushable(PUSHABLES[i]).pushData(_eraId, report, _oracleCollator);
         }
         _clearReporting();
+        if (report.finalize) {
+            eraNonce++;
+        }
     }
 
     /**
@@ -236,7 +240,7 @@ contract Oracle {
             return (false, type(uint256).max);
         }
 
-        // if more than 2 kind of reports exist, choose the most frequent
+        // if more than 2 kinds of reports exist, choose the most frequent
         uint256 maxind = 0;
         uint256 repeat = 0;
         uint16 maxval = 0;
