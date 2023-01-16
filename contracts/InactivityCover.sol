@@ -794,11 +794,16 @@ contract InactivityCover is IPushable {
             Types.CollatorData calldata collatorData = _report.collators[i];
             if (_eraId > members[collatorData.collatorAccount].lastPushedEra && !_report.finalize) {
                 // if this is the first report for this collator for this era, and it is not the last report
+                // then set delegatorsReportedInEra to the number of delegators submitted with this report
                 members[collatorData.collatorAccount].delegatorsReportedInEra = collatorData.topActiveDelegations.length;
             } else if(_report.finalize) {
-                // else, if this is the last report for the collator/s, then reset
+                // else, if this is the last report for the collator/s, then reset 
+                // this will allow the oracles to start afresh in the next era
                 members[collatorData.collatorAccount].delegatorsReportedInEra = 0;
             } else {
+                // finally, if this is an eraNonce in-betweent the first and the last ones for this collator,
+                // then increment delegatorsReportedInEra by the number of delegators submitted
+                // Currently, oracles are set to submit up to 150 delegators on each report, and the max count of topActiveDelegators is 300, so this line does not run
                 members[collatorData.collatorAccount].delegatorsReportedInEra += collatorData.topActiveDelegations.length;
             }
             members[collatorData.collatorAccount].lastPushedEra = _eraId;
