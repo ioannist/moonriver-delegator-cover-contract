@@ -396,7 +396,6 @@ contract InactivityCover is IPushable {
     @param delegators The delegators to pay cover claims to. These are accumulated claims and could even be from multiple collators.
     */
     function payOutCover(address payable[] calldata delegators) external {
-        uint256 toPayTotal;
         for (uint256 i = 0; i < delegators.length; i++) {
             address delegator = delegators[i];
             require(delegator != address(0), "ZERO_ADDR");
@@ -423,14 +422,14 @@ contract InactivityCover is IPushable {
 
             // delete payout entry from delegator
             delete payoutAmounts[delegator];
-            toPayTotal += toPay;
+            // debit the cover owed
+            payoutsOwedTotal -= toPay;
             totalPayouts[delegator] += toPay;
             emit PayoutEvent(delegator, toPay);
 
             (bool sent, ) = delegator.call{value: toPay}("");
             require(sent, "TRANSF_FAIL");
-        }
-        payoutsOwedTotal -= toPayTotal; // debit the total cover owed
+        }        
     }
 
     /**

@@ -1093,33 +1093,6 @@ contract('InactivityCover', accounts => {
         return maxCoveredDelegation;
     }
 
-    it("oracle pushes report for collator with >300 delegators (gas check); no refund as gas price is set to 0", async () => {
-        const deposit = web3.utils.toWei("120", "ether");
-        const newEra = new BN("222");
-
-        await ic.whitelist(member1, member1, { from: manager });
-        await ic.depositCover(member1, { from: member1, value: deposit });
-
-        const collators300 = [{
-            collatorAccount: member1,
-            points: "0",
-            active: true,
-            bond: web3.utils.toWei("500", "ether"),
-            delegationsTotal: web3.utils.toWei("25000", "ether"),
-            topActiveDelegations: topActiveDelegations300
-        }];
-        const oracleDataThis = {
-            ...oracleData,
-            collators: collators300
-        }
-
-        await om.addOracleMember(member2, oracle2, { from: oracleManager });
-        await om.reportPara(member2, newEra, 0, oracleDataThis, { from: oracle2, gas: "10000000" });
-        return expect(await ic.payoutAmounts(member2)).to.be.bignumber.equal(new BN("0"));
-    })
-    return;
-
-
 
     it("have all variables initialized", async () => {
         expect(await om.QUORUM()).to.be.bignumber.equal(_quorum);

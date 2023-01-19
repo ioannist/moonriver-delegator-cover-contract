@@ -122,8 +122,6 @@ contract('DepositStaking', accounts => {
         await ic.setSimulateNoProxySupport_mock(true);
     });
 
-    return;
-
     it("manager cannot delegate if a delegator was not paid", async () => {
         const candidate = member1;
         const amount = web3.utils.toWei("2", "ether");
