@@ -220,7 +220,7 @@ contract DepositStaking {
             "FORBIDDEN"
         );
         // The contract must have staked funds
-        require(stakedTotal > 0, "ZERO_STAKED");
+        require(stakedTotal != 0, "ZERO_STAKED");
         // Check that this method didn't execute again in the past ERAS_BETWEEN_FORCED_UNDELEGATION eras
         require(
             lastForcedUndelegationEra +

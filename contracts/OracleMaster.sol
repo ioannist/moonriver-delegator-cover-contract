@@ -115,7 +115,7 @@ contract OracleMaster is Pausable {
             ORACLE == address(0) && _oracle != address(0),
             "ALREADY_INITIALIZED"
         );
-        require(_quorum > 0 && _quorum <= MAX_MEMBERS, "OM: INCORRECT_QUORUM");
+        require(_quorum != 0 && _quorum <= MAX_MEMBERS, "OM: INCORRECT_QUORUM");
         staking = ParachainStaking(0x0000000000000000000000000000000000000800);
         proxy = IProxy(0x000000000000000000000000000000000000080b);
         AUTH_MANAGER = _auth_manager;
@@ -140,7 +140,7 @@ contract OracleMaster is Pausable {
         auth(ROLE_ORACLE_QUORUM_MANAGER)
     {
         require(
-            _quorum > 0 && _quorum < MAX_MEMBERS,
+            _quorum != 0 && _quorum < MAX_MEMBERS,
             "OM: QUORUM_WONT_BE_MADE"
         );
         uint8 oldQuorum = QUORUM;
@@ -524,11 +524,11 @@ contract OracleMaster is Pausable {
             }
         }
         return
-            report.round > 0 &&
-            report.totalStaked > 0 &&
-            report.totalSelected > 0 &&
-            report.awarded > 0 &&
-            report.blockNumber > 0;
+            report.round != 0 &&
+            report.totalStaked != 0 &&
+            report.totalSelected != 0 &&
+            report.awarded != 0 &&
+            report.blockNumber != 0;
     }
 
     /**

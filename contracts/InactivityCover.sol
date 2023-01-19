@@ -24,12 +24,12 @@ contract InactivityCover is IPushable {
         bool active; // starts active, can go inactive by reducing deposit to less than minimum deposit
         uint256 deposit; // deposit
         uint256 maxCoveredDelegation; // any amount of this limit is not covered (used to incentivize splitting large delegations among multiple collators)
-        uint128 lastPushedEra; // the last era that was pushed and processed for this member; oracles may agree to not report an era for a member if there is no effect (no cover claims)
         uint256 delegatorsReportedInEra; // 
         uint256 lastDelegationsTotall; // total backing of this collator the last time a report was pushed
         uint128 noZeroPtsCoverAfterEra; // if positive (non-zero), then the member does not offer 0-point cover after this era
         uint128 noActiveSetCoverAfterEra; // if positive (non-zero), the member does not offer out-of-active-set cover after this era
         uint128 defaultCount; // how many time this member has defaulted
+        uint128 lastPushedEra; // the last era that was pushed and processed for this member; oracles may agree to not report an era for a member if there is no effect (no cover claims)
     }
 
     event DepositEvent(address member, uint256 amount);
@@ -251,8 +251,8 @@ contract InactivityCover is IPushable {
     */
     function cancelDecreaseCover(address _member) external {
         require(_isMemberAuth(msg.sender, _member), "N_COLLATOR_PROXY");
-        require(members[_member].deposit > 0, "NO_DEP");
-        require(scheduledDecreasesMap[_member].amount > 0, "DECR_N_EXIST");
+        require(members[_member].deposit != 0, "NO_DEP");
+        require(scheduledDecreasesMap[_member].amount != 0, "DECR_N_EXIST");
         // Reset memberNotPaid to 0 if it was set to this collator, otherwise leave as is.
         // Anybody can execute a scheduled member withdrawal on their behalf, but only the member can cancel its request.
         // Therefore, it is necessary to reset memberNotPaid on cancellation, to avoid a stuck non-zero membernotPaid value.
@@ -396,7 +396,8 @@ contract InactivityCover is IPushable {
     @param delegators The delegators to pay cover claims to. These are accumulated claims and could even be from multiple collators.
     */
     function payOutCover(address payable[] calldata delegators) external {
-        for (uint256 i = 0; i < delegators.length; i++) {
+        uint256 delegatorsLength = delegators.length;
+        for (uint256 i = 0; i < delegatorsLength; i++) {
             address delegator = delegators[i];
             require(delegator != address(0), "ZERO_ADDR");
 
@@ -461,7 +462,7 @@ contract InactivityCover is IPushable {
         // However, on average, we expect most eras to last one era nonce (no claims). The idea is that, invoicing should
         // decide if a member qualifies for a fee waiver by checking its oracle activity since roughly the last time invoicing ran
         require(eraNow % 32 == 0, "ERA_INV");
-        require(memberFee > 0, "ZERO_FEE");
+        require(memberFee != 0, "ZERO_FEE");
         membersInvoicedLastEra = eraNow;
 
         uint256 length = memberAddresses.length;
@@ -504,7 +505,7 @@ contract InactivityCover is IPushable {
         // else, credit the oracle-running members
             uint256 oraclePayment = totalFee / membersWithOraclesCount;
             for(uint256 i; i < length; i++) {
-                if (membersWithOracles & (1 << i) > 0) {
+                if (membersWithOracles & (1 << i) != 0) {
                     address memberAddress = memberAddresses[i];
                     members[memberAddress].deposit += oraclePayment;
                     emit OraclePaidEvent(memberAddress, oraclePayment, eraNow);
@@ -895,7 +896,7 @@ contract InactivityCover is IPushable {
             // Oracles pay some minor tx fees when they submit a report, but they get reimusrsed for the calculation of the claims when that happens.
             // This is not only fair but also necessary because only 1 oracle will have to run pushData per eraNonce (the oracle that happens to be the Nth one in an N-quorum)
             // If the oracle is not reimbursed, then there is an incentive to not be the Nth oracle to avoid the fee.
-            if (refundOracleGasPrice > 0 && _oracleCollator != address(0)) {
+            if (refundOracleGasPrice != 0 && _oracleCollator != address(0)) {
                 uint256 gasUsed = startGas - gasleft();
                 uint256 refund = gasUsed * refundOracleGasPrice;
                 if (members[collatorData.collatorAccount].deposit < refund) {
@@ -963,8 +964,8 @@ contract InactivityCover is IPushable {
      @param _member The member to refund their deposit to.
     */
     function _scheduleDecreaseCover(uint256 _amount, address _member) private {
-        require(_amount > 0, "ZERO_DECR");
-        require(members[_member].deposit > 0, "NO_DEP");
+        require(_amount != 0, "ZERO_DECR");
+        require(members[_member].deposit != 0, "NO_DEP");
         require(members[_member].deposit >= _amount, "EXC_DEP");
         require(scheduledDecreasesMap[_member].amount == 0, "DECR_EXIST");
         scheduledDecreasesMap[_member] = ScheduledDecrease(_getEra() + erasCovered[_member], _amount);
