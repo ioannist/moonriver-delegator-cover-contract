@@ -1734,7 +1734,7 @@ contract('InactivityCover', accounts => {
 
         await om.addOracleMember(member1, oracle1, { from: oracleManager });
         await om.reportPara(member1, newEra, 1, oracleData, { from: oracle1 });
-        await om.reportPara(member1, newEra2, 2, oracleData, { from: oracle1 }); // second
+        await om.reportPara(member1, newEra2, 3, oracleData, { from: oracle1 }); // second
         await ic.payOutCover([delegator1]);
         expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(zero);
         expect(await ic.payoutAmounts(delegator2)).to.be.bignumber.equal(payoutsOwedTotal2); // has not been paid out
@@ -1778,7 +1778,7 @@ contract('InactivityCover', accounts => {
 
         await om.addOracleMember(member1, oracle1, { from: oracleManager });
         await om.reportPara(member1, newEra, 1, oracleData, { from: oracle1 });
-        await om.reportPara(member1, newEra2, 2, oracleDataSecond, { from: oracle1 }); // second
+        await om.reportPara(member1, newEra2, 3, oracleDataSecond, { from: oracle1 }); // second
         await ic.payOutCover([delegator1]);
         expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(zero);
         expect(await ic.payoutAmounts(delegator2)).to.be.bignumber.equal(payoutsOwedTotal2); // has not been paid out
@@ -2009,7 +2009,7 @@ contract('InactivityCover', accounts => {
 
         // defaulted member makes a deposit
         await ic.depositCover(member1, { from: member1Proxy, value: deposit });
-        await om.reportPara(member1, newEra2, 2, oracleData, { from: oracle1 });
+        await om.reportPara(member1, newEra2, 3, oracleData, { from: oracle1 });
                 
         // delegators will get paid only for the newly reported round (rounds while the collator had defaulted are foregone / don't accumulate)
         expect(await ic.payoutAmounts(delegator1)).to.be.bignumber.equal(payoutsOwedTotal1);
@@ -2843,7 +2843,7 @@ contract('InactivityCover', accounts => {
         await om.reportPara(member1, newEra, 1, oracleData1, { from: oracle1 });
         await om.reportPara(member2, newEra, 1, oracleData1, { from: oracle2 });
         await om.reportPara(member1, newEra, 2, oracleData1, { from: oracle1 });
-        return expect(om.reportPara(member2, newEra, 1, oracleData1, { from: oracle2 })).to.be.rejectedWith('OLD_MEMBER_ERA');
+        return expect(om.reportPara(member2, newEra, 2, oracleData1, { from: oracle2 })).to.be.rejectedWith('OLD_MEMBER_ERA');
     })
 
     it("oracle data can be pushed twice for different collators", async () => {
@@ -2881,7 +2881,7 @@ contract('InactivityCover', accounts => {
         }
         await om.addOracleMember(member1, oracle1, { from: oracleManager });
         await om.reportPara(member1, newEra, 1, oracleData1, { from: oracle1 });
-        return await expect(om.reportPara(member1, newEra, 3, oracleData1, { from: oracle1 })).to.be.rejectedWith('OLD_MEMBER_ERA');
+        return await expect(om.reportPara(member1, newEra, 2, oracleData1, { from: oracle1 })).to.be.rejectedWith('OLD_MEMBER_ERA');
     })
 
 
@@ -2916,12 +2916,12 @@ contract('InactivityCover', accounts => {
         expect(await om.getOraclePointBitmap(member2, { from: agent007 })).to.be.bignumber.equal(new BN('0', 2));
         await om.reportPara(member2, newEra, 1, oracleData1, { from: oracle2 });
         expect(await om.getOraclePointBitmap(member2, { from: agent007 })).to.be.bignumber.equal(new BN('1', 2));
-        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("1"));
+        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("2"));
         await om.reportPara(member1, newEra2, 2, oracleData1, { from: oracle1 });
         expect(await om.getOraclePointBitmap(member1, { from: agent007 })).to.be.bignumber.equal(new BN('11', 2));
         await om.reportPara(member2, newEra2, 2, oracleData1, { from: oracle2 });
         expect(await om.getOraclePointBitmap(member2, { from: agent007 })).to.be.bignumber.equal(new BN('101', 2));
-        return expect(await or.eraNonce()).to.be.bignumber.equal(new BN("2"));
+        return expect(await or.eraNonce()).to.be.bignumber.equal(new BN("3"));
     })
 
     it("when an oracle reports an eraNonce that has concluded, the tx fails", async () => {
@@ -2939,7 +2939,7 @@ contract('InactivityCover', accounts => {
         expect(await om.getOraclePointBitmap(member1, { from: agent007 })).to.be.bignumber.equal(new BN('0', 2));
         await om.reportPara(member1, newEra, 1, oracleData1, { from: oracle1 });
         await om.reportPara(member2, newEra, 1, oracleData1, { from: oracle2 });
-        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("1"));
+        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("2"));
         // oracle3 sends the same report, but quorum has been met; this may happeb if the eraNonce that the oracle has read from the contract is no longer current
         expect(om.reportPara(member3, newEra, 1, oracleData1, { from: oracle3 })).to.be.rejectedWith('OR: INV_NONCE');
     })
@@ -2964,21 +2964,21 @@ contract('InactivityCover', accounts => {
         await om.reportPara(member2, newEra, 1, oracleData1, { from: oracle2 });
         expect(await om.getOraclePointBitmap(member1, { from: agent007 })).to.be.bignumber.equal(new BN('1', 2));
         expect(await om.getOraclePointBitmap(member2, { from: agent007 })).to.be.bignumber.equal(new BN('1', 2));
-        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("1"));
-        await om.reportPara(member1, newEra, 3, oracleData2, { from: oracle1 });
+        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("2"));
+        await om.reportPara(member1, newEra, 2, oracleData2, { from: oracle1 });
         expect(await om.getOraclePointBitmap(member1, { from: agent007 })).to.be.bignumber.equal(new BN('11', 2)); // set bit
         expect(await om.getOraclePointBitmap(member2, { from: agent007 })).to.be.bignumber.equal(new BN('10', 2)); // shifted
-        await om.reportPara(member2, newEra, 3, oracleData2, { from: oracle2 });
+        await om.reportPara(member2, newEra, 2, oracleData2, { from: oracle2 });
         expect(await om.getOraclePointBitmap(member1, { from: agent007 })).to.be.bignumber.equal(new BN('110', 2)); // shifted
         expect(await om.getOraclePointBitmap(member2, { from: agent007 })).to.be.bignumber.equal(new BN('101', 2)); // set bit
-        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("2"));
-        await om.reportPara(member1, newEra2, 5, oracleData2, { from: oracle1 });
+        expect(await or.eraNonce()).to.be.bignumber.equal(new BN("3"));
+        await om.reportPara(member1, newEra2, 3, oracleData2, { from: oracle1 });
         expect(await om.getOraclePointBitmap(member1, { from: agent007 })).to.be.bignumber.equal(new BN('11001', 2)); // shifted, and set bit
         expect(await om.getOraclePointBitmap(member2, { from: agent007 })).to.be.bignumber.equal(new BN('101', 2));
-        await om.reportPara(member2, newEra2, 5, oracleData2, { from: oracle2 });
+        await om.reportPara(member2, newEra2, 3, oracleData2, { from: oracle2 });
         expect(await om.getOraclePointBitmap(member1, { from: agent007 })).to.be.bignumber.equal(new BN('11001', 2));
         expect(await om.getOraclePointBitmap(member2, { from: agent007 })).to.be.bignumber.equal(new BN('10101', 2)); // shifted, and set bit
-        return expect(await or.eraNonce()).to.be.bignumber.equal(new BN("3"));
+        return expect(await or.eraNonce()).to.be.bignumber.equal(new BN("4"));
     })
 
     it("next part cannot be pushed until quorum reached for first part", async () => {
@@ -3010,10 +3010,10 @@ contract('InactivityCover', accounts => {
         }
         await om.addOracleMember(member1, oracle1, { from: oracleManager });
         await om.reportPara(member1, newEra, 1, oracleData1, { from: oracle1 });
-        await om.reportPara(member1, newEra, 3, oracleData2, { from: oracle1 });
+        await om.reportPara(member1, newEra, 2, oracleData2, { from: oracle1 });
         await expect(await om.eraId()).to.be.bignumber.equal(newEra);
-        await om.reportPara(member1, newEra2, 5, oracleData1, { from: oracle1 });
-        await om.reportPara(member1, newEra2, 7, oracleData2, { from: oracle1 });
+        await om.reportPara(member1, newEra2, 3, oracleData1, { from: oracle1 });
+        await om.reportPara(member1, newEra2, 4, oracleData2, { from: oracle1 });
         return expect(await om.eraId()).to.be.bignumber.equal(newEra2);
     })
 
