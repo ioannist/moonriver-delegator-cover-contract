@@ -395,7 +395,7 @@ contract InactivityCover is IPushable {
     The function can be called with multiple delegators for saving gas costs.
     @param delegators The delegators to pay cover claims to. These are accumulated claims and could even be from multiple collators.
     */
-    function payOutCover(address payable[] calldata delegators) external {
+    function payOutCover(address payable[] calldata delegators) public {
         uint256 delegatorsLength = delegators.length;
         for (uint256 i = 0; i < delegatorsLength; i++) {
             address delegator = delegators[i];
@@ -861,10 +861,10 @@ contract InactivityCover is IPushable {
 
             // this loop may run for 300 times so it must be optimized
             uint256 toPayTotal;
+            uint256 topActiveDelegationsLength = collatorData.topActiveDelegations.length;
             for (
                 uint128 j = 0;
-                j < collatorData.topActiveDelegations.length;
-                j++
+                j < topActiveDelegationsLength;
             ) {
                 Types.DelegationsData calldata delegationData = collatorData
                     .topActiveDelegations[j];
@@ -887,6 +887,10 @@ contract InactivityCover is IPushable {
                 payoutAmounts[delegationData.ownerAccount] += toPay; // credit the delegator
                 members[collatorData.collatorAccount].deposit -= toPay; // debit the collator deposit
                 toPayTotal += toPay;
+                
+                unchecked {
+                    ++j;
+                }
             }
             require(toPayTotal <= MAX_ERA_MEMBER_PAYOUT, "EXCEEDS_MAX_ERA_MEMBER_PAYOUT");
             membersDepositTotal -= toPayTotal; // decrease the total members deposit
