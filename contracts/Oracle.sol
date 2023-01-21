@@ -81,7 +81,7 @@ contract Oracle {
 
         if (newEra) {
             _clearReporting();
-            eraNonce++;
+            // eraNonce++;
         }
 
         {

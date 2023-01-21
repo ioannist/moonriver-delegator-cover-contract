@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 import "../InactivityCover.sol";
+import "./DepositStaking_mock.sol";
 
 contract InactivityCover_mock is InactivityCover {
 
@@ -66,6 +67,14 @@ contract InactivityCover_mock is InactivityCover {
         return eraId;
     }
 
+    function _getDelegationAmount(address _delegator, address _collator, uint256 _reportedAmount) internal view override returns (uint256) {
+        return _reportedAmount;
+    }
+
+    function _getCandidateTotalCounted(address _collator, uint256 _reportedAmount) internal view override returns (uint256) {
+        return _reportedAmount;
+    }
+
     function _isLastCompletedEra(
         uint128 _eraId
     ) internal view override returns (bool) {
@@ -88,5 +97,13 @@ contract InactivityCover_mock is InactivityCover {
 
     function setSimulateNoProxySupport_mock(bool _sim) external {
         simulateNoProxySupportMock = _sim;
+    }
+
+    function _getFreeBalance() internal view override returns (uint256) {
+        // The method returns the current free balance (reducible + locked), but it excludes funds
+        // in unlocking (soon to be reducible)
+        return
+            address(this).balance +
+            DepositStaking_mock(DEPOSIT_STAKING).stakedTotal(); // reducible + (staked + being_unstaked)
     }
 }

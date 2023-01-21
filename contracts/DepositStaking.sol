@@ -27,10 +27,6 @@ contract DepositStaking {
     /// Inactivity cover contract address
     address payable public INACTIVITY_COVER;
 
-    /// Variables for staking this contract's funds to generate income
-    /// Total staked by this contract
-    uint256 public stakedTotal;
-
     /// Addresses of collators this contract has delegated to
     address[] internal collatorsDelegated;
 
@@ -93,7 +89,7 @@ contract DepositStaking {
         uint256 amount,
         uint256 candidateDelegationCount,
         uint256 delegatorDelegationCount
-    ) external auth(ROLE_STAKING_MANAGER) {
+    ) public virtual auth(ROLE_STAKING_MANAGER) {
         // To delegate, there must not exist an unpaid delegator or member
         require(
             InactivityCover(INACTIVITY_COVER).memberNotPaid() == address(0),
@@ -104,6 +100,7 @@ contract DepositStaking {
             "DELEG_N_PAID"
         );
         // this balance does not include amounts in unstaking phase (pending decreases, revokes, etc.)
+        uint256 stakedTotal = _getStakedTotal();
         uint256 balance = address(INACTIVITY_COVER).balance + stakedTotal;
         require(
             stakedTotal + amount <= (maxPercentStaked * balance) / 100,
@@ -115,7 +112,6 @@ contract DepositStaking {
             delegations[candidate].isDelegated = true;
         }
         delegations[candidate].amount += amount;
-        stakedTotal += amount;
         // will fail if already delegating to this collator
         InactivityCover(INACTIVITY_COVER).delegate(
             candidate,
@@ -139,7 +135,7 @@ contract DepositStaking {
     function delegatorBondMore(
         address candidate,
         uint256 more
-    ) external auth(ROLE_STAKING_MANAGER) {
+    ) public virtual auth(ROLE_STAKING_MANAGER) {
         // To bond more, there must not exist an unpaid delegator or member
         require(
             InactivityCover(INACTIVITY_COVER).memberNotPaid() == address(0),
@@ -150,7 +146,6 @@ contract DepositStaking {
             "DELEG_N_PAID"
         );
         delegations[candidate].amount += more;
-        stakedTotal += more;
         InactivityCover(INACTIVITY_COVER).delegator_bond_more(candidate, more);
         emit DelegatorBondMoreEvent(candidate, more);
     }
@@ -161,15 +156,15 @@ contract DepositStaking {
     (delegator claims and member withdrawals). There is no method to cancel a scheduled decrease request, so all
     requests must be executed (anybody can execute pending requests on chain) for the funds to be added to the reducible
     balance of the contract. During the decrease period, the funds do not show up in the contract's reducible balance or the
-    stakedTotal variable. This is by design and it has the effect of under-estimating the contract's total funds (staked + liquid)
-    by the amount of funds that are pending unstaking.
+    getDelegatorTotalStaked amount from the staking precompile. This is by design and it has the effect of under-estimating
+    the contract's total funds (staked + liquid) by the amount of funds that are pending unstaking.
     @param candidate The address of the collator candidate for which delegation shall decrease
     @param less The amount by which the delegation is decreased (upon execution)
     */
     function scheduleDelegatorBondLess(
         address candidate,
         uint256 less
-    ) external auth(ROLE_STAKING_MANAGER) {
+    ) public auth(ROLE_STAKING_MANAGER) {
         _scheduleDelegatorBondLess(candidate, less);
         emit DelegatorBondLessEvent(candidate, less);
     }
@@ -220,7 +215,7 @@ contract DepositStaking {
             "FORBIDDEN"
         );
         // The contract must have staked funds
-        require(stakedTotal != 0, "ZERO_STAKED");
+        require(_getStakedTotal() != 0, "ZERO_STAKED");
         // Check that this method didn't execute again in the past ERAS_BETWEEN_FORCED_UNDELEGATION eras
         require(
             lastForcedUndelegationEra +
@@ -272,9 +267,8 @@ contract DepositStaking {
     function _scheduleDelegatorBondLess(
         address candidate,
         uint256 less
-    ) internal {
+    ) internal virtual {
         delegations[candidate].amount -= less;
-        stakedTotal -= less;
         if (delegations[candidate].amount == 0) {
             delegations[candidate].isDelegated = false;
             for (uint256 i; i < collatorsDelegated.length; i++) {
@@ -291,8 +285,7 @@ contract DepositStaking {
         );
     }
 
-    function _scheduleDelegatorRevoke(address candidate) internal {
-        stakedTotal -= delegations[candidate].amount;
+    function _scheduleDelegatorRevoke(address candidate) internal virtual {
         delegations[candidate].amount = 0;
         delegations[candidate].isDelegated = false;
         for (uint256 i; i < collatorsDelegated.length; i++) {
@@ -307,5 +300,9 @@ contract DepositStaking {
 
     function _getEra() internal view virtual returns (uint128) {
         return uint128(staking.round());
+    }
+
+    function _getStakedTotal() internal view virtual returns(uint256) {
+        return staking.getDelegatorTotalStaked(INACTIVITY_COVER);
     }
 }

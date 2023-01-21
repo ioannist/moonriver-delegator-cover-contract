@@ -801,14 +801,14 @@ contract InactivityCover is IPushable {
                 // this will allow the oracles to start afresh in the next era
                 members[collatorData.collatorAccount].delegatorsReportedInEra = 0;
             } else {
-                // finally, if this is an eraNonce in-betweent the first and the last ones for this collator,
+                // finally, if this is an eraNonce in-between the first and the last ones for this collator,
                 // then increment delegatorsReportedInEra by the number of delegators submitted
                 // Currently, oracles are set to submit up to 150 delegators on each report, and the max count of topActiveDelegators is 300, so this line does not run
                 members[collatorData.collatorAccount].delegatorsReportedInEra += collatorData.topActiveDelegations.length;
             }
             members[collatorData.collatorAccount].lastPushedEra = _eraId;
-            members[collatorData.collatorAccount]
-                .lastDelegationsTotall = collatorData.delegationsTotal;
+            members[collatorData.collatorAccount].lastDelegationsTotall
+                = _getCandidateTotalCounted(collatorData.collatorAccount, collatorData.delegationsTotal);
 
             if (
                 !members[collatorData.collatorAccount].isMember ||
@@ -869,12 +869,13 @@ contract InactivityCover is IPushable {
                 Types.DelegationsData calldata delegationData = collatorData
                     .topActiveDelegations[j];
 
-                uint256 toPay = delegationData.amount >
+                uint256 delegationAmount = _getDelegationAmount(delegationData.ownerAccount, collatorData.collatorAccount, delegationData.amount);
+                uint256 toPay = delegationAmount >
                     members[collatorData.collatorAccount].maxCoveredDelegation
                     ? (STAKE_UNIT_COVER *
                         members[collatorData.collatorAccount]
                             .maxCoveredDelegation) / 1 ether
-                    : (STAKE_UNIT_COVER * delegationData.amount) / 1 ether;
+                    : (STAKE_UNIT_COVER * delegationAmount) / 1 ether;
 
                 if (members[collatorData.collatorAccount].deposit < toPay) {
                     // because delegations are sorted lowest-> highest, we know that we have paid as many delegators as possible before defaulting
@@ -976,16 +977,25 @@ contract InactivityCover is IPushable {
         emit DecreaseCoverScheduledEvent(_member, _amount);
     }
 
-    function _getFreeBalance() private view returns (uint256) {
+    function _getFreeBalance() internal view virtual returns (uint256) {
         // The method returns the current free balance (reducible + locked), but it excludes funds
         // in unlocking (soon to be reducible)
         return
             address(this).balance +
-            DepositStaking(DEPOSIT_STAKING).stakedTotal(); // reducible + (staked + being_unstaked)
+            staking.getDelegatorTotalStaked(address(this));
+            // DepositStaking(DEPOSIT_STAKING).stakedTotal(); // reducible + (staked + being_unstaked)
     }
 
     function _getEra() internal view virtual returns (uint128) {
         return uint128(staking.round());
+    }
+
+    function _getDelegationAmount(address _delegator, address _collator, uint256 _reportedAmount) internal view virtual returns (uint256) {
+        return staking.delegationAmount(_delegator, _collator);
+    }
+
+    function _getCandidateTotalCounted(address _collator, uint256 _reportedAmount) internal view virtual returns (uint256) {
+        return staking.getCandidateTotalCounted(_collator);
     }
 
     function _isLastCompletedEra(
