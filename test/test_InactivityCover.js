@@ -3017,6 +3017,31 @@ contract('InactivityCover', accounts => {
         return expect(await om.eraId()).to.be.bignumber.equal(newEra2);
     })
 
+    it("oracle data is not pushed when report has finalize = false", async () => {
+        const newEra = new BN("222");
+        const newEra2 = new BN("223");
+        const oracleData1 = {
+            ...oracleData,
+            finalize: false,
+            collators: [oracleData.collators[0]]
+        }
+        const oracleData1f = {
+            ...oracleData,
+            finalize: true,
+            collators: [oracleData.collators[0]]
+        }
+        const oracleData2 = {
+            ...oracleData,
+            collators: [oracleData.collators[1]]
+        }
+        await om.addOracleMember(member1, oracle1, { from: oracleManager });
+        await om.reportPara(member1, newEra, 0, oracleData1, { from: oracle1 });
+        await om.reportPara(member1, newEra, 0, oracleData1f, { from: oracle1 });
+        await om.reportPara(member1, newEra, 1, oracleData2, { from: oracle1 });
+        return expect(await om.eraId()).to.be.bignumber.equal(newEra);
+    })
+    
+
     it("oracle pushes report for collator with >300 delegators (gas check); no refund as gas price is set to 0", async () => {
         const deposit = web3.utils.toWei("120", "ether");
         const newEra = new BN("222");
