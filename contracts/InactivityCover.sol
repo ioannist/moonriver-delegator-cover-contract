@@ -812,7 +812,7 @@ contract InactivityCover is IPushable {
 
             if (
                 !members[collatorData.collatorAccount].isMember ||
-                !members[collatorData.collatorAccount].active
+                !members[collatorData.collatorAccount].active                
             ) {
                 continue; // not a member or not active
             }
@@ -875,7 +875,7 @@ contract InactivityCover is IPushable {
                     ? (STAKE_UNIT_COVER *
                         members[collatorData.collatorAccount]
                             .maxCoveredDelegation) / 1 ether
-                    : (STAKE_UNIT_COVER * delegationAmount) / 1 ether;
+                    : (STAKE_UNIT_COVER * delegationAmount) / 1 ether; // also works for delegationAmount == 0
 
                 if (members[collatorData.collatorAccount].deposit < toPay) {
                     // because delegations are sorted lowest-> highest, we know that we have paid as many delegators as possible before defaulting
