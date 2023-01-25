@@ -33,6 +33,10 @@ contract Oracle {
     // Current report variant hash by veto oracle member
     uint256 internal currentVetoReportVariant;
 
+    // A historical map of what block hash was used to construct the oracle reports
+    // Used by oracles to go back in time and find the delegators of members that have unregistered and kicked out all their delegators
+    mapping(uint128 => bytes32) public erasToBlockHashes;
+
     // Allows function calls only from OracleMaster
     modifier onlyOracleMaster() {
         require(msg.sender == ORACLE_MASTER);
@@ -213,6 +217,7 @@ contract Oracle {
         Types.OracleData memory report,
         address _oracleCollator
     ) internal {
+        erasToBlockHashes[_eraId] = report.blockHash;
         for (uint256 i = 0; i < PUSHABLES.length; i++) {
             if (PUSHABLES[i] == address(0)) {
                 continue;
@@ -258,5 +263,9 @@ contract Oracle {
             }
         }
         return (maxval >= _quorum && repeat == 0, maxind);
+    }
+
+    function getReportBlockHash(uint128 _eraId) external view returns(bytes32) {
+        return erasToBlockHashes[_eraId];
     }
 }
