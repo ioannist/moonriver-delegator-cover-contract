@@ -764,6 +764,10 @@ contract InactivityCover is IPushable {
         return upgraded[_member];
     }
 
+    function getMembersCount() external view returns(uint256) {
+        return memberAddresses.length;
+    }
+
     /// ***************** FUNCTIONS CALLABLE ONLY BY OTHERS CONTRACTS *****************
 
     /**

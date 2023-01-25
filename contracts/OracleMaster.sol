@@ -509,6 +509,10 @@ contract OracleMaster is Pausable {
         return oraclePointBitmaps[_oracleMember];
     }
 
+    function getMembersCount() external view returns(uint256) {
+        return members.length;
+    }
+
     /// ***************** INTERNAL FUNCTIONS *****************
 
     /// @notice Return true if report is consistent
