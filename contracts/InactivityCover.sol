@@ -125,9 +125,6 @@ contract InactivityCover is IPushable {
     // a map of members that upgraded to V2
     mapping(address => bool) upgraded;
 
-    // this is required by oracles
-    uint128 public memberWentInactiveEra;
-
     // Manager role
     bytes32 internal constant ROLE_MANAGER = keccak256("ROLE_MANAGER");
 
@@ -378,7 +375,6 @@ contract InactivityCover is IPushable {
         if (members[_member].deposit < MIN_DEPOSIT) {
             members[_member].active = false;
             members[_member].wentInactiveEra = eraId;
-            memberWentInactiveEra = eraId;
             members[_member].defaultCount++;
         }
         membersDepositTotal -= amount;
@@ -487,7 +483,6 @@ contract InactivityCover is IPushable {
                         // defaulted amounts are written off and not paid even if the member becomes active again
                         members[memberAddress].active = false;
                         members[memberAddress].wentInactiveEra = eraId;
-                        memberWentInactiveEra = eraId;
                         members[memberAddress].defaultCount++;
                         continue;
                     }
@@ -895,7 +890,6 @@ contract InactivityCover is IPushable {
                     // because delegations are sorted lowest-> highest, we know that we have paid as many delegators as possible before defaulting
                     members[collatorData.collatorAccount].active = false;
                     members[collatorData.collatorAccount].wentInactiveEra = _eraId;
-                    memberWentInactiveEra = _eraId;
                     members[collatorData.collatorAccount].defaultCount++;
                     // defaulted amounts are written off and not paid if the member becomes active again
                     break;
@@ -924,7 +918,6 @@ contract InactivityCover is IPushable {
                     // by setting active= false, the member has to reach the MIN_DEPOSIT again to reactive which is more than enough to cover the refund
                     members[collatorData.collatorAccount].active = false;
                     members[collatorData.collatorAccount].wentInactiveEra = _eraId;
-                    memberWentInactiveEra = _eraId;
                     members[collatorData.collatorAccount].defaultCount++;
                     // defaulted amounts are written off and not paid if the member becomes active again
                     continue;
