@@ -30,6 +30,7 @@ contract InactivityCover is IPushable {
         uint128 noActiveSetCoverAfterEra; // if positive (non-zero), the member does not offer out-of-active-set cover after this era
         uint128 defaultCount; // how many time this member has defaulted
         uint128 lastPushedEra; // the last era that was pushed and processed for this member; oracles may agree to not report an era for a member if there is no effect (no cover claims)
+        uint128 wentInactiveEra; // last era that the member's bool active value was set to false
     }
 
     event DepositEvent(address member, uint256 amount);
@@ -373,6 +374,7 @@ contract InactivityCover is IPushable {
         members[_member].deposit -= amount;
         if (members[_member].deposit < MIN_DEPOSIT) {
             members[_member].active = false;
+            members[_member].wentInactiveEra = eraId;
             members[_member].defaultCount++;
         }
         membersDepositTotal -= amount;
@@ -727,6 +729,7 @@ contract InactivityCover is IPushable {
             uint256,
             uint128,
             uint128,
+            uint128,
             uint128
         )
     {
@@ -739,7 +742,8 @@ contract InactivityCover is IPushable {
             m.delegatorsReportedInEra,
             m.lastPushedEra,
             m.noZeroPtsCoverAfterEra,
-            m.noActiveSetCoverAfterEra
+            m.noActiveSetCoverAfterEra,
+            m.wentInactiveEra
         );
     }
 
@@ -833,12 +837,12 @@ contract InactivityCover is IPushable {
             if (
                 // check that member is offering active-set cover;
                 // if noActiveSetCoverAfterEra is a positive number, then the member will stop offering cover after noActiveSetCoverAfterEra + erasCovered
-                (noActiveSetCoverAfterEra == 0 || noActiveSetCoverAfterEra > eraId) &&
+                (noActiveSetCoverAfterEra == 0 || noActiveSetCoverAfterEra > _eraId) &&
                 // collator must not be in the active set
                 !collatorData.active
             ) {
                 // if collator is out of the active set
-                emit MemberNotActiveEvent(collatorData.collatorAccount, eraId);
+                emit MemberNotActiveEvent(collatorData.collatorAccount, _eraId);
                 mustPay = true;
             }
             uint128 noZeroPtsCoverAfterEra = members[
@@ -847,7 +851,7 @@ contract InactivityCover is IPushable {
             if (
                 // check that member is offering zero-points cover;
                 // if noZeroPtsCoverAfterEra is a positive number, then the member will stop offering cover after noZeroPtsCoverAfterEra + erasCovered
-                (noZeroPtsCoverAfterEra == 0 || noZeroPtsCoverAfterEra > eraId) &&
+                (noZeroPtsCoverAfterEra == 0 || noZeroPtsCoverAfterEra > _eraId) &&
                 // collator must be in the active set and have reported 0 points for this era
                 collatorData.active &&
                 collatorData.points == 0
@@ -855,7 +859,7 @@ contract InactivityCover is IPushable {
                 // if collator is in the active set but produced 0 blocks
                 emit MemberHasZeroPointsEvent(
                     collatorData.collatorAccount,
-                    eraId
+                    _eraId
                 );
                 mustPay = true;
             }
@@ -884,6 +888,7 @@ contract InactivityCover is IPushable {
                 if (members[collatorData.collatorAccount].deposit < toPay) {
                     // because delegations are sorted lowest-> highest, we know that we have paid as many delegators as possible before defaulting
                     members[collatorData.collatorAccount].active = false;
+                    members[collatorData.collatorAccount].wentInactiveEra = _eraId;
                     members[collatorData.collatorAccount].defaultCount++;
                     // defaulted amounts are written off and not paid if the member becomes active again
                     break;
@@ -920,7 +925,7 @@ contract InactivityCover is IPushable {
                 // because we are only moving funds from one deposit to another, we don't need to update membersDepositTotal or payoutsOwedTotal
             }
         }
-        emit ReportPushedEvent(eraId, _oracleCollator);
+        emit ReportPushedEvent(_eraId, _oracleCollator);
     }
 
     function delegate(
