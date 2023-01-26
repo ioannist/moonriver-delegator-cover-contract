@@ -67,7 +67,7 @@ contract InactivityCover_mock is InactivityCover {
         return eraId;
     }
 
-    function _getDelegationAmount(address _delegator, address _collator, uint256 _reportedAmount) internal view override returns (uint256) {
+    function _getDelegationAmount(address _delegator, address _collator, uint256 _reportedAmount,bool _isCandidate) internal view override returns (uint256) {
         return _reportedAmount;
     }
 

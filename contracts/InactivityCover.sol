@@ -869,6 +869,7 @@ contract InactivityCover is IPushable {
             }
 
             // this loop may run for 300 times so it must be optimized
+            bool isCandidate = staking.isCandidate(collatorData.collatorAccount);
             uint256 toPayTotal;
             uint256 topActiveDelegationsLength = collatorData.topActiveDelegations.length;
             for (
@@ -878,7 +879,7 @@ contract InactivityCover is IPushable {
                 Types.DelegationsData calldata delegationData = collatorData
                     .topActiveDelegations[j];
 
-                uint256 delegationAmount = _getDelegationAmount(delegationData.ownerAccount, collatorData.collatorAccount, delegationData.amount);
+                uint256 delegationAmount = _getDelegationAmount(delegationData.ownerAccount, collatorData.collatorAccount, delegationData.amount, isCandidate);
                 uint256 toPay = delegationAmount >
                     members[collatorData.collatorAccount].maxCoveredDelegation
                     ? (STAKE_UNIT_COVER *
@@ -1001,8 +1002,8 @@ contract InactivityCover is IPushable {
         return uint128(staking.round());
     }
 
-    function _getDelegationAmount(address _delegator, address _collator, uint256 _reportedAmount) internal view virtual returns (uint256) {
-        return staking.delegationAmount(_delegator, _collator);
+    function _getDelegationAmount(address _delegator, address _collator, uint256 _reportedAmount, bool _isCandidate) internal view virtual returns (uint256) {
+        return _isCandidate ? staking.delegationAmount(_delegator, _collator) : _reportedAmount;
     }
 
     function _getCandidateTotalCounted(address _collator, uint256 _reportedAmount) internal view virtual returns (uint256) {

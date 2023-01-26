@@ -26,7 +26,10 @@ contract OracleMaster is Pausable {
     ParachainStaking public staking;
     IProxy public proxy;
 
-    OracleBinaryConfig public oracleBinaryConfig;
+    OracleBinaryConfig public oracleBinaryConfig = OracleBinaryConfig({
+        MAX_DELEGATORS_IN_REPORT: 150,
+        RUN_PERIOD_IN_SECONDS: 180
+    });
 
     // current era id
     uint128 public eraId;
