@@ -525,12 +525,10 @@ contract InactivityCover is IPushable {
     This includes contract staking rewards or other funds that were sent to the contract outside the deposit function.
     The method checks that the funds are over and above total deposits by keeping track of 4 values:
     A) contract balance, that is the reducible balance visible to the EVM (this is maintained automatically)
-    B) totalStaked, that is the amount currently staked and NOT pending decrease or revoke (mainteined by the contract logic)
-    C) membersDepositTotal, this is the total deposits of all members that have NOT been claimed;
-    any pending deposit decreases (not executed) do not reduce total deposits (vs. totalStaked decereases that DO reduce totalStaked)
+    B) totalStaked, that is the amount currently staked or pending decrease or revoke (maintained by the staking precompile))
+    C) membersDepositTotal, this is the total deposits of all members that have NOT been claimed; any pending deposit decreases (not executed) do not reduce total deposits
     D) payoutsOwedTotal this are the member deposits that have been moved to the delegator payables account, i.e. funds owed to the delegators due to cover claims
     The manager can then withdraw any amount < (A + B) - (C + D), i.e. any extra funds that now owed to delegators or members.
-    Since A + B does not include funds pending decrease or revoke (let that be E), the manager's capcity to withdraw is reduced by E
     @param amount How much to withdraw
     @param receiver Who to send the withdrawal to
     */
@@ -540,7 +538,6 @@ contract InactivityCover is IPushable {
     ) external auth(ROLE_MANAGER) {
         // The contract must have enough non-locked funds
         require(address(this).balance > amount, "NO_FUNDS");
-        // The check below may result in a false negative (reject withdrawal even though there are extra funds) for E > 0 (see @dev\Vv)
         require(
             _getFreeBalance() - amount > membersDepositTotal + payoutsOwedTotal,
             "NO_REWARDS"
@@ -990,8 +987,7 @@ contract InactivityCover is IPushable {
     }
 
     function _getFreeBalance() internal view virtual returns (uint256) {
-        // The method returns the current free balance (reducible + locked), but it excludes funds
-        // in unlocking (soon to be reducible)
+        // The method returns the current free balance (reducible + locked + in unlocking)
         return
             address(this).balance +
             staking.getDelegatorTotalStaked(address(this));
