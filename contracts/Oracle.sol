@@ -194,7 +194,7 @@ contract Oracle {
     function _getStakeReport(
         uint256 _index
     ) internal view returns (Types.OracleData storage staking) {
-        assert(_index < currentReports.length);
+        require(_index < currentReports.length, "OR: OUT_OF_INDEX");
         return currentReports[_index];
     }
 
