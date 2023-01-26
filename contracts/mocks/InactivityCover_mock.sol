@@ -71,7 +71,7 @@ contract InactivityCover_mock is InactivityCover {
         return _reportedAmount;
     }
 
-    function _getCandidateTotalCounted(address _collator, uint256 _reportedAmount) internal view override returns (uint256) {
+    function _getCandidateTotalCounted(address _collator, uint256 _reportedAmount,  bool _isCandidate) internal view override returns (uint256) {
         return _reportedAmount;
     }
 

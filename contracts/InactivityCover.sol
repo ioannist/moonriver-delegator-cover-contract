@@ -801,6 +801,7 @@ contract InactivityCover is IPushable {
         for (uint256 i = 0; i < _report.collators.length; i++) {
             uint256 startGas = gasleft();
             Types.CollatorData calldata collatorData = _report.collators[i];
+            bool isCandidate = staking.isCandidate(collatorData.collatorAccount);
             if (_eraId > members[collatorData.collatorAccount].lastPushedEra && !_report.finalize) {
                 // if this is the first report for this collator for this era, and it is not the last report
                 // then set delegatorsReportedInEra to the number of delegators submitted with this report
@@ -817,7 +818,7 @@ contract InactivityCover is IPushable {
             }
             members[collatorData.collatorAccount].lastPushedEra = _eraId;
             members[collatorData.collatorAccount].lastDelegationsTotal
-                = _getCandidateTotalCounted(collatorData.collatorAccount, collatorData.delegationsTotal);
+                = _getCandidateTotalCounted(collatorData.collatorAccount, collatorData.delegationsTotal, isCandidate);
 
             if (
                 !members[collatorData.collatorAccount].isMember ||
@@ -869,7 +870,6 @@ contract InactivityCover is IPushable {
             }
 
             // this loop may run for 300 times so it must be optimized
-            bool isCandidate = staking.isCandidate(collatorData.collatorAccount);
             uint256 toPayTotal;
             uint256 topActiveDelegationsLength = collatorData.topActiveDelegations.length;
             for (
@@ -1006,8 +1006,8 @@ contract InactivityCover is IPushable {
         return _isCandidate ? staking.delegationAmount(_delegator, _collator) : _reportedAmount;
     }
 
-    function _getCandidateTotalCounted(address _collator, uint256 _reportedAmount) internal view virtual returns (uint256) {
-        return staking.getCandidateTotalCounted(_collator);
+    function _getCandidateTotalCounted(address _collator, uint256 _reportedAmount, bool _isCandidate) internal view virtual returns (uint256) {
+        return _isCandidate ? staking.getCandidateTotalCounted(_collator) : _reportedAmount;
     }
 
     function _isLastCompletedEra(
