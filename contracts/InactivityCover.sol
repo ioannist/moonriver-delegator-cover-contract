@@ -31,6 +31,7 @@ contract InactivityCover is IPushable {
         uint128 defaultCount; // how many time this member has defaulted
         uint128 lastPushedEra; // the last era that was pushed and processed for this member; oracles may agree to not report an era for a member if there is no effect (no cover claims)
         uint128 wentInactiveEra; // last era that the member's bool active value was set to false
+        uint128 wentActiveEra; // last era that the member's bool active value was set to true
     }
 
     event DepositEvent(address member, uint256 amount);
@@ -216,6 +217,7 @@ contract InactivityCover is IPushable {
         members[_member].deposit += msg.value;
         if (members[_member].deposit >= MIN_DEPOSIT) {
             members[_member].active = true;
+            members[_member].wentActiveEra = eraId;
         }
         membersDepositTotal += msg.value;
         emit DepositEvent(_member, msg.value);
@@ -728,6 +730,7 @@ contract InactivityCover is IPushable {
             uint128,
             uint128,
             uint128,
+            uint128,
             uint128
         )
     {
@@ -741,7 +744,8 @@ contract InactivityCover is IPushable {
             m.lastPushedEra,
             m.noZeroPtsCoverAfterEra,
             m.noActiveSetCoverAfterEra,
-            m.wentInactiveEra
+            m.wentInactiveEra,
+            m.wentActiveEra
         );
     }
 
