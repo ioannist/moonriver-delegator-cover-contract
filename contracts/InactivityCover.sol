@@ -25,7 +25,7 @@ contract InactivityCover is IPushable {
         uint256 deposit; // deposit
         uint256 maxCoveredDelegation; // any amount of this limit is not covered (used to incentivize splitting large delegations among multiple collators)
         uint256 delegatorsReportedInEra; // 
-        uint256 lastDelegationsTotall; // total backing of this collator the last time a report was pushed
+        uint256 lastDelegationsTotal; // total backing of this collator the last time a report was pushed
         uint128 noZeroPtsCoverAfterEra; // if positive (non-zero), then the member does not offer 0-point cover after this era
         uint128 noActiveSetCoverAfterEra; // if positive (non-zero), the member does not offer out-of-active-set cover after this era
         uint128 defaultCount; // how many time this member has defaulted
@@ -210,7 +210,7 @@ contract InactivityCover is IPushable {
             members[_member].maxCoveredDelegation = type(uint256).max; // default no-max value (editable)
             erasCovered[_member] = 8; // initial cover period - to be updated in the next oracle push
         } else {
-            _updateErasCovered(_member, members[_member].lastDelegationsTotall);
+            _updateErasCovered(_member, members[_member].lastDelegationsTotal);
         }
 
         members[_member].deposit += msg.value;
@@ -816,7 +816,7 @@ contract InactivityCover is IPushable {
                 members[collatorData.collatorAccount].delegatorsReportedInEra += collatorData.topActiveDelegations.length;
             }
             members[collatorData.collatorAccount].lastPushedEra = _eraId;
-            members[collatorData.collatorAccount].lastDelegationsTotall
+            members[collatorData.collatorAccount].lastDelegationsTotal
                 = _getCandidateTotalCounted(collatorData.collatorAccount, collatorData.delegationsTotal);
 
             if (
