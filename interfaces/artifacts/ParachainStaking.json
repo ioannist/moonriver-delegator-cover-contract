@@ -1,0 +1,781 @@
+{
+	"deploy": {
+		"VM:-": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"main:1": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"ropsten:3": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"rinkeby:4": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"kovan:42": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"goerli:5": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"Custom": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		}
+	},
+	"data": {
+		"bytecode": {
+			"functionDebugData": {},
+			"generatedSources": [],
+			"linkReferences": {},
+			"object": "",
+			"opcodes": "",
+			"sourceMap": ""
+		},
+		"deployedBytecode": {
+			"functionDebugData": {},
+			"generatedSources": [],
+			"immutableReferences": {},
+			"linkReferences": {},
+			"object": "",
+			"opcodes": "",
+			"sourceMap": ""
+		},
+		"gasEstimates": null,
+		"methodIdentifiers": {
+			"cancelCandidateBondLess()": "b5ad5f07",
+			"cancelDelegationRequest(address)": "c90eee83",
+			"cancelLeaveCandidates(uint256)": "9c76ebb4",
+			"cancelLeaveDelegators()": "f7421284",
+			"candidateAutoCompoundingDelegationCount(address)": "905f0806",
+			"candidateBondMore(uint256)": "a52c8643",
+			"candidateCount()": "a9a981a3",
+			"candidateDelegationCount(address)": "2ec087eb",
+			"candidateExitIsPending(address)": "43443682",
+			"candidateRequestIsPending(address)": "d0deec11",
+			"delegate(address,uint256,uint256,uint256)": "829f5ee3",
+			"delegateWithAutoCompound(address,uint256,uint8,uint256,uint256,uint256)": "4b8bc9bf",
+			"delegationAmount(address,address)": "a73e51bc",
+			"delegationAutoCompound(address,address)": "b4d4c7fd",
+			"delegationRequestIsPending(address,address)": "3b16def8",
+			"delegatorBondMore(address,uint256)": "0465135b",
+			"delegatorDelegationCount(address)": "067ec822",
+			"executeCandidateBondLess(address)": "2e290290",
+			"executeDelegationRequest(address,address)": "e98c8abe",
+			"executeLeaveCandidates(address,uint256)": "3867f308",
+			"executeLeaveDelegators(address,uint256)": "fb1e2bf9",
+			"getCandidateTotalCounted(address)": "bc5a1043",
+			"getDelegatorTotalStaked(address)": "e6861713",
+			"goOffline()": "a6485ccd",
+			"goOnline()": "6e5b676b",
+			"isCandidate(address)": "d51b9e93",
+			"isDelegator(address)": "fd8ab482",
+			"isInTopDelegations(address,address)": "91cc8657",
+			"isSelectedCandidate(address)": "740d7d2a",
+			"joinCandidates(uint256,uint256)": "1f2f83ad",
+			"minDelegation()": "02985992",
+			"points(uint256)": "9799b4e7",
+			"round()": "146ca531",
+			"scheduleCandidateBondLess(uint256)": "60744ae0",
+			"scheduleDelegatorBondLess(address,uint256)": "c172fd2b",
+			"scheduleLeaveCandidates(uint256)": "b1a3c1b7",
+			"scheduleLeaveDelegators()": "f939dadb",
+			"scheduleRevokeDelegation(address)": "1a1c740c",
+			"selectedCandidates()": "bcf868a6",
+			"setAutoCompound(address,uint8,uint256,uint256)": "faa1786f"
+		}
+	},
+	"abi": [
+		{
+			"inputs": [],
+			"name": "cancelCandidateBondLess",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				}
+			],
+			"name": "cancelDelegationRequest",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "candidateCount",
+					"type": "uint256"
+				}
+			],
+			"name": "cancelLeaveCandidates",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "cancelLeaveDelegators",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				}
+			],
+			"name": "candidateAutoCompoundingDelegationCount",
+			"outputs": [
+				{
+					"internalType": "uint32",
+					"name": "",
+					"type": "uint32"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "more",
+					"type": "uint256"
+				}
+			],
+			"name": "candidateBondMore",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "candidateCount",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				}
+			],
+			"name": "candidateDelegationCount",
+			"outputs": [
+				{
+					"internalType": "uint32",
+					"name": "",
+					"type": "uint32"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				}
+			],
+			"name": "candidateExitIsPending",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				}
+			],
+			"name": "candidateRequestIsPending",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				},
+				{
+					"internalType": "uint256",
+					"name": "amount",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint256",
+					"name": "candidateDelegationCount",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint256",
+					"name": "delegatorDelegationCount",
+					"type": "uint256"
+				}
+			],
+			"name": "delegate",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				},
+				{
+					"internalType": "uint256",
+					"name": "amount",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint8",
+					"name": "autoCompound",
+					"type": "uint8"
+				},
+				{
+					"internalType": "uint256",
+					"name": "candidateDelegationCount",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint256",
+					"name": "candidateAutoCompoundingDelegationCount",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint256",
+					"name": "delegatorDelegationCount",
+					"type": "uint256"
+				}
+			],
+			"name": "delegateWithAutoCompound",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "delegator",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				}
+			],
+			"name": "delegationAmount",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "delegator",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				}
+			],
+			"name": "delegationAutoCompound",
+			"outputs": [
+				{
+					"internalType": "uint8",
+					"name": "",
+					"type": "uint8"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "delegator",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				}
+			],
+			"name": "delegationRequestIsPending",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				},
+				{
+					"internalType": "uint256",
+					"name": "more",
+					"type": "uint256"
+				}
+			],
+			"name": "delegatorBondMore",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "delegator",
+					"type": "address"
+				}
+			],
+			"name": "delegatorDelegationCount",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				}
+			],
+			"name": "executeCandidateBondLess",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "delegator",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				}
+			],
+			"name": "executeDelegationRequest",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				},
+				{
+					"internalType": "uint256",
+					"name": "candidateDelegationCount",
+					"type": "uint256"
+				}
+			],
+			"name": "executeLeaveCandidates",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "delegator",
+					"type": "address"
+				},
+				{
+					"internalType": "uint256",
+					"name": "delegatorDelegationCount",
+					"type": "uint256"
+				}
+			],
+			"name": "executeLeaveDelegators",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				}
+			],
+			"name": "getCandidateTotalCounted",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "delegator",
+					"type": "address"
+				}
+			],
+			"name": "getDelegatorTotalStaked",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "goOffline",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "goOnline",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				}
+			],
+			"name": "isCandidate",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "delegator",
+					"type": "address"
+				}
+			],
+			"name": "isDelegator",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "delegator",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				}
+			],
+			"name": "isInTopDelegations",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				}
+			],
+			"name": "isSelectedCandidate",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "amount",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint256",
+					"name": "candidateCount",
+					"type": "uint256"
+				}
+			],
+			"name": "joinCandidates",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "minDelegation",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "round",
+					"type": "uint256"
+				}
+			],
+			"name": "points",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "round",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "less",
+					"type": "uint256"
+				}
+			],
+			"name": "scheduleCandidateBondLess",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				},
+				{
+					"internalType": "uint256",
+					"name": "less",
+					"type": "uint256"
+				}
+			],
+			"name": "scheduleDelegatorBondLess",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "candidateCount",
+					"type": "uint256"
+				}
+			],
+			"name": "scheduleLeaveCandidates",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "scheduleLeaveDelegators",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				}
+			],
+			"name": "scheduleRevokeDelegation",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "selectedCandidates",
+			"outputs": [
+				{
+					"internalType": "address[]",
+					"name": "",
+					"type": "address[]"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "candidate",
+					"type": "address"
+				},
+				{
+					"internalType": "uint8",
+					"name": "value",
+					"type": "uint8"
+				},
+				{
+					"internalType": "uint256",
+					"name": "candidateAutoCompoundingDelegationCount",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint256",
+					"name": "delegatorDelegationCount",
+					"type": "uint256"
+				}
+			],
+			"name": "setAutoCompound",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		}
+	]
+}

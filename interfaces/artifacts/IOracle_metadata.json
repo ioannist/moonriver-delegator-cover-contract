@@ -1,0 +1,301 @@
+{
+	"compiler": {
+		"version": "0.8.7+commit.e28d00a7"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "address payable",
+						"name": "_pushable",
+						"type": "address"
+					},
+					{
+						"internalType": "bool",
+						"name": "_toAdd",
+						"type": "bool"
+					}
+				],
+				"name": "addRemovePushable",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "clearReporting",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "oracleMaster",
+						"type": "address"
+					},
+					{
+						"internalType": "address payable",
+						"name": "_pushable",
+						"type": "address"
+					},
+					{
+						"internalType": "uint128",
+						"name": "_eraId",
+						"type": "uint128"
+					}
+				],
+				"name": "initialize",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "index",
+						"type": "uint256"
+					}
+				],
+				"name": "isReported",
+				"outputs": [
+					{
+						"internalType": "uint128",
+						"name": "",
+						"type": "uint128"
+					},
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "index",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "quorum",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint128",
+						"name": "eraId",
+						"type": "uint128"
+					},
+					{
+						"internalType": "uint128",
+						"name": "_eraNonce",
+						"type": "uint128"
+					},
+					{
+						"components": [
+							{
+								"internalType": "uint256",
+								"name": "totalStaked",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint128",
+								"name": "totalSelected",
+								"type": "uint128"
+							},
+							{
+								"internalType": "uint128",
+								"name": "orbitersCount",
+								"type": "uint128"
+							},
+							{
+								"internalType": "uint128",
+								"name": "round",
+								"type": "uint128"
+							},
+							{
+								"internalType": "bytes32",
+								"name": "blockHash",
+								"type": "bytes32"
+							},
+							{
+								"internalType": "uint128",
+								"name": "blockNumber",
+								"type": "uint128"
+							},
+							{
+								"internalType": "uint128",
+								"name": "awarded",
+								"type": "uint128"
+							},
+							{
+								"components": [
+									{
+										"internalType": "address",
+										"name": "collatorAccount",
+										"type": "address"
+									},
+									{
+										"internalType": "uint128",
+										"name": "points",
+										"type": "uint128"
+									},
+									{
+										"internalType": "bool",
+										"name": "active",
+										"type": "bool"
+									},
+									{
+										"internalType": "uint256",
+										"name": "bond",
+										"type": "uint256"
+									},
+									{
+										"internalType": "uint256",
+										"name": "delegationsTotal",
+										"type": "uint256"
+									},
+									{
+										"components": [
+											{
+												"internalType": "address",
+												"name": "ownerAccount",
+												"type": "address"
+											},
+											{
+												"internalType": "uint256",
+												"name": "amount",
+												"type": "uint256"
+											}
+										],
+										"internalType": "struct Types.DelegationsData[]",
+										"name": "topActiveDelegations",
+										"type": "tuple[]"
+									}
+								],
+								"internalType": "struct Types.CollatorData[]",
+								"name": "collators",
+								"type": "tuple[]"
+							},
+							{
+								"internalType": "bool",
+								"name": "finalize",
+								"type": "bool"
+							}
+						],
+						"internalType": "struct Types.OracleData",
+						"name": "staking",
+						"type": "tuple"
+					},
+					{
+						"internalType": "address",
+						"name": "oracle",
+						"type": "address"
+					},
+					{
+						"internalType": "bool",
+						"name": "veto",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "vetoDisabled",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "newEra",
+						"type": "bool"
+					}
+				],
+				"name": "reportPara",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_inactivity_cover",
+						"type": "address"
+					}
+				],
+				"name": "setInactivityCover",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint8",
+						"name": "quorum",
+						"type": "uint8"
+					},
+					{
+						"internalType": "uint128",
+						"name": "_eraId",
+						"type": "uint128"
+					}
+				],
+				"name": "softenQuorum",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"interfaces/IOracle.sol": "IOracle"
+		},
+		"evmVersion": "london",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"interfaces/IOracle.sol": {
+			"keccak256": "0x4cdb0b583367769ed77eee031fc93319aa24867ddb2c809f275a8bb975f2c1b9",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://fa2c0ae0f9ed23c858e39e854dd56adf7a10241dd5f3f5244dc679949db0fd3c",
+				"dweb:/ipfs/QmNoYPVUiDqqBRGnR2MSEjyTEnsxPvQ2q4XmQn8ZnJE4aG"
+			]
+		},
+		"interfaces/Types.sol": {
+			"keccak256": "0x182b6bc57dfd702a21144cc64c94ad24e9f9d557e1efcd93f711692713e78414",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://a26793be17e8354f9e539f857d8693b6edc2717a29bcc37036f61bfaf2a43637",
+				"dweb:/ipfs/Qmbi6gBjnUJrP75nEBLisXy1j4XAp9VMrFaRB7BbT7zkCJ"
+			]
+		}
+	},
+	"version": 1
+}

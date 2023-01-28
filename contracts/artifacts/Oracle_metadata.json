@@ -1,6 +1,6 @@
 {
 	"compiler": {
-		"version": "0.8.3+commit.8d00100c"
+		"version": "0.8.7+commit.e28d00a7"
 	},
 	"language": "Solidity",
 	"output": {
@@ -101,6 +101,44 @@
 						"internalType": "uint128",
 						"name": "",
 						"type": "uint128"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint128",
+						"name": "",
+						"type": "uint128"
+					}
+				],
+				"name": "erasToBlockHashes",
+				"outputs": [
+					{
+						"internalType": "bytes32",
+						"name": "",
+						"type": "bytes32"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint128",
+						"name": "_eraId",
+						"type": "uint128"
+					}
+				],
+				"name": "getReportBlockHash",
+				"outputs": [
+					{
+						"internalType": "bytes32",
+						"name": "",
+						"type": "bytes32"
 					}
 				],
 				"stateMutability": "view",
@@ -255,6 +293,11 @@
 								"internalType": "struct Types.CollatorData[]",
 								"name": "collators",
 								"type": "tuple[]"
+							},
+							{
+								"internalType": "bool",
+								"name": "finalize",
+								"type": "bool"
 							}
 						],
 						"internalType": "struct Types.OracleData",
@@ -274,6 +317,11 @@
 					{
 						"internalType": "bool",
 						"name": "vetoDisabled",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "newEra",
 						"type": "bool"
 					}
 				],
@@ -317,7 +365,7 @@
 						"_0": "is reported indicator"
 					}
 				},
-				"reportPara(uint256,uint256,uint128,uint128,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[]),address,bool,bool)": {
+				"reportPara(uint256,uint256,uint128,uint128,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[],bool),address,bool,bool,bool)": {
 					"details": "A report is considered and final and is pushed to the cover contract when A) Q number of oracles have reported exactly the same report, where Q = quorum B) the veto account has submitted a report and it agrees with the quorum report (immediately or when quorum is reached), OR the veto account is disabled",
 					"params": {
 						"_eraId": "current era id",
@@ -348,7 +396,7 @@
 				"isReported(uint256)": {
 					"notice": "Returns true if member is already reported"
 				},
-				"reportPara(uint256,uint256,uint128,uint128,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[]),address,bool,bool)": {
+				"reportPara(uint256,uint256,uint128,uint128,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[],bool),address,bool,bool,bool)": {
 					"notice": "Accept oracle report data, allowed to call only by oracle master contract"
 				},
 				"softenQuorum(uint8,uint128)": {
@@ -362,14 +410,14 @@
 		"compilationTarget": {
 			"contracts/Oracle.sol": "Oracle"
 		},
-		"evmVersion": "istanbul",
+		"evmVersion": "london",
 		"libraries": {},
 		"metadata": {
 			"bytecodeHash": "ipfs"
 		},
 		"optimizer": {
-			"enabled": true,
-			"runs": 9999
+			"enabled": false,
+			"runs": 200
 		},
 		"remappings": []
 	},
@@ -391,11 +439,11 @@
 			]
 		},
 		"contracts/Oracle.sol": {
-			"keccak256": "0xeafb697ad39f8bb985899cde23bdfd2807c6799efb5d36fcae8e28cace75710e",
+			"keccak256": "0x259c2bbc00f77edc358b47c9acae160abe73b4592ee0805e59a793b7ca861510",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://ee2b217101855b5204d1a8046248d11d56f66ec8abddc751812bbf7cc2edeb85",
-				"dweb:/ipfs/QmXPBwawyaV64J3qSbBjgypjC6KernmTDdhbjcorUgiMJy"
+				"bzz-raw://9d69770236d5cd4ef8377a44551893897a49776c1e5da8a6a87335c868626168",
+				"dweb:/ipfs/QmT5N8D5LydxwGXQbpimnU5tb7MhNpr2BG4EmMzorSxG2E"
 			]
 		},
 		"contracts/utils/ReportUtils.sol": {
@@ -423,11 +471,11 @@
 			]
 		},
 		"interfaces/Types.sol": {
-			"keccak256": "0x96f8c5e28906c66e24fd6a70a46c3bde6f268182592c8c38eac25622287fd907",
+			"keccak256": "0x182b6bc57dfd702a21144cc64c94ad24e9f9d557e1efcd93f711692713e78414",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://defe674716172a599c7da65af4f6516bf0d78f9321803c4d5091ebb7868b2fae",
-				"dweb:/ipfs/Qmep3kry2H1Jvjacs6TakwBfnQ8KVfHccgRuM9o8of2cpZ"
+				"bzz-raw://a26793be17e8354f9e539f857d8693b6edc2717a29bcc37036f61bfaf2a43637",
+				"dweb:/ipfs/Qmbi6gBjnUJrP75nEBLisXy1j4XAp9VMrFaRB7BbT7zkCJ"
 			]
 		}
 	},

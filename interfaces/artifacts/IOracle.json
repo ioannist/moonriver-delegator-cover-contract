@@ -1,0 +1,310 @@
+{
+	"deploy": {
+		"VM:-": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"main:1": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"ropsten:3": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"rinkeby:4": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"kovan:42": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"goerli:5": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"Custom": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		}
+	},
+	"data": {
+		"bytecode": {
+			"functionDebugData": {},
+			"generatedSources": [],
+			"linkReferences": {},
+			"object": "",
+			"opcodes": "",
+			"sourceMap": ""
+		},
+		"deployedBytecode": {
+			"functionDebugData": {},
+			"generatedSources": [],
+			"immutableReferences": {},
+			"linkReferences": {},
+			"object": "",
+			"opcodes": "",
+			"sourceMap": ""
+		},
+		"gasEstimates": null,
+		"methodIdentifiers": {
+			"addRemovePushable(address,bool)": "30206bcc",
+			"clearReporting()": "b75b518c",
+			"initialize(address,address,uint128)": "7265580f",
+			"isReported(uint256)": "89b80361",
+			"reportPara(uint256,uint256,uint128,uint128,(uint256,uint128,uint128,uint128,bytes32,uint128,uint128,(address,uint128,bool,uint256,uint256,(address,uint256)[])[],bool),address,bool,bool,bool)": "889cc58b",
+			"setInactivityCover(address)": "12ecb3c4",
+			"softenQuorum(uint8,uint128)": "f461e54f"
+		}
+	},
+	"abi": [
+		{
+			"inputs": [
+				{
+					"internalType": "address payable",
+					"name": "_pushable",
+					"type": "address"
+				},
+				{
+					"internalType": "bool",
+					"name": "_toAdd",
+					"type": "bool"
+				}
+			],
+			"name": "addRemovePushable",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "clearReporting",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "oracleMaster",
+					"type": "address"
+				},
+				{
+					"internalType": "address payable",
+					"name": "_pushable",
+					"type": "address"
+				},
+				{
+					"internalType": "uint128",
+					"name": "_eraId",
+					"type": "uint128"
+				}
+			],
+			"name": "initialize",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "index",
+					"type": "uint256"
+				}
+			],
+			"name": "isReported",
+			"outputs": [
+				{
+					"internalType": "uint128",
+					"name": "",
+					"type": "uint128"
+				},
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "index",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint256",
+					"name": "quorum",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint128",
+					"name": "eraId",
+					"type": "uint128"
+				},
+				{
+					"internalType": "uint128",
+					"name": "_eraNonce",
+					"type": "uint128"
+				},
+				{
+					"components": [
+						{
+							"internalType": "uint256",
+							"name": "totalStaked",
+							"type": "uint256"
+						},
+						{
+							"internalType": "uint128",
+							"name": "totalSelected",
+							"type": "uint128"
+						},
+						{
+							"internalType": "uint128",
+							"name": "orbitersCount",
+							"type": "uint128"
+						},
+						{
+							"internalType": "uint128",
+							"name": "round",
+							"type": "uint128"
+						},
+						{
+							"internalType": "bytes32",
+							"name": "blockHash",
+							"type": "bytes32"
+						},
+						{
+							"internalType": "uint128",
+							"name": "blockNumber",
+							"type": "uint128"
+						},
+						{
+							"internalType": "uint128",
+							"name": "awarded",
+							"type": "uint128"
+						},
+						{
+							"components": [
+								{
+									"internalType": "address",
+									"name": "collatorAccount",
+									"type": "address"
+								},
+								{
+									"internalType": "uint128",
+									"name": "points",
+									"type": "uint128"
+								},
+								{
+									"internalType": "bool",
+									"name": "active",
+									"type": "bool"
+								},
+								{
+									"internalType": "uint256",
+									"name": "bond",
+									"type": "uint256"
+								},
+								{
+									"internalType": "uint256",
+									"name": "delegationsTotal",
+									"type": "uint256"
+								},
+								{
+									"components": [
+										{
+											"internalType": "address",
+											"name": "ownerAccount",
+											"type": "address"
+										},
+										{
+											"internalType": "uint256",
+											"name": "amount",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct Types.DelegationsData[]",
+									"name": "topActiveDelegations",
+									"type": "tuple[]"
+								}
+							],
+							"internalType": "struct Types.CollatorData[]",
+							"name": "collators",
+							"type": "tuple[]"
+						},
+						{
+							"internalType": "bool",
+							"name": "finalize",
+							"type": "bool"
+						}
+					],
+					"internalType": "struct Types.OracleData",
+					"name": "staking",
+					"type": "tuple"
+				},
+				{
+					"internalType": "address",
+					"name": "oracle",
+					"type": "address"
+				},
+				{
+					"internalType": "bool",
+					"name": "veto",
+					"type": "bool"
+				},
+				{
+					"internalType": "bool",
+					"name": "vetoDisabled",
+					"type": "bool"
+				},
+				{
+					"internalType": "bool",
+					"name": "newEra",
+					"type": "bool"
+				}
+			],
+			"name": "reportPara",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "_inactivity_cover",
+					"type": "address"
+				}
+			],
+			"name": "setInactivityCover",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint8",
+					"name": "quorum",
+					"type": "uint8"
+				},
+				{
+					"internalType": "uint128",
+					"name": "_eraId",
+					"type": "uint128"
+				}
+			],
+			"name": "softenQuorum",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		}
+	]
+}
