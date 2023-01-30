@@ -48,6 +48,9 @@ contract DepositStaking {
     bytes32 internal constant ROLE_STAKING_MANAGER =
         keccak256("ROLE_STAKING_MANAGER");
 
+    // Missing delegated collator index
+    uint256 internal constant COLLATOR_N_FOUND = type(uint256).max;
+
     /// Allows function calls only from member with specific role
     modifier auth(bytes32 role) {
         require(IAuthManager(AUTH_MANAGER).has(role, msg.sender), "UNAUTH");
@@ -279,12 +282,13 @@ contract DepositStaking {
     function _scheduleDelegatorRevoke(address candidate) internal virtual {
         delegations[candidate].amount = 0;
         delegations[candidate].isDelegated = false;
-        for (uint256 i; i < collatorsDelegated.length; i++) {
-            if (collatorsDelegated[i] == candidate) {
-                delete collatorsDelegated[i];
-                break;
-            }
-        }
+        
+        uint256 index = _getDelegatedCollatorIndex(candidate);
+        require(index != COLLATOR_N_FOUND, "COLLATOR_N_FOUND");
+        uint256 last = collatorsDelegated.length - 1;
+        if (index != last) collatorsDelegated[index] = collatorsDelegated[last];
+        collatorsDelegated.pop();
+
         // There is no method to cancel a request, and anybody can execute a scheduled request, so this is a one-way to revoking the delegation
         InactivityCover(INACTIVITY_COVER).schedule_delegator_revoke(candidate);
     }
@@ -295,5 +299,19 @@ contract DepositStaking {
 
     function _getStakedTotal() internal view virtual returns(uint256) {
         return staking.getDelegatorTotalStaked(INACTIVITY_COVER);
+    }
+
+    function _getDelegatedCollatorIndex(address _candidate)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 length = collatorsDelegated.length;
+        for (uint256 i = 0; i < length; ++i) {
+            if (collatorsDelegated[i] == _candidate) {
+                return i;
+            }
+        }
+        return COLLATOR_N_FOUND;
     }
 }
