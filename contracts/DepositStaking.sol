@@ -28,7 +28,7 @@ contract DepositStaking {
     address payable public INACTIVITY_COVER;
 
     /// Addresses of collators this contract has delegated to
-    address[] internal collatorsDelegated;
+    address[] public collatorsDelegated;
 
     /// Collator address, and delegation amount by this contract
     mapping(address => Delegation) public delegations;
@@ -274,7 +274,7 @@ contract DepositStaking {
 
     function getCollatorsDelegated(
         uint256 index
-    ) external view auth(ROLE_STAKING_MANAGER) returns (address) {
+    ) external view returns (address) {
         return collatorsDelegated[index];
     }
 

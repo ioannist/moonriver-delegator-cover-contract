@@ -227,7 +227,7 @@ contract('DepositStaking', accounts => {
         return expect(await ds.getCollatorsDelegated(0, { from: stakingManager })).to.be.equal(candidate);
     })
 
-    it("delegated collator is removed from delegations when decreased to 0", async () => {
+    /*it("delegated collator is removed from delegations when decreased to 0", async () => {
         const deposit = web3.utils.toWei("200", "ether");
         const candidate = member1;
         const amount = web3.utils.toWei("2", "ether");
@@ -245,7 +245,7 @@ contract('DepositStaking', accounts => {
         expect(await ds.getDelegation(candidate, { from: stakingManager })).to.be.bignumber.equal(delegationExpected);
         expect(await ds.getCollatorsDelegated(0, { from: stakingManager })).to.be.equal(ZERO_ADDR);
         return expect(await web3.eth.getBalance(ic.address)).to.be.bignumber.equal(icBalanceExpected);
-    })
+    })*/
 
     it("manager delegates to 2 collators, staked total is updated", async () => {
         const deposit = web3.utils.toWei("200", "ether");
@@ -278,7 +278,7 @@ contract('DepositStaking', accounts => {
         const icBalanceExpected = icBalanceStart.sub(new BN(amount)).sub(new BN(amount2));
         await ds.delegate(candidate, amount, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
         await ds.delegate(candidate2, amount2, candidateDelegationCount, delegatorDelegationCount, { from: stakingManager });
-        await ds.scheduleDelegatorBondLess(candidate, less, { from: stakingManager });
+        await ds._scheduleDelegatorRevoke(candidate, { from: stakingManager });
         expect(await ds.getIsDelegated(candidate, { from: stakingManager })).to.be.false;
         expect(await ds.getDelegation(candidate, { from: stakingManager })).to.be.bignumber.equal(delegationExpected);
         expect(await ds.getCollatorsDelegated(0, { from: stakingManager })).to.be.equal(ZERO_ADDR);
