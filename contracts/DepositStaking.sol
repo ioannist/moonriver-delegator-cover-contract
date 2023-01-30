@@ -269,15 +269,6 @@ contract DepositStaking {
         uint256 less
     ) internal virtual {
         delegations[candidate].amount -= less;
-        if (delegations[candidate].amount == 0) {
-            delegations[candidate].isDelegated = false;
-            for (uint256 i; i < collatorsDelegated.length; i++) {
-                if (collatorsDelegated[i] == candidate) {
-                    delete collatorsDelegated[i];
-                    break;
-                }
-            }
-        }
         // There is no method to cancel a request, and anybody can execute a scheduled request, so this is a one-way to decreasing the delegation
         InactivityCover(INACTIVITY_COVER).schedule_delegator_bond_less(
             candidate,
