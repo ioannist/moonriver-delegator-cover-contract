@@ -30,9 +30,6 @@ contract DepositStaking {
     /// Addresses of collators this contract has delegated to
     address[] public collatorsDelegated;
 
-    /// Collator address, and delegation amount by this contract
-    mapping(address => Delegation) public delegations;
-
     /// Last era that a forced undelegaton was requested
     uint128 public lastForcedUndelegationEra;
 
@@ -44,7 +41,7 @@ contract DepositStaking {
     /// Manager role
     bytes32 internal constant ROLE_MANAGER = keccak256("ROLE_MANAGER");
 
-    /// Stakign manager can stake/unstake contract funds
+    /// Staking manager can stake/unstake contract funds
     bytes32 internal constant ROLE_STAKING_MANAGER =
         keccak256("ROLE_STAKING_MANAGER");
 
@@ -110,11 +107,9 @@ contract DepositStaking {
             "EXCEEDS_MAX_PERCENT"
         );
 
-        if (!delegations[candidate].isDelegated) {
+        if (_getDelegationAmount(INACTIVITY_COVER, candidate) == 0) {
             collatorsDelegated.push(candidate);
-            delegations[candidate].isDelegated = true;
         }
-        delegations[candidate].amount += amount;
         // will fail if already delegating to this collator
         InactivityCover(INACTIVITY_COVER).delegate(
             candidate,
@@ -148,7 +143,6 @@ contract DepositStaking {
             InactivityCover(INACTIVITY_COVER).delegatorNotPaid() == address(0),
             "DELEG_N_PAID"
         );
-        delegations[candidate].amount += more;
         InactivityCover(INACTIVITY_COVER).delegator_bond_more(candidate, more);
         emit DelegatorBondMoreEvent(candidate, more);
     }
@@ -234,10 +228,10 @@ contract DepositStaking {
         address lowestDelegationCandidate;
         for (uint256 i; i < collatorsDelegated.length; i++) {
             address candidate = collatorsDelegated[i];
-            if (candidate != address(0) && delegations[candidate].amount != 0 && delegations[candidate].amount < lowestDelegation) {
-                lowestDelegation = delegations[candidate].amount;
+            uint256 delegationAmount = _getDelegationAmount(INACTIVITY_COVER, candidate);
+            if (candidate != address(0) && delegationAmount != 0 && delegationAmount < lowestDelegation) {
+                lowestDelegation = delegationAmount;
                 lowestDelegationCandidate = candidate;
-                emit DelegatorBondLessEvent(address(0), delegations[candidate].amount);
             }
         }
         require(lowestDelegationCandidate != address(0), "NO_CANDIDATE");
@@ -263,13 +257,13 @@ contract DepositStaking {
     function getIsDelegated(
         address candidate
     ) external view auth(ROLE_STAKING_MANAGER) returns (bool) {
-        return delegations[candidate].isDelegated;
+        return _getDelegationAmount(INACTIVITY_COVER, candidate) != 0;
     }
 
     function getDelegation(
         address candidate
     ) external view auth(ROLE_STAKING_MANAGER) returns (uint256) {
-        return delegations[candidate].amount;
+        return _getDelegationAmount(INACTIVITY_COVER, candidate);
     }
 
     function getCollatorsDelegated(
@@ -284,7 +278,6 @@ contract DepositStaking {
         address candidate,
         uint256 less
     ) internal virtual {
-        delegations[candidate].amount -= less;
         // There is no method to cancel a request, and anybody can execute a scheduled request, so this is a one-way to decreasing the delegation
         InactivityCover(INACTIVITY_COVER).schedule_delegator_bond_less(
             candidate,
@@ -293,9 +286,6 @@ contract DepositStaking {
     }
 
     function _scheduleDelegatorRevoke(address candidate) internal virtual {
-        delegations[candidate].amount = 0;
-        delegations[candidate].isDelegated = false;
-        
         uint256 index = _getDelegatedCollatorIndex(candidate);
         require(index != COLLATOR_N_FOUND, "COLLATOR_N_FOUND");
         uint256 last = collatorsDelegated.length - 1;
@@ -312,6 +302,10 @@ contract DepositStaking {
 
     function _getStakedTotal() internal view virtual returns(uint256) {
         return staking.getDelegatorTotalStaked(INACTIVITY_COVER);
+    }
+
+    function _getDelegationAmount(address _delegator, address _candidate) internal view virtual returns(uint256) {
+        return staking.delegationAmount(_delegator, _candidate);
     }
 
     function _getDelegatedCollatorIndex(address _candidate)
