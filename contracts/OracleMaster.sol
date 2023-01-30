@@ -146,6 +146,8 @@ contract OracleMaster is Pausable {
             _quorum != 0 && _quorum < MAX_MEMBERS,
             "OM: QUORUM_WONT_BE_MADE"
         );
+        require(_quorum != QUORUM, "OM: SAME_QUORUM");
+        
         uint8 oldQuorum = QUORUM;
         QUORUM = _quorum;
 

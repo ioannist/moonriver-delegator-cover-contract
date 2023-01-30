@@ -47,8 +47,8 @@ module.exports = async (deployer, network, accounts) => {
 
   // replenish balancesif low
   for (const a of accounts) {
-    //console.log(`Sending DEV to ${a}`);
-    //await web3.eth.sendTransaction({ to: a, from: manager, value: web3.utils.toWei("1", "ether") });
+    console.log(`Sending DEV to ${a}`);
+    await web3.eth.sendTransaction({ to: a, from: manager, value: web3.utils.toWei("1", "ether") });
   }
 
   console.log(`Deploying OracleMaster`);
