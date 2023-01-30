@@ -215,10 +215,8 @@ contract InactivityCover is IPushable {
         }
 
         members[_member].deposit += msg.value;
-        if (members[_member].deposit >= MIN_DEPOSIT) {
-            if (!members[_member].active) {
-                members[_member].wentActiveEra = eraId;
-            } 
+        if (members[_member].deposit >= MIN_DEPOSIT && !members[_member].active) {
+            members[_member].wentActiveEra = eraId;
             members[_member].active = true;
         }
         membersDepositTotal += msg.value;
