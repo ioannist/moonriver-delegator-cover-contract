@@ -245,6 +245,19 @@ contract DepositStaking {
         emit ForceRevokeEvent(lastForcedUndelegationEra, lowestDelegationCandidate);
     }
 
+    /**
+    @notice Cleanup method that can be used by anobody to clean the collatorsDelegated array.
+    @param _candidate The collator to remove from collatorsDelegated as long as the contract's delegation to it is zero.
+    */
+    function cleanCollatorNotDelegated(address _candidate) external {
+        require(staking.delegationAmount(INACTIVITY_COVER, _candidate) == 0, "DELEGATION_NOT_ZERO");
+        uint256 index = _getDelegatedCollatorIndex(_candidate);
+        require(index != COLLATOR_N_FOUND, "COLLATOR_N_FOUND");
+        uint256 last = collatorsDelegated.length - 1;
+        if (index != last) collatorsDelegated[index] = collatorsDelegated[last];
+        collatorsDelegated.pop();
+    }
+
     /// ***************** GETTERS *****************
 
     function getIsDelegated(
