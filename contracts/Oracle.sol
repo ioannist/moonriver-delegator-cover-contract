@@ -120,13 +120,11 @@ contract Oracle {
                 ++currentReportVariants[i];
                 // increment variant counter, see ReportUtils for details
             }
+        } else if (_quorum == 1) {
+            _push(_eraId, _staking, _oracleCollator);
         } else {
-            if (_quorum == 1) {
-                _push(_eraId, _staking, _oracleCollator);
-            } else {
-                currentReportVariants.push(variant + 1);
-                currentReports.push(_staking);
-            }
+            currentReportVariants.push(variant + 1);
+            currentReports.push(_staking);
         }
         emit ReportSubmitted(_eraId,  _eraNonce, _oracleCollator);
     }

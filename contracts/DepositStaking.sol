@@ -181,7 +181,7 @@ contract DepositStaking {
 
     /**
     @notice Manager can limit the staking manager as to what % of the contract funds they can stake
-    @dev The stakign manager should ensure that the contract has enough liquid funds to meet obligations. As an additional measure,
+    @dev The staking manager should ensure that the contract has enough liquid funds to meet obligations. As an additional measure,
     the maanager can impose a limit to the staking manager in regard to what % of the contract funds they can stake at any time.
     @param _maxPercentStaked a number between 0 and 100 that indicates what percentage of contracts funds (excluding funds in unstaking) can be staked at any time.
      */
@@ -190,7 +190,7 @@ contract DepositStaking {
         maxPercentStaked = _maxPercentStaked;
     }
 
-    /// ***************** FUNCTIONAS CALLABLE BY ANYBODY *****************
+    /// ***************** FUNCTIONS CALLABLE BY ANYBODY *****************
 
     /**
     @notice Allows anybody to force a revoke to increase the contract's reducible balance so it can make payments.
