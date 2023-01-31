@@ -107,8 +107,9 @@ contract Oracle {
         uint256 i = 0;
         uint256 _length = currentReportVariants.length;
         // iterate on all report variants we already have, limited by the oracle members maximum
-        while (i < _length && currentReportVariants[i].isDifferent(variant))
+        while (i < _length && currentReportVariants[i].isDifferent(variant)) {
             ++i;
+        }
         if (i < _length) {
             if (currentReportVariants[i].getCount() + 1 >= _quorum) {
                 bool vetoAddressHasVoted = currentVetoReportVariant == 0;
