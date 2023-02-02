@@ -23,16 +23,10 @@ contract AuthManager is IAuthManager, Initializable {
 
     /**
      * @notice Initialize contract after deploying
-     * @param superior - address of member which granted with super role
      */
-    function initialize(address superior) external initializer {
-        if (superior == address(0)) {
-            members[msg.sender] = [SUPER_ROLE];
-            emit AddMember(msg.sender, SUPER_ROLE);
-        } else {
-            members[superior] = [SUPER_ROLE];
-            emit AddMember(superior, SUPER_ROLE);
-        }
+    function initialize() external initializer {
+        members[msg.sender] = [SUPER_ROLE];
+        emit AddMember(msg.sender, SUPER_ROLE);
     }
 
     /**

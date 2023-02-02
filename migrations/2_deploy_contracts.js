@@ -35,7 +35,7 @@ module.exports = async (deployer, network, accounts) => {
   }
 
   console.log(`Initializing AuthManager`);
-  await AM.initialize(superior);
+  await AM.initialize({from: superior});
 
   console.log(`Adding manager role ${manager}`)
   //const managerHash = web3.utils.sha3('ROLE_MANAGER', { encoding: 'hex' })

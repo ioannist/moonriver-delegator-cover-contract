@@ -1029,7 +1029,7 @@ contract('InactivityCover', accounts => {
 
         am = await AuthManager.new();
         assert.ok(am);
-        await am.initialize(superior);
+        await am.initialize({from: superior});
         await am.addByString('ROLE_MANAGER', manager);
         await am.addByString('ROLE_ORACLE_MEMBERS_MANAGER', oracleManager);
         await am.addByString('ROLE_ORACLE_QUORUM_MANAGER', oracleManager);

@@ -31,16 +31,6 @@ interface Types {
         uint64 era;
     }
 
-    /*struct ScheduledRequestsData {
-        // account of delegator who made this request
-        address delegator;
-        // round when the request is executable
-        uint128 whenExecutable;
-        // 0 for revoke, 1 for decrease, 2 for leave
-        uint128 actionType;
-        // associated MOVR amount for that action
-        uint128 actionAmount;
-    }*/
     struct DelegationsData {
         // delegator address
         address ownerAccount;
@@ -76,31 +66,14 @@ interface Types {
         uint128 orbitersCount;
         // the data snapshot is from the last block of this round, and the block data
         uint128 round;
-        bytes32 blockHash;
         uint128 blockNumber;
+        bytes32 blockHash;
         // total number of points awarded in this round
         uint128 awarded;
+       // if finalize is true, there are no more data to send for the included collator/s -> eraNonce++ 
+        bool finalize;
         // collator data for all candidates
         CollatorData[] collators;
-        // if finalize is true, there are no more data to send for the included collator/s -> eraNonce++ 
-        bool finalize;
-        /*
-        bytes32 stashAccount;
-        bytes32 controllerAccount;
-        LedgerStatus stakeStatus;
-        // active part of stash balance
-        uint128 activeBalance;
-        // locked for stake stash balance.
-        uint128 totalBalance;
-        // totalBalance = activeBalance + sum(unlocked.balance)
-        UnlockingChunk[] unlocking;
-        uint32[] claimedRewards;
-        // stash account balance. It includes locked (totalBalance) balance assigned
-        // to a controller.
-        uint128 stashBalance;
-        // slashing spans for ledger
-        uint32 slashingSpans;
-        */
     }
 
     struct RelaySpec {
