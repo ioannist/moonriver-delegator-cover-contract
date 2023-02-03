@@ -38,7 +38,7 @@ contract InactivityCover is IPushable {
     event DecreaseCoverScheduledEvent(address member, uint256 amount, uint128 eraId);
     event DecreaseCoverEvent(address member, uint256 amount);
     event CancelDecreaseCoverEvent(address member);
-    event MemberNotActiveEvent(address member, uint128 eraId);
+    event MemberNotInActiveSetEvent(address member, uint128 eraId);
     event MemberHasZeroPointsEvent(address member, uint128 eraId);
     event PayoutEvent(address delegator, uint256 amount);
     event DelegatorNotPaidEvent(address delegator, uint256 amount);
@@ -51,6 +51,8 @@ contract InactivityCover is IPushable {
         bool noActiveSetCoverAfterEra
     );
     event MemberInvoicedEvent(address member, uint256 amount, uint128 eraId);
+    event MemberDefaultEvent(address member);
+    event MemberActiveStatusChanged(address member, bool active);
     event OraclePaidEvent(address member, uint256 amount, uint128 eraId);
 
     /// The ParachainStaking wrapper at the known pre-compile address. This will be used to make all calls
@@ -115,7 +117,7 @@ contract InactivityCover is IPushable {
     // Same as above for delegators who cannot claims their cover due to funds being locked
     address public delegatorNotPaid;
 
-    // How much does a member (who does not run an oracle) get charged every time they are invvoiced
+    // How much does a member (who does not run an oracle) get charged every time they are invoiced
     uint256 public memberFee; // default is zero
     // The least era when members were successfulyl invoiced
     uint128 public membersInvoicedLastEra;
@@ -217,6 +219,7 @@ contract InactivityCover is IPushable {
         if (members[_member].deposit >= MIN_DEPOSIT && !members[_member].active) {
             members[_member].wentActiveEra = eraId;
             members[_member].active = true;
+            emit MemberActiveStatusChanged(_member, true);
         }
         membersDepositTotal += msg.value;
         emit DepositEvent(_member, msg.value);
@@ -376,7 +379,7 @@ contract InactivityCover is IPushable {
         if (members[_member].deposit < MIN_DEPOSIT) {
             members[_member].active = false;
             members[_member].wentInactiveEra = eraId;
-            members[_member].defaultCount++;
+            emit MemberActiveStatusChanged(_member, false);
         }
         membersDepositTotal -= amount;
         delete scheduledDecreasesMap[_member];
@@ -485,6 +488,8 @@ contract InactivityCover is IPushable {
                         members[memberAddress].active = false;
                         members[memberAddress].wentInactiveEra = eraId;
                         members[memberAddress].defaultCount++;
+                        emit MemberDefaultEvent(memberAddress);
+                        emit MemberActiveStatusChanged(memberAddress, false);
                         continue;
                     }
                     members[memberAddress].deposit -= memberFee;
@@ -847,7 +852,7 @@ contract InactivityCover is IPushable {
                 !collatorData.active
             ) {
                 // if collator is out of the active set
-                emit MemberNotActiveEvent(collatorData.collatorAccount, _eraId);
+                emit MemberNotInActiveSetEvent(collatorData.collatorAccount, _eraId);
                 mustPay = true;
             }
             uint128 noZeroPtsCoverAfterEra = members[
@@ -896,6 +901,8 @@ contract InactivityCover is IPushable {
                     members[collatorData.collatorAccount].wentInactiveEra = _eraId;
                     members[collatorData.collatorAccount].defaultCount++;
                     // defaulted amounts are written off and not paid if the member becomes active again
+                    emit MemberDefaultEvent(collatorData.collatorAccount);
+                    emit MemberActiveStatusChanged(collatorData.collatorAccount, false);
                     break;
                 }
 
@@ -924,6 +931,8 @@ contract InactivityCover is IPushable {
                     members[collatorData.collatorAccount].wentInactiveEra = _eraId;
                     members[collatorData.collatorAccount].defaultCount++;
                     // defaulted amounts are written off and not paid if the member becomes active again
+                    emit MemberDefaultEvent(collatorData.collatorAccount);
+                    emit MemberActiveStatusChanged(collatorData.collatorAccount, false);
                     continue;
                 }
                 members[collatorData.collatorAccount].deposit -= refund;
