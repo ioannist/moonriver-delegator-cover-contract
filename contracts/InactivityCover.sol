@@ -517,7 +517,7 @@ contract InactivityCover is IPushable {
                     emit OraclePaidEvent(memberAddress, oraclePayment, eraNow);
                 }
             }
-            // if there is anything left, credit the manager with the remainder
+            // if there is anything left (due to uneven division), credit the manager with the remainder
             membersDepositTotal -= remainder;
         }
     }
