@@ -35,10 +35,9 @@ contract InactivityCover is IPushable {
     }
 
     event DepositEvent(address member, uint256 amount);
-    event DecreaseCoverScheduledEvent(address member, uint256 amount);
+    event DecreaseCoverScheduledEvent(address member, uint256 amount, uint128 eraId);
     event DecreaseCoverEvent(address member, uint256 amount);
     event CancelDecreaseCoverEvent(address member);
-    event ReportPushedEvent(uint128 eraId, address oracleCollator);
     event MemberNotActiveEvent(address member, uint128 eraId);
     event MemberHasZeroPointsEvent(address member, uint128 eraId);
     event PayoutEvent(address delegator, uint256 amount);
@@ -929,7 +928,6 @@ contract InactivityCover is IPushable {
                 // because we are only moving funds from one deposit to another, we don't need to update membersDepositTotal or payoutsOwedTotal
             }
         }
-        emit ReportPushedEvent(_eraId, _oracleCollator);
     }
 
     function delegate(
@@ -986,8 +984,9 @@ contract InactivityCover is IPushable {
         require(members[_member].deposit != 0, "NO_DEP");
         require(members[_member].deposit >= _amount, "EXC_DEP");
         require(scheduledDecreasesMap[_member].amount == 0, "DECR_EXIST");
-        scheduledDecreasesMap[_member] = ScheduledDecrease(_getEra() + erasCovered[_member], _amount);
-        emit DecreaseCoverScheduledEvent(_member, _amount);
+        uint128 scheduledEraId = _getEra() + erasCovered[_member];
+        scheduledDecreasesMap[_member] = ScheduledDecrease(scheduledEraId, _amount);
+        emit DecreaseCoverScheduledEvent(_member, _amount, scheduledEraId);
     }
 
     function _getFreeBalance() internal view virtual returns (uint256) {
