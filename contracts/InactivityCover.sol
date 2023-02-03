@@ -712,8 +712,8 @@ contract InactivityCover is IPushable {
     }
 
     function setMemberFee(uint256 _memberFee) external auth(ROLE_MANAGER) {
-        // _memberFee should be well below 3 MOVR (per week, or 84 rounds) but we set the max to 3 to allow for increases in round duration
-        require(_memberFee <= 3 ether, "FEE_INV");
+        // _memberFee should be well below 1 MOVR (per 32 rounds) but we set the max to 3 to allow for increases in round duration
+        require(_memberFee <= 1 ether, "FEE_INV");
         memberFee = _memberFee;
     }
 
