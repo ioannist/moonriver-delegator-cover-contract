@@ -508,14 +508,17 @@ contract InactivityCover is IPushable {
         } else {
         // else, credit the oracle-running members
             uint256 oraclePayment = totalFee / membersWithOraclesCount;
+            uint256 remainder = totalFee;
             for(uint256 i; i < length; i++) {
                 if (membersWithOracles & (1 << i) != 0) {
                     address memberAddress = memberAddresses[i];
                     members[memberAddress].deposit += oraclePayment;
+                    remainder -= oraclePayment;
                     emit OraclePaidEvent(memberAddress, oraclePayment, eraNow);
                 }
             }
-            // because all we are doing is moving deposits around, we don't need to update membersDepositTotal or payoutsOwedTotal
+            // if there is anything left, credit the manager with the remainder
+            membersDepositTotal -= remainder;
         }
     }
 
