@@ -2137,7 +2137,7 @@ contract('InactivityCover', accounts => {
     it("invoicing members results to one non-oracle-running member paying an oracle-running member the member fee", async () => {
         const deposit = new BN(web3.utils.toWei("120", "ether"));
         const invoiceEra = new BN("32");
-        const memberFee = new BN(web3.utils.toWei("2", "ether"));
+        const memberFee = new BN(web3.utils.toWei("1", "ether"));
         const oracleDataEmpty = {
             ...oracleData,
             collators: []
@@ -2166,7 +2166,7 @@ contract('InactivityCover', accounts => {
     it("invoicing members results to two oracle-running members not getting any fees bc there are no non-oracle-running members", async () => {
         const deposit = new BN(web3.utils.toWei("120", "ether"));
         const invoiceEra = new BN("32");
-        const memberFee = new BN(web3.utils.toWei("2", "ether"));
+        const memberFee = new BN(web3.utils.toWei("1", "ether"));
         const oracleDataEmpty = {
             ...oracleData,
             collators: []
@@ -2198,7 +2198,7 @@ contract('InactivityCover', accounts => {
     it("invoicing members results to two non-oracle-running members not getting any fees bc there are no oracle-running members", async () => {
         const deposit = new BN(web3.utils.toWei("120", "ether"));
         const invoiceEra = new BN("32");
-        const memberFee = new BN(web3.utils.toWei("2", "ether"));
+        const memberFee = new BN(web3.utils.toWei("1", "ether"));
         const expectedDeposit1 = deposit.sub(memberFee);
         const expectedDeposit2 = deposit.sub(memberFee);
 
@@ -2222,7 +2222,7 @@ contract('InactivityCover', accounts => {
     it("invoicing members results to an oracle-running member colelcting fees from two non-racle-running members", async () => {
         const deposit = new BN(web3.utils.toWei("120", "ether"));
         const invoiceEra = new BN("64");
-        const memberFee = new BN(web3.utils.toWei("2", "ether"));
+        const memberFee = new BN(web3.utils.toWei("1", "ether"));
         const oracleDataEmpty = {
             ...oracleData,
             collators: []
@@ -2255,7 +2255,7 @@ contract('InactivityCover', accounts => {
     it("invoicing members results to two oracle-running members sharing the fees from one non-racle-running member", async () => {
         const deposit = new BN(web3.utils.toWei("120", "ether"));
         const invoiceEra = new BN("32");
-        const memberFee = new BN(web3.utils.toWei("2", "ether"));
+        const memberFee = new BN(web3.utils.toWei("1", "ether"));
         const oracleDataEmpty = {
             ...oracleData,
             collators: []

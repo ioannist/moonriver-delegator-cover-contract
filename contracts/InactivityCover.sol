@@ -5,6 +5,7 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../interfaces/StakingInterface.sol";
 import "../interfaces/IOracleMaster.sol";
 import "../interfaces/Types.sol";
@@ -13,7 +14,7 @@ import "../interfaces/IPushable.sol";
 import "../interfaces/IProxy.sol";
 import "./DepositStaking.sol";
 
-contract InactivityCover is IPushable {
+contract InactivityCover is IPushable, ReentrancyGuard  {
     struct ScheduledDecrease {
         uint128 era; // the era when the scheduled decrease was created
         uint256 amount;
@@ -401,7 +402,7 @@ contract InactivityCover is IPushable {
     The function can be called with multiple delegators for saving gas costs.
     @param delegators The delegators to pay cover claims to. These are accumulated claims and could even be from multiple collators.
     */
-    function payOutCover(address payable[] calldata delegators) public {
+    function payOutCover(address payable[] calldata delegators) public nonReentrant {
         uint256 delegatorsLength = delegators.length;
         for (uint256 i = 0; i < delegatorsLength; i++) {
             address delegator = delegators[i];

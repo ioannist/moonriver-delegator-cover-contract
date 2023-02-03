@@ -2,12 +2,13 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../interfaces/Types.sol";
 import "../interfaces/IOracleMaster.sol";
 import "../interfaces/IPushable.sol";
 import "./utils/ReportUtils.sol";
 
-contract Oracle {
+contract Oracle is ReentrancyGuard {
     using ReportUtils for uint256;
 
     event ReportingCleared();
@@ -81,7 +82,7 @@ contract Oracle {
         bool veto,
         bool vetoDisabled,
         bool newEra
-    ) external onlyOracleMaster {
+    ) external nonReentrant onlyOracleMaster {
 
         if (newEra) {
             _clearReporting();

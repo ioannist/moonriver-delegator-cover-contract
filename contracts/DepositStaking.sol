@@ -2,11 +2,12 @@
 pragma solidity ^0.8.2;
 pragma abicoder v2;
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../interfaces/IAuthManager.sol";
 import "./InactivityCover.sol";
 import "../interfaces/StakingInterface.sol";
 
-contract DepositStaking {
+contract DepositStaking is ReentrancyGuard {
     struct Delegation {
         bool isDelegated;
         uint256 amount;
@@ -89,7 +90,7 @@ contract DepositStaking {
         uint256 amount,
         uint256 candidateDelegationCount,
         uint256 delegatorDelegationCount
-    ) public virtual auth(ROLE_STAKING_MANAGER) {
+    ) public nonReentrant virtual auth(ROLE_STAKING_MANAGER) {
         // To delegate, there must not exist an unpaid delegator or member
         require(
             InactivityCover(INACTIVITY_COVER).memberNotPaid() == address(0),
@@ -133,7 +134,7 @@ contract DepositStaking {
     function delegatorBondMore(
         address candidate,
         uint256 more
-    ) public virtual auth(ROLE_STAKING_MANAGER) {
+    ) public nonReentrant virtual auth(ROLE_STAKING_MANAGER) {
         // To bond more, there must not exist an unpaid delegator or member
         require(
             InactivityCover(INACTIVITY_COVER).memberNotPaid() == address(0),
@@ -161,7 +162,7 @@ contract DepositStaking {
     function scheduleDelegatorBondLess(
         address candidate,
         uint256 less
-    ) public auth(ROLE_STAKING_MANAGER) {
+    ) public nonReentrant auth(ROLE_STAKING_MANAGER) {
         _scheduleDelegatorBondLess(candidate, less);
         emit DelegatorBondLessEvent(candidate, less);
     }
@@ -174,7 +175,7 @@ contract DepositStaking {
     */
     function scheduleDelegatorRevoke(
         address candidate
-    ) external auth(ROLE_STAKING_MANAGER) {
+    ) external nonReentrant auth(ROLE_STAKING_MANAGER) {
         _scheduleDelegatorRevoke(candidate);
         emit RevokeEvent(candidate);
     }
@@ -203,7 +204,7 @@ contract DepositStaking {
     This is a method of last resort and it allows members and delegators to get their funds, should the manager fail to keep enough funds liquid.
     The manager would want to avoid forcing users to run this function which is 1) inconvenient for them, and 2) exposes the manager to random revoke risk.
     */
-    function forceScheduleRevoke() external {
+    function forceScheduleRevoke() external nonReentrant {
         // There must be a non-paid delegator or member to call this method
         require(
             InactivityCover(INACTIVITY_COVER).delegatorNotPaid() !=

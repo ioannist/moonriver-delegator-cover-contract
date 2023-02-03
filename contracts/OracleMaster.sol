@@ -3,13 +3,13 @@ pragma solidity ^0.8.2;
 pragma abicoder v2;
 
 import "@openzeppelin/contracts/security/Pausable.sol";
-
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/IAuthManager.sol";
 import "../interfaces/IProxy.sol";
 import "../interfaces/StakingInterface.sol";
 
-contract OracleMaster is Pausable {
+contract OracleMaster is Pausable, ReentrancyGuard {
 
     // The following config properties are no used by the contract but they are loaded and used by the oracle binary
     // We use the contact as a means for the oracle mamager to be able to update the config of all oracle binaries
@@ -139,7 +139,7 @@ contract OracleMaster is Pausable {
     @param _quorum new value of quorum threshold
     */
     function setQuorum(uint8 _quorum)
-        external
+        external nonReentrant
         auth(ROLE_ORACLE_QUORUM_MANAGER)
     {
         require(
@@ -147,7 +147,7 @@ contract OracleMaster is Pausable {
             "OM: QUORUM_WONT_BE_MADE"
         );
         require(_quorum != QUORUM, "OM: SAME_QUORUM");
-        
+
         uint8 oldQuorum = QUORUM;
         QUORUM = _quorum;
 
