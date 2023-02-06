@@ -87,7 +87,6 @@ contract Oracle is ReentrancyGuard {
 
         if (newEra) {
             _clearReporting();
-            // eraNonce++;
         }
 
         {
