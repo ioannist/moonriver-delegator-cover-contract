@@ -641,6 +641,7 @@ contract InactivityCover is IPushable, ReentrancyGuard  {
                 (maxAPR * 1 ether) / (100 * 365 * minRoundsPerDay),
             "HIGH"
         );
+        require(_stake_unit_cover > 0, "ZERO");
         STAKE_UNIT_COVER = _stake_unit_cover;
     }
 
