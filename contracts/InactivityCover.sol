@@ -53,6 +53,7 @@ contract InactivityCover is IPushable, ReentrancyGuard  {
     event MemberDefaultEvent(address member);
     event MemberActiveStatusChanged(address member, bool active);
     event OraclePaidEvent(address member, uint256 amount, uint128 eraId);
+    event UpgradedToV2Event(address member);
 
     /// The ParachainStaking wrapper at the known pre-compile address. This will be used to make all calls
     /// to the underlying staking solution
@@ -232,6 +233,7 @@ contract InactivityCover is IPushable, ReentrancyGuard  {
         require(_isMemberAuth(msg.sender, _member), "N_COLLATOR_PROXY");
         require(contractV2 != address(0), "NO_V2");
         upgraded[_member] = true;
+        emit UpgradedToV2Event(_member);
         (bool sent, ) = contractV2.call{value: members[_member].deposit}("");
         require(sent, "TRANSF_FAIL");
     }
