@@ -90,7 +90,7 @@ contract DepositStaking is ReentrancyGuard {
         uint256 amount,
         uint256 candidateDelegationCount,
         uint256 delegatorDelegationCount
-    ) public nonReentrant virtual auth(ROLE_STAKING_MANAGER) {
+    ) public virtual auth(ROLE_STAKING_MANAGER) {
         // To delegate, there must not exist an unpaid delegator or member
         require(
             InactivityCover(INACTIVITY_COVER).memberNotPaid() == address(0),
@@ -134,7 +134,7 @@ contract DepositStaking is ReentrancyGuard {
     function delegatorBondMore(
         address candidate,
         uint256 more
-    ) public nonReentrant virtual auth(ROLE_STAKING_MANAGER) {
+    ) public virtual auth(ROLE_STAKING_MANAGER) {
         // To bond more, there must not exist an unpaid delegator or member
         require(
             InactivityCover(INACTIVITY_COVER).memberNotPaid() == address(0),
@@ -162,7 +162,7 @@ contract DepositStaking is ReentrancyGuard {
     function scheduleDelegatorBondLess(
         address candidate,
         uint256 less
-    ) public nonReentrant auth(ROLE_STAKING_MANAGER) {
+    ) public auth(ROLE_STAKING_MANAGER) {
         emit DelegatorBondLessEvent(candidate, less);
         _scheduleDelegatorBondLess(candidate, less);
     }
@@ -175,7 +175,7 @@ contract DepositStaking is ReentrancyGuard {
     */
     function scheduleDelegatorRevoke(
         address candidate
-    ) external nonReentrant auth(ROLE_STAKING_MANAGER) {
+    ) external auth(ROLE_STAKING_MANAGER) {
         emit RevokeEvent(candidate);
         _scheduleDelegatorRevoke(candidate);
     }

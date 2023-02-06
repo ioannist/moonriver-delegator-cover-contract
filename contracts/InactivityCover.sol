@@ -403,7 +403,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     The function can be called with multiple delegators for saving gas costs.
     @param delegators The delegators to pay cover claims to. These are accumulated claims and could even be from multiple collators.
     */
-    function payOutCover(address payable[] calldata delegators) public nonReentrant whenNotPaused {
+    function payOutCover(address payable[] calldata delegators) external nonReentrant whenNotPaused {
         uint256 delegatorsLength = delegators.length;
         for (uint256 i = 0; i < delegatorsLength; i++) {
             address delegator = delegators[i];
@@ -772,7 +772,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
         return erasCovered[member];
     }
 
-    function getBalance() public view returns (uint256) {
+    function getBalance() external view returns (uint256) {
         return address(this).balance;
     }
 

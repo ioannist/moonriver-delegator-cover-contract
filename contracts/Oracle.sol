@@ -83,7 +83,7 @@ contract Oracle is ReentrancyGuard {
         bool veto,
         bool vetoDisabled,
         bool newEra
-    ) external nonReentrant onlyOracleMaster {
+    ) external onlyOracleMaster {
 
         if (newEra) {
             _clearReporting();
