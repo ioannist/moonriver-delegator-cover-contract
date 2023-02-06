@@ -3,8 +3,6 @@ pragma solidity ^0.8.2;
 pragma abicoder v2;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../interfaces/StakingInterface.sol";
 import "../interfaces/IOracleMaster.sol";
