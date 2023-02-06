@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.3;
+pragma abicoder v2;
 
 // From LIDO liquid KSM contract
 library ReportUtils {
