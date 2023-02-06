@@ -3,34 +3,6 @@ pragma solidity 0.8.17;
 
 interface Types {
 
-    struct Fee{
-        uint16 total;
-        uint16 operators;
-        uint16 developers;
-        uint16 treasury;
-    }
-
-    struct Stash {
-        bytes32 stashAccount;
-        uint128  eraId;
-    }
-
-    enum LedgerStatus {
-        // bonded but not participate in staking
-        Idle,
-        // participate as nominator
-        Nominator,
-        // participate as validator
-        Validator,
-        // not bonded not participate in staking
-        None
-    }
-
-    struct UnlockingChunk {
-        uint256 balance;
-        uint64 era;
-    }
-
     struct DelegationsData {
         // delegator address
         address ownerAccount;
@@ -74,12 +46,5 @@ interface Types {
         bool finalize;
         // collator data for all candidates
         CollatorData[] collators;
-    }
-
-    struct RelaySpec {
-        uint16 maxValidatorsPerLedger;
-        uint128 minNominatorBalance;
-        uint128 ledgerMinimumActiveBalance;
-        uint256 maxUnlockingChunks;
     }
 }
