@@ -157,11 +157,16 @@ contract Oracle is ReentrancyGuard {
         if (_toAdd) {
             PUSHABLES.push(_pushable);
         } else {
+            uint index;
             for (uint256 i = 0; i < PUSHABLES.length; i++) {
                 if (PUSHABLES[i] == _pushable) {
-                    delete PUSHABLES[i];
+                    index = i;
+                    break;
                 }
             }
+            uint256 last = PUSHABLES.length - 1;
+            if (index != last) PUSHABLES[index] = PUSHABLES[last];
+            PUSHABLES.pop();
         }
     }
 
