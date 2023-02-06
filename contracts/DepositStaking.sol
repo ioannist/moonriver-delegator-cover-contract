@@ -111,7 +111,6 @@ contract DepositStaking is ReentrancyGuard {
         if (_getDelegationAmount(INACTIVITY_COVER, candidate) == 0) {
             collatorsDelegated.push(candidate);
         }
-        emit DelegateEvent(candidate, amount);
         // will fail if already delegating to this collator
         InactivityCover(INACTIVITY_COVER).delegate(
             candidate,
@@ -119,6 +118,7 @@ contract DepositStaking is ReentrancyGuard {
             candidateDelegationCount,
             delegatorDelegationCount
         );
+        emit DelegateEvent(candidate, amount);
     }
 
     /**
@@ -144,8 +144,8 @@ contract DepositStaking is ReentrancyGuard {
             InactivityCover(INACTIVITY_COVER).delegatorNotPaid() == address(0),
             "DELEG_N_PAID"
         );
-        emit DelegatorBondMoreEvent(candidate, more);
         InactivityCover(INACTIVITY_COVER).delegator_bond_more(candidate, more);
+        emit DelegatorBondMoreEvent(candidate, more);
     }
 
     /**
@@ -163,8 +163,8 @@ contract DepositStaking is ReentrancyGuard {
         address candidate,
         uint256 less
     ) public nonReentrant auth(ROLE_STAKING_MANAGER) {
-        emit DelegatorBondLessEvent(candidate, less);
         _scheduleDelegatorBondLess(candidate, less);
+        emit DelegatorBondLessEvent(candidate, less);
     }
 
     /**
@@ -176,8 +176,8 @@ contract DepositStaking is ReentrancyGuard {
     function scheduleDelegatorRevoke(
         address candidate
     ) external nonReentrant auth(ROLE_STAKING_MANAGER) {
-        emit RevokeEvent(candidate);
         _scheduleDelegatorRevoke(candidate);
+        emit RevokeEvent(candidate);
     }
 
     /**
@@ -236,8 +236,8 @@ contract DepositStaking is ReentrancyGuard {
             }
         }
         require(lowestDelegationCandidate != address(0), "NO_CANDIDATE");
-        emit ForceRevokeEvent(lastForcedUndelegationEra, lowestDelegationCandidate);
         _scheduleDelegatorRevoke(lowestDelegationCandidate);
+        emit ForceRevokeEvent(lastForcedUndelegationEra, lowestDelegationCandidate);
     }
 
     /**

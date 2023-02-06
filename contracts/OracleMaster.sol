@@ -151,11 +151,11 @@ contract OracleMaster is Pausable, ReentrancyGuard {
         uint8 oldQuorum = QUORUM;
         QUORUM = _quorum;
 
-        emit QuorumChanged(_quorum);
         // If the QUORUM value was lowered, check existing reports whether it is time to push
         if (oldQuorum > _quorum) {
             IOracle(ORACLE).softenQuorum(_quorum, eraId);
         }
+        emit QuorumChanged(_quorum);
     }
 
     /**
