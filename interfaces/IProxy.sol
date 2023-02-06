@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.8.3;
+pragma solidity 0.8.17;
 
 /// @dev The Proxy contract's address.
 address constant PROXY_ADDRESS = 0x000000000000000000000000000000000000080b;
