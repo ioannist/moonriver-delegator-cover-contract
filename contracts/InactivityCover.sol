@@ -129,7 +129,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     mapping(address => bool) upgraded;
 
     // Manager role
-    bytes32 internal immutable ROLE_MANAGER = keccak256("ROLE_MANAGER");
+    bytes32 internal immutable ROLE_MANAGER;
 
     // Allows function calls only from Oracle
     modifier onlyOracle() {
@@ -148,6 +148,10 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     modifier auth(bytes32 role) {
         require(IAuthManager(AUTH_MANAGER).has(role, msg.sender), "UNAUTH");
         _;
+    }
+
+    constructor () {
+        ROLE_MANAGER = keccak256("ROLE_MANAGER");
     }
 
     /**

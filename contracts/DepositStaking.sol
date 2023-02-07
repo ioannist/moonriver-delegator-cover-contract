@@ -40,11 +40,10 @@ contract DepositStaking is ReentrancyGuard {
     address contractV2;
 
     /// Manager role
-    bytes32 internal immutable ROLE_MANAGER = keccak256("ROLE_MANAGER");
+    bytes32 internal immutable ROLE_MANAGER;
 
     /// Staking manager can stake/unstake contract funds
-    bytes32 internal immutable ROLE_STAKING_MANAGER =
-        keccak256("ROLE_STAKING_MANAGER");
+    bytes32 internal immutable ROLE_STAKING_MANAGER;
 
     // Missing delegated collator index
     uint256 internal constant COLLATOR_N_FOUND = type(uint256).max;
@@ -53,6 +52,11 @@ contract DepositStaking is ReentrancyGuard {
     modifier auth(bytes32 role) {
         require(IAuthManager(AUTH_MANAGER).has(role, msg.sender), "UNAUTH");
         _;
+    }
+
+    constructor () {
+        ROLE_MANAGER = keccak256("ROLE_MANAGER");
+        ROLE_STAKING_MANAGER = keccak256("ROLE_STAKING_MANAGER");
     }
 
     /**

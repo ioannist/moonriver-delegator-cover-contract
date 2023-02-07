@@ -56,19 +56,16 @@ contract OracleMaster is Pausable, ReentrancyGuard {
     uint256 internal constant MEMBER_N_FOUND = type(uint256).max;
 
     // General oracle manager role
-    bytes32 internal immutable ROLE_PAUSE_MANAGER =
-        keccak256("ROLE_PAUSE_MANAGER");
+    bytes32 internal immutable ROLE_PAUSE_MANAGER;
 
     // Oracle members manager role
-    bytes32 internal immutable ROLE_ORACLE_MEMBERS_MANAGER =
-        keccak256("ROLE_ORACLE_MEMBERS_MANAGER");
+    bytes32 internal immutable ROLE_ORACLE_MEMBERS_MANAGER;
 
     // Oracle members manager role
-    bytes32 internal immutable ROLE_ORACLE_QUORUM_MANAGER =
-        keccak256("ROLE_ORACLE_QUORUM_MANAGER");
+    bytes32 internal immutable ROLE_ORACLE_QUORUM_MANAGER;
 
     // Manager role
-    bytes32 internal immutable ROLE_MANAGER = keccak256("ROLE_MANAGER");
+    bytes32 internal immutable ROLE_MANAGER;
 
     // Collators to oracle representatives (each collator can have one oracle rep)
     mapping(address => address) public collatorsToOracles;
@@ -102,6 +99,16 @@ contract OracleMaster is Pausable, ReentrancyGuard {
             "OM: CALLER_N_INACTIVITY_COVER"
         );
         _;
+    }
+
+    constructor () {
+        ROLE_PAUSE_MANAGER = keccak256("ROLE_PAUSE_MANAGER");
+        // Oracle members manager role
+        ROLE_ORACLE_MEMBERS_MANAGER = keccak256("ROLE_ORACLE_MEMBERS_MANAGER");
+        // Oracle members manager role
+        ROLE_ORACLE_QUORUM_MANAGER = keccak256("ROLE_ORACLE_QUORUM_MANAGER");
+        // Manager role
+        ROLE_MANAGER = keccak256("ROLE_MANAGER");
     }
 
     /**
