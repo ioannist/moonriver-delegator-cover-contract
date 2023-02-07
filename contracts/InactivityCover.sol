@@ -416,6 +416,9 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
             uint256 toPay = payoutAmounts[delegator];
             if (toPay == 0 || toPay < MIN_PAYOUT) {
                 emit DelegatorPayoutLessThanMinEvent(delegator);
+                unchecked {
+                    ++i;
+                }
                 continue;
             }
             // Check if contract has enough reducible balance (may be locked in staking)
@@ -426,6 +429,9 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
                 }
                 // will continue paying as many delegators as possible (smaller amounts owed) until drained
                 emit DelegatorNotPaidEvent(delegator, toPay);
+                unchecked {
+                    ++i;
+                }
                 continue;
             }
             // Reset delegatorNotPaid to 0 (if it is this delegator) as they can now get paid
@@ -500,6 +506,9 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
                         members[memberAddress].defaultCount++;
                         emit MemberDefaultEvent(memberAddress);
                         emit MemberActiveStatusChanged(memberAddress, false);
+                        unchecked {
+                            ++i;
+                        }
                         continue;
                     }
                     members[memberAddress].deposit -= memberFee;
@@ -847,6 +856,9 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
                 = _getCandidateTotalCounted(collatorData.collatorAccount, collatorData.delegationsTotal, isCandidate);
 
             if (!member.isMember || !member.active) {
+                unchecked {
+                    ++i;
+                }
                 continue; // not a member or not active
             }
 
@@ -885,6 +897,9 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
                 mustPay = true;
             }
             if (!mustPay) {
+                unchecked {
+                    ++i;
+                }
                 continue;
             }
 
@@ -942,6 +957,9 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
                     // defaulted amounts are written off and not paid if the member becomes active again
                     emit MemberDefaultEvent(collatorData.collatorAccount);
                     emit MemberActiveStatusChanged(collatorData.collatorAccount, false);
+                    unchecked {
+                        ++i;
+                    }
                     continue;
                 }
                 members[collatorData.collatorAccount].deposit -= refund;

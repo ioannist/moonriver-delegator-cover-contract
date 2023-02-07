@@ -230,6 +230,9 @@ contract Oracle is ReentrancyGuard {
         uint256 length = PUSHABLES.length;
         for (uint256 i = 0; i < length;) {
             if (PUSHABLES[i] == address(0)) {
+                unchecked {
+                    ++i;
+                }
                 continue;
             }
             IPushable(PUSHABLES[i]).pushData(_eraId, report, _oracleCollator);
