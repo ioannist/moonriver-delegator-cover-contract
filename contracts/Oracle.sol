@@ -223,7 +223,7 @@ contract Oracle is ReentrancyGuard {
      */
     function _push(
         uint128 _eraId,
-        Types.OracleData memory report,
+        Types.OracleData calldata report,
         address _oracleCollator
     ) internal {
         erasToBlockHashes[_eraId] = report.blockHash;
