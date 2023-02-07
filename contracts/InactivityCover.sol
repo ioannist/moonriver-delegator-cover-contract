@@ -827,7 +827,8 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
             uint256 startGas = gasleft();
             Types.CollatorData calldata collatorData = _report.collators[i];
             bool isCandidate = staking.isCandidate(collatorData.collatorAccount);
-            if (_eraId > members[collatorData.collatorAccount].lastPushedEra && !_report.finalize) {
+            Member memory member = members[collatorData.collatorAccount];
+            if (_eraId > members.lastPushedEra && !_report.finalize) {
                 // if this is the first report for this collator for this era, and it is not the last report
                 // then set delegatorsReportedInEra to the number of delegators submitted with this report
                 members[collatorData.collatorAccount].delegatorsReportedInEra = collatorData.topActiveDelegations.length;
@@ -845,10 +846,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
             members[collatorData.collatorAccount].lastDelegationsTotal
                 = _getCandidateTotalCounted(collatorData.collatorAccount, collatorData.delegationsTotal, isCandidate);
 
-            if (
-                !members[collatorData.collatorAccount].isMember ||
-                !members[collatorData.collatorAccount].active                
-            ) {
+            if (!member.isMember || !member.active) {
                 continue; // not a member or not active
             }
 
@@ -858,9 +856,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
             );
 
             bool mustPay;
-            uint128 noActiveSetCoverAfterEra = members[
-                collatorData.collatorAccount
-            ].noActiveSetCoverAfterEra;
+            uint128 noActiveSetCoverAfterEra = member.noActiveSetCoverAfterEra;
             if (
                 // check that member is offering active-set cover;
                 // if noActiveSetCoverAfterEra is a positive number, then the member will stop offering cover after noActiveSetCoverAfterEra + erasCovered
@@ -872,9 +868,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
                 emit MemberNotInActiveSetEvent(collatorData.collatorAccount, _eraId);
                 mustPay = true;
             }
-            uint128 noZeroPtsCoverAfterEra = members[
-                collatorData.collatorAccount
-            ].noZeroPtsCoverAfterEra;
+            uint128 noZeroPtsCoverAfterEra = member.noZeroPtsCoverAfterEra;
             if (
                 // check that member is offering zero-points cover;
                 // if noZeroPtsCoverAfterEra is a positive number, then the member will stop offering cover after noZeroPtsCoverAfterEra + erasCovered
@@ -905,14 +899,12 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
                     .topActiveDelegations[j];
 
                 uint256 delegationAmount = _getDelegationAmount(delegationData.ownerAccount, collatorData.collatorAccount, delegationData.amount, isCandidate);
-                uint256 toPay = delegationAmount >
-                    members[collatorData.collatorAccount].maxCoveredDelegation
+                uint256 toPay = delegationAmount > member.maxCoveredDelegation
                     ? (STAKE_UNIT_COVER *
-                        members[collatorData.collatorAccount]
-                            .maxCoveredDelegation) / 1 ether
+                        member.maxCoveredDelegation) / 1 ether
                     : (STAKE_UNIT_COVER * delegationAmount) / 1 ether; // also works for delegationAmount == 0
 
-                if (members[collatorData.collatorAccount].deposit < toPay) {
+                if (members[collatorData.collatorAccount].deposit < toPay) { // cannot use cached member, causedeposit is updated
                     // because delegations are sorted lowest-> highest, we know that we have paid as many delegators as possible before defaulting
                     members[collatorData.collatorAccount].active = false;
                     members[collatorData.collatorAccount].wentInactiveEra = _eraId;
@@ -942,7 +934,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
             if (refundOracleGasPrice != 0 && _oracleCollator != address(0)) {
                 uint256 gasUsed = startGas - gasleft();
                 uint256 refund = gasUsed * refundOracleGasPrice;
-                if (members[collatorData.collatorAccount].deposit < refund) {
+                if (members[collatorData.collatorAccount].deposit < refund) { // don't use cached member, because deposit may be modified
                     // by setting active= false, the member has to reach the MIN_DEPOSIT again to reactive which is more than enough to cover the refund
                     members[collatorData.collatorAccount].active = false;
                     members[collatorData.collatorAccount].wentInactiveEra = _eraId;
