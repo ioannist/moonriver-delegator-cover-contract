@@ -4,24 +4,24 @@ pragma solidity 0.8.17;
 interface Types {
 
     struct DelegationsData {
-        // delegator address
-        address ownerAccount;
         // delegation amount
         // for topActiveDelegations, amount excludes decreases
         uint256 amount;
+        // delegator address
+        address ownerAccount;
     }
 
     struct CollatorData {
-        // address of this collator
-        address collatorAccount;
-        // total points awarded to this collator for this round
-        uint128 points;
-        // true if this is an active collator, false if it is waiting
-        bool active;
         // self-bond amount
         uint256 bond;
         // total of counted delegations
         uint256 delegationsTotal;
+        // total points awarded to this collator for this round
+        uint128 points;
+        // address of this collator
+        address collatorAccount;
+        // true if this is an active collator, false if it is waiting
+        bool active;
         // delegator data for this collator
         DelegationsData[] topActiveDelegations; // excludes decreases and revokes
         // DelegationsData[] bottomDelegations;
