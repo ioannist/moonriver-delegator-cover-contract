@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity 0.8.17;
+pragma solidity ^0.8.12;
 
 /// @dev The ParachainStaking contract's address.
 address constant PARACHAIN_STAKING_ADDRESS = 0x0000000000000000000000000000000000000800;
