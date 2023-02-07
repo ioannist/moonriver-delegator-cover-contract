@@ -157,13 +157,17 @@ contract Oracle is ReentrancyGuard {
             PUSHABLES.push(_pushable);
         } else {
             uint index;
-            for (uint256 i = 0; i < PUSHABLES.length; i++) {
+            uint256 length = PUSHABLES.length;
+            for (uint256 i = 0; i < length;) {
                 if (PUSHABLES[i] == _pushable) {
                     index = i;
                     break;
                 }
+                unchecked {
+                    ++i;
+                }
             }
-            uint256 last = PUSHABLES.length - 1;
+            uint256 last = length - 1;
             if (index != last) PUSHABLES[index] = PUSHABLES[last];
             PUSHABLES.pop();
         }
@@ -223,11 +227,15 @@ contract Oracle is ReentrancyGuard {
         address _oracleCollator
     ) internal {
         erasToBlockHashes[_eraId] = report.blockHash;
-        for (uint256 i = 0; i < PUSHABLES.length; i++) {
+        uint256 length = PUSHABLES.length;
+        for (uint256 i = 0; i < length;) {
             if (PUSHABLES[i] == address(0)) {
                 continue;
             }
             IPushable(PUSHABLES[i]).pushData(_eraId, report, _oracleCollator);
+            unchecked {
+                ++i;
+            }
         }
         _clearReporting();
         if (report.finalize) {
@@ -255,7 +263,7 @@ contract Oracle is ReentrancyGuard {
         uint256 repeat = 0;
         uint16 maxval = 0;
         uint16 cur = 0;
-        for (uint256 i = 0; i < _length; ++i) {
+        for (uint256 i = 0; i < _length;) {
             cur = currentReportVariants[i].getCount();
             if (cur >= maxval) {
                 if (cur == maxval) {
@@ -265,6 +273,9 @@ contract Oracle is ReentrancyGuard {
                     maxval = cur;
                     repeat = 0;
                 }
+            }
+            unchecked {
+                ++i;
             }
         }
         return (maxval >= _quorum && repeat == 0, maxind);

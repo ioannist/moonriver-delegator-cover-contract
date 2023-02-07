@@ -527,9 +527,13 @@ contract OracleMaster is Pausable, ReentrancyGuard {
         returns (bool)
     {
         uint256 collatorsWithZeroPoints = 0;
-        for (uint256 i = 0; i < report.collators.length; i++) {
+        uint256 length = report.collators.length;
+        for (uint256 i = 0; i < length;) {
             if (report.collators[i].points == 0) {
                 collatorsWithZeroPoints++;
+            }
+            unchecked {
+                ++i;
             }
         }
         return
@@ -551,9 +555,12 @@ contract OracleMaster is Pausable, ReentrancyGuard {
         returns (uint256)
     {
         uint256 length = members.length;
-        for (uint256 i = 0; i < length; ++i) {
+        for (uint256 i = 0; i < length;) {
             if (members[i] == _oracleMember) {
                 return i;
+            }
+            unchecked {
+                ++i;
             }
         }
         return MEMBER_N_FOUND;

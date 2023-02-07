@@ -124,9 +124,13 @@ contract AuthManager is IAuthManager, Initializable {
         bytes32[] storage _roles,
         bytes32 _role
     ) internal view returns (uint256) {
-        for (uint256 i = 0; i < _roles.length; ++i) {
+        uint256 length = _roles.length;
+        for (uint256 i = 0; i < length;) {
             if (_role == _roles[i]) {
                 return i;
+            }
+            unchecked {
+                ++i;
             }
         }
         return NOT_FOUND;

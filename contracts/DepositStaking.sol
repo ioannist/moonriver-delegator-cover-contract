@@ -227,12 +227,16 @@ contract DepositStaking is ReentrancyGuard {
         // Find the collator with the lowest delegation
         uint256 lowestDelegation = type(uint256).max;
         address lowestDelegationCandidate;
-        for (uint256 i; i < collatorsDelegated.length; i++) {
+        uint2526 length = collatorsDelegated.length;
+        for (uint256 i; i < length;) {
             address candidate = collatorsDelegated[i];
             uint256 delegationAmount = _getDelegationAmount(INACTIVITY_COVER, candidate);
             if (candidate != address(0) && delegationAmount != 0 && delegationAmount < lowestDelegation) {
                 lowestDelegation = delegationAmount;
                 lowestDelegationCandidate = candidate;
+            }
+            unchecked {
+                ++i;
             }
         }
         require(lowestDelegationCandidate != address(0), "NO_CANDIDATE");
@@ -315,9 +319,12 @@ contract DepositStaking is ReentrancyGuard {
         returns (uint256)
     {
         uint256 length = collatorsDelegated.length;
-        for (uint256 i = 0; i < length; ++i) {
+        for (uint256 i = 0; i < length;) {
             if (collatorsDelegated[i] == _candidate) {
                 return i;
+            }
+            unchecked {
+                ++i;
             }
         }
         return COLLATOR_N_FOUND;

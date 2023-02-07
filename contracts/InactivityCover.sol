@@ -405,7 +405,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     */
     function payOutCover(address payable[] calldata delegators) external nonReentrant whenNotPaused {
         uint256 delegatorsLength = delegators.length;
-        for (uint256 i = 0; i < delegatorsLength; i++) {
+        for (uint256 i = 0; i < delegatorsLength;) {
             address delegator = delegators[i];
             require(delegator != address(0), "ZERO_ADDR");
 
@@ -438,6 +438,10 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
 
             (bool sent, ) = delegator.call{value: toPay}("");
             require(sent, "TRANSF_FAIL");
+        
+            unchecked {
+                ++i;
+            }
         }        
     }
 
@@ -479,7 +483,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
         uint256 membersWithOraclesCount;
 
         // debit non-oracle-running members
-        for(uint256 i; i < length; i++) {
+        for(uint256 i; i < length;) {
             address memberAddress = memberAddresses[i];
             // If the collator is active AND it is not participating as an oracle, then charge it
             if (members[memberAddress].active) {
@@ -503,6 +507,9 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
                     membersWithOraclesCount++;
                 }
             }
+            unchecked {
+                ++i;
+            }
         }
         // if there are zero non-racle-running members, return
         if (totalFee == 0) {
@@ -516,12 +523,15 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
         // else, credit the oracle-running members
             uint256 oraclePayment = totalFee / membersWithOraclesCount;
             uint256 remainder = totalFee;
-            for(uint256 i; i < length; i++) {
+            for(uint256 i; i < length;) {
                 if (membersWithOracles & (1 << i) != 0) {
                     address memberAddress = memberAddresses[i];
                     members[memberAddress].deposit += oraclePayment;
                     remainder -= oraclePayment;
                     emit OraclePaidEvent(memberAddress, oraclePayment, eraNow);
+                }
+                unchecked {
+                    ++i;
                 }
             }
             // if there is anything left (due to uneven division), credit the manager with the remainder
@@ -808,7 +818,8 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
         require(_isLastCompletedEra(_eraId), "INV_ERA");
         eraId = _eraId;
 
-        for (uint256 i = 0; i < _report.collators.length; i++) {
+        uint256 collatorsLength = _report.collators.length;
+        for (uint256 i = 0; i < collatorsLength;) {
             uint256 startGas = gasleft();
             Types.CollatorData calldata collatorData = _report.collators[i];
             bool isCandidate = staking.isCandidate(collatorData.collatorAccount);
@@ -940,6 +951,9 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
                 members[collatorData.collatorAccount].deposit -= refund;
                 members[_oracleCollator].deposit += refund;
                 // because we are only moving funds from one deposit to another, we don't need to update membersDepositTotal or payoutsOwedTotal
+            }
+            unchecked {
+                ++i;
             }
         }
     }
