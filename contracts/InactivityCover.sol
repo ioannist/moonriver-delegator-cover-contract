@@ -129,7 +129,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     mapping(address => bool) upgraded;
 
     // Manager role
-    bytes32 internal constant ROLE_MANAGER = keccak256("ROLE_MANAGER");
+    bytes32 internal immutable ROLE_MANAGER = keccak256("ROLE_MANAGER");
 
     // Allows function calls only from Oracle
     modifier onlyOracle() {

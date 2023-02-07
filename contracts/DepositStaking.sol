@@ -40,10 +40,10 @@ contract DepositStaking is ReentrancyGuard {
     address contractV2;
 
     /// Manager role
-    bytes32 internal constant ROLE_MANAGER = keccak256("ROLE_MANAGER");
+    bytes32 internal immutable ROLE_MANAGER = keccak256("ROLE_MANAGER");
 
     /// Staking manager can stake/unstake contract funds
-    bytes32 internal constant ROLE_STAKING_MANAGER =
+    bytes32 internal immutable ROLE_STAKING_MANAGER =
         keccak256("ROLE_STAKING_MANAGER");
 
     // Missing delegated collator index

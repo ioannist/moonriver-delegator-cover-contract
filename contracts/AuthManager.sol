@@ -14,7 +14,7 @@ contract AuthManager is IAuthManager, Initializable {
     uint256 internal constant NOT_FOUND = type(uint256).max;
 
     // hash for SUPER role
-    bytes32 public constant SUPER_ROLE = keccak256("SUPER_ROLE");
+    bytes32 public immutable SUPER_ROLE = keccak256("SUPER_ROLE");
 
     // event emitted when new member for role added
     event AddMember(address member, bytes32 role);
