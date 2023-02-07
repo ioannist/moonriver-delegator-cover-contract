@@ -410,10 +410,10 @@ contract OracleMaster is Pausable, ReentrancyGuard {
         // This means that ONLY collators can run oracles (one each) and by extension the manager can also run only one oracle.
         uint256 memberIndex = _getMemberId(msg.sender);
         require(
-            memberIndex != MEMBER_N_FOUND &&
-                (sudo || _isProxyOfSelectedCandidate(msg.sender, _collator)),
+            memberIndex != MEMBER_N_FOUND,
             "OM: MEMBER_N_FOUND"
         );
+        require(sudo || _isProxyOfSelectedCandidate(msg.sender, _collator), "OM: IS_NOT_PROXY");
         require(collatorsToOracles[_collator] == msg.sender, "OM: N_COLLATOR");
         // Oracles always report the last completed era (round)
         // Is a quorum of the previous era is not reached during the current era, the opportunity to process cover claims for the previous era is lost forever
