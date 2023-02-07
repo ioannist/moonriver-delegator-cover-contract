@@ -231,7 +231,7 @@ contract DepositStaking is ReentrancyGuard {
         // Find the collator with the lowest delegation
         uint256 lowestDelegation = type(uint256).max;
         address lowestDelegationCandidate;
-        uint2526 length = collatorsDelegated.length;
+        uint256 length = collatorsDelegated.length;
         for (uint256 i; i < length;) {
             address candidate = collatorsDelegated[i];
             uint256 delegationAmount = _getDelegationAmount(INACTIVITY_COVER, candidate);

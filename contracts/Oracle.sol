@@ -202,7 +202,7 @@ contract Oracle is ReentrancyGuard {
      */
     function _getStakeReport(
         uint256 _index
-    ) internal view returns (Types.OracleData storage staking) {
+    ) internal view returns (Types.OracleData memory staking) {
         require(_index < currentReports.length, "OR: OUT_OF_INDEX");
         return currentReports[_index];
     }
@@ -223,7 +223,7 @@ contract Oracle is ReentrancyGuard {
      */
     function _push(
         uint128 _eraId,
-        Types.OracleData calldata report,
+        Types.OracleData memory report,
         address _oracleCollator
     ) internal {
         erasToBlockHashes[_eraId] = report.blockHash;

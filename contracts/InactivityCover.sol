@@ -828,7 +828,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
             Types.CollatorData calldata collatorData = _report.collators[i];
             bool isCandidate = staking.isCandidate(collatorData.collatorAccount);
             Member memory member = members[collatorData.collatorAccount];
-            if (_eraId > members.lastPushedEra && !_report.finalize) {
+            if (_eraId > member.lastPushedEra && !_report.finalize) {
                 // if this is the first report for this collator for this era, and it is not the last report
                 // then set delegatorsReportedInEra to the number of delegators submitted with this report
                 members[collatorData.collatorAccount].delegatorsReportedInEra = collatorData.topActiveDelegations.length;
