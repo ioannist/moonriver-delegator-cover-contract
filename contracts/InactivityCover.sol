@@ -20,8 +20,6 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     }
 
     struct Member {
-        bool isMember; // once a member, always a member
-        bool active; // starts active, can go inactive by reducing deposit to less than minimum deposit
         uint256 deposit; // deposit
         uint256 maxCoveredDelegation; // any amount of this limit is not covered (used to incentivize splitting large delegations among multiple collators)
         uint256 delegatorsReportedInEra; // 
@@ -32,6 +30,8 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
         uint128 lastPushedEra; // the last era that was pushed and processed for this member; oracles may agree to not report an era for a member if there is no effect (no cover claims)
         uint128 wentInactiveEra; // last era that the member's bool active value was set to false
         uint128 wentActiveEra; // last era that the member's bool active value was set to true
+        bool isMember; // once a member, always a member
+        bool active; // starts active, can go inactive by reducing deposit to less than minimum deposit
     }
 
     event DepositEvent(address member, uint256 amount);
