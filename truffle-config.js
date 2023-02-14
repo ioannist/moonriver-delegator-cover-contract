@@ -38,6 +38,13 @@ const privateKeys = [
    process.env.ORACLE3_KEY
 ];
 
+const privateKeysMoonbeam = [
+   process.env.MOONBEAM_KEY,
+   process.env.MOONBEAM_MANAGER,
+   process.env.MOONBEAM_ORACLE_MEMBERS_MANAGER,
+   process.env.MOONBEAM_ORACLE_MEMBER
+];
+
 module.exports = {
    networks: {
       // Moonbeam Development Network
@@ -74,6 +81,17 @@ module.exports = {
          network_id: 1285,
          networkCheckTimeout: 60000,
          timeoutBlocks: 200
+      },
+      moonbeam: {
+         provider: () => {
+            return new HDWalletProvider({
+               privateKeys: privateKeysMoonbeam,
+               providerOrUrl:  'https://moonbeam.public.blastapi.io' //'https://moonbeam.unitedbloc.com:3000'
+            });
+         },
+         network_id: 1284,
+         //networkCheckTimeout: 60000,
+         //timeoutBlocks: 200
       },
    },
    // Solidity 0.8.2 Compiler

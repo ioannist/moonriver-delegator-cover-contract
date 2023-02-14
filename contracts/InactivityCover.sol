@@ -2,6 +2,8 @@
 pragma solidity ^0.8.12;
 pragma abicoder v2;
 
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
@@ -55,6 +57,16 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     event MemberActiveStatusChanged(address member, bool active);
     event OraclePaidEvent(address member, uint256 amount, uint128 eraId);
     event UpgradedToV2Event(address member);
+    event SetStakeUnitCoverEvent(uint256 amount);
+    event SetMinPayoutEvent(uint256 amount);
+    event SetRefundOracleGasPriceEvent(uint256 amount);
+    event SetErasBetweenForcedUndelegationsEvent(uint256 amount);
+    event SetMaxEraMemberPayoutEvent(uint256 amount);
+    event SetMaxErasCoveredEvent(uint256 amount);
+    event SetNoManualWhitelistingRequiredEvent(bool notRequired);
+    event SetMemberFeeEvent(uint256 amount);
+    event SetContractV2Event(address v2);
+    event WhitelistEvent(address member, address proxy);
 
     /// The ParachainStaking wrapper at the known pre-compile address. This will be used to make all calls
     /// to the underlying staking solution
@@ -81,6 +93,8 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     uint128 public ERAS_BETWEEN_FORCED_UNDELEGATION;
     // Maximum era payout
     uint256 public MAX_ERA_MEMBER_PAYOUT;
+    // Maximum eras covered
+    uint128 public MAX_ERAS_COVERED;
 
     //Variables for Cover Claims
     // Current era id (round)
@@ -289,7 +303,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
         require(_isMemberAuth(msg.sender, _member), "N_COLLATOR_PROXY");
         require(members[_member].active, "NOT_ACTIVE");
         // To disable max_covered, we can use a very high value.
-        require(_max_covered >= 500 ether, "INVALID"); // TODO change value for Moonbeam
+        require(_max_covered >= 20000 ether, "INVALID"); // TODO change value for Moonbeam
         members[_member].maxCoveredDelegation = _max_covered;
         emit MemberSetMaxCoveredDelegationEvent(_member, _max_covered);
     }
@@ -598,6 +612,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     ) external auth(ROLE_MANAGER) {
         require(whitelisted[_member] == address(0), "ALREADY_WHITELISTED");
         whitelisted[_member] = proxyAccount;
+        emit WhitelistEvent(_member, proxyAccount);
     }
 
     /**
@@ -669,6 +684,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
         );
         require(_stake_unit_cover > 0, "ZERO");
         STAKE_UNIT_COVER = _stake_unit_cover;
+        emit SetStakeUnitCoverEvent(_stake_unit_cover);
     }
 
     /**
@@ -681,6 +697,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
         // Protect delegators from having to wait forever to get paid due to an unresonable min payment
         require(_min_payout <= 1 ether, "HIGH");
         MIN_PAYOUT = _min_payout;
+        emit SetMinPayoutEvent(_min_payout);
     }
 
     /**
@@ -695,9 +712,10 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     function setRefundOracleGasPrice(
         uint256 _refundOracleGasPrice
     ) external auth(ROLE_MANAGER) {
-        require(_refundOracleGasPrice <= 10_000_000_000, "INV_PRICE"); // TODO change for Moonbeam
+        require(_refundOracleGasPrice <= 10_000_000, "INV_PRICE"); // TODO change for Moonbeam
         // for market values, check https://moonbeam-gasinfo.netlify.app/
         refundOracleGasPrice = _refundOracleGasPrice;
+        emit SetRefundOracleGasPriceEvent(_refundOracleGasPrice);
     }
 
     /**
@@ -715,6 +733,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
         // Protect contract from multiple undelegations without allowing time to unbond
         require(_eras_between_forced_undelegation <= 300, "HIGH");
         ERAS_BETWEEN_FORCED_UNDELEGATION = _eras_between_forced_undelegation;
+        emit SetErasBetweenForcedUndelegationsEvent(_eras_between_forced_undelegation);
     }
 
     /**
@@ -727,6 +746,13 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     */
     function setMaxEraMemberPayout(uint256 _max_era_member_payout) external auth(ROLE_MANAGER) {
         MAX_ERA_MEMBER_PAYOUT = _max_era_member_payout;
+        emit SetMaxEraMemberPayoutEvent(_max_era_member_payout);
+    }
+
+    function setMaxErasCovered(uint128 _max_eras_covered) external auth(ROLE_MANAGER) {
+        require(MAX_ERAS_COVERED > 1, "LOW");
+        MAX_ERAS_COVERED = _max_eras_covered;
+        emit SetMaxErasCoveredEvent(_max_eras_covered);
     }
 
     /**
@@ -735,17 +761,34 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     */
     function setNoManualWhitelistingRequired(bool _noManualWhitelistingRequired) external auth(ROLE_MANAGER) {
         noManualWhitelistingRequired = _noManualWhitelistingRequired;
+        emit SetNoManualWhitelistingRequiredEvent(_noManualWhitelistingRequired);
     }
 
     function setMemberFee(uint256 _memberFee) external auth(ROLE_MANAGER) {
         // _memberFee should be well below 1 MOVR (per 32 rounds) but we set the max to 1 to allow for increases in round duration
         require(_memberFee <= 1 ether, "FEE_INV");
         memberFee = _memberFee;
+        emit SetMemberFeeEvent(_memberFee);
     }
 
     function setContractV2(address payable _contractV2) external auth(ROLE_MANAGER) {
         contractV2 = _contractV2;
-    }    
+        emit SetContractV2Event(_contractV2);
+    }
+
+    /**
+    @dev Recovery method for accidental deposits of NFTs
+    */
+    function recoverNFT(IERC721 nft, uint256 tokenId, address to) external auth(ROLE_MANAGER) {
+        nft.safeTransferFrom(address(this), to, tokenId);
+    }
+
+    /**
+    @dev Recovery method for accidental deposits of ERC20s
+    */
+    function recoverCoin(IERC20 coins, uint256 amount, address to) external auth(ROLE_MANAGER) {
+        require(coins.transfer(to, amount));
+    }
 
     /// ***************** GETTERS *****************
 
@@ -1079,7 +1122,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
         // The more the collator must pay (refundPerEra), the shorter the cover period.
         // The larger the deposit, the longer the cover period.
         uint128 erasCov = uint128(members[_member].deposit / refundPerEra);
-        erasCovered[_member] = erasCov <= 1080 ? erasCov : 1080; // max 3 months TODO change for Moonbeam
+        erasCovered[_member] = erasCov <= MAX_ERAS_COVERED ? erasCov : MAX_ERAS_COVERED;
     }
 
     /**
