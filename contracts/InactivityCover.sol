@@ -2,11 +2,7 @@
 pragma solidity ^0.8.12;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
 import "../interfaces/StakingInterface.sol";
 import "../interfaces/IOracleMaster.sol";
 import "../interfaces/Types.sol";
@@ -15,7 +11,7 @@ import "../interfaces/IPushable.sol";
 import "../interfaces/IProxy.sol";
 import "./DepositStaking.sol";
 
-contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
+contract InactivityCover is IPushable, ReentrancyGuard  {
     struct ScheduledDecrease {
         uint128 era; // the era when the scheduled decrease was created
         uint256 amount;
@@ -65,7 +61,6 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     event SetMaxErasCoveredEvent(uint256 amount);
     event SetNoManualWhitelistingRequiredEvent(bool notRequired);
     event SetMemberFeeEvent(uint256 amount);
-    event SetContractV2Event(address v2);
     event WhitelistEvent(address member, address proxy);
 
     /// The ParachainStaking wrapper at the known pre-compile address. This will be used to make all calls
@@ -94,7 +89,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     // Maximum era payout
     uint256 public MAX_ERA_MEMBER_PAYOUT;
     // Maximum eras covered
-    uint128 public MAX_ERAS_COVERED;
+    uint128 public MAX_ERAS_COVERED = 360;
 
     //Variables for Cover Claims
     // Current era id (round)
@@ -137,10 +132,10 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     // The least era when members were successfulyl invoiced
     uint128 public membersInvoicedLastEra;
 
-    // This is the address of the V2 of the contract; used for moving deposits when V2 is ready
-    address payable contractV2;
-    // a map of members that upgraded to V2
-    mapping(address => bool) upgraded;
+    // Set to true after runtime 2100 to enable getting delegaiton amounts from chain
+    bool public runtime2100;
+    // For emergency pausing
+    bool public paused;
 
     // Manager role
     bytes32 internal immutable ROLE_MANAGER;
@@ -245,19 +240,6 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     }
 
     /**
-    @dev Use this method to move your deposit balance to a new version of this contract. Works only
-    if the manager has set the addres of the V2 contract, and can only be initiated by the depositor/member.
-    */
-    function upgradeToV2(address _member) external {
-        require(_isMemberAuth(msg.sender, _member), "N_COLLATOR_PROXY");
-        require(contractV2 != address(0), "NO_V2");
-        upgraded[_member] = true;
-        emit UpgradedToV2Event(_member);
-        (bool sent, ) = contractV2.call{value: members[_member].deposit}("");
-        require(sent, "TRANSF_FAIL");
-    }
-
-    /**
     @notice Schedule a deposit decrease that can be executed in the future
     @dev A member can request to withdraw its cover funds. The member has to wait for a number of rounds
     until they can withdraw. During this waiting time, their funds continue to cover their delegators.
@@ -355,6 +337,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     function transferMemberAuth(address _member, address proxyAccount) external {
         require(_isMemberAuth(msg.sender, _member), "N_COLLATOR_PROXY");
         whitelisted[_member] = proxyAccount;
+        emit WhitelistEvent(_member, proxyAccount);
     }
 
     /// ***************** MEMBER FUNCS THAT CAN BE CALLED BY ANYBODY *****************
@@ -421,7 +404,8 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     The function can be called with multiple delegators for saving gas costs.
     @param delegators The delegators to pay cover claims to. These are accumulated claims and could even be from multiple collators.
     */
-    function payOutCover(address payable[] calldata delegators) external nonReentrant whenNotPaused {
+    function payOutCover(address payable[] calldata delegators) external nonReentrant {
+        require(!paused);
         uint256 delegatorsLength = delegators.length;
         for (uint256 i = 0; i < delegatorsLength;) {
             address delegator = delegators[i];
@@ -615,6 +599,10 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
         emit WhitelistEvent(_member, proxyAccount);
     }
 
+    function pause(bool _paused) external auth(ROLE_MANAGER) {
+        paused = _paused;
+    }
+
     /**
     @notice Set the minimum member deposit required
     @dev if a collator has not deposited the minimum ammount, then its active flag is false. Inactive collators cannot execute several member methods.
@@ -622,6 +610,10 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
     */
     function setMinDeposit(uint256 _min_deposit) external auth(ROLE_MANAGER) {
         MIN_DEPOSIT = _min_deposit;
+    }
+
+    function setRuntime2100() external auth(ROLE_MANAGER) {
+        runtime2100 = true;
     }
 
     /**
@@ -771,25 +763,6 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
         emit SetMemberFeeEvent(_memberFee);
     }
 
-    function setContractV2(address payable _contractV2) external auth(ROLE_MANAGER) {
-        contractV2 = _contractV2;
-        emit SetContractV2Event(_contractV2);
-    }
-
-    /**
-    @dev Recovery method for accidental deposits of NFTs
-    */
-    function recoverNFT(IERC721 nft, uint256 tokenId, address to) external auth(ROLE_MANAGER) {
-        nft.safeTransferFrom(address(this), to, tokenId);
-    }
-
-    /**
-    @dev Recovery method for accidental deposits of ERC20s
-    */
-    function recoverCoin(IERC20 coins, uint256 amount, address to) external auth(ROLE_MANAGER) {
-        require(coins.transfer(to, amount));
-    }
-
     /// ***************** GETTERS *****************
 
     function getMember(
@@ -834,18 +807,6 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
         );
     }
 
-    function getErasCovered(address member) external view returns (uint128) {
-        return erasCovered[member];
-    }
-
-    function getBalance() external view returns (uint256) {
-        return address(this).balance;
-    }
-
-    function isUpgraded(address _member) external view returns(bool) {
-        return upgraded[_member];
-    }
-
     function getMembersCount() external view returns(uint256) {
         return memberAddresses.length;
     }
@@ -878,7 +839,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
         for (uint256 i = 0; i < collatorsLength;) {
             uint256 startGas = gasleft();
             Types.CollatorData calldata collatorData = _report.collators[i];
-            bool isCandidate = staking.isCandidate(collatorData.collatorAccount);
+            bool isNotCandidate = !staking.isCandidate(collatorData.collatorAccount);
             Member memory member = members[collatorData.collatorAccount];
             if (_eraId > member.lastPushedEra && !_report.finalize) {
                 // if this is the first report for this collator for this era, and it is not the last report
@@ -896,7 +857,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
             }
             members[collatorData.collatorAccount].lastPushedEra = _eraId;
             members[collatorData.collatorAccount].lastDelegationsTotal
-                = _getCandidateTotalCounted(collatorData.collatorAccount, collatorData.delegationsTotal, isCandidate);
+                = _getCandidateTotalCounted(collatorData.collatorAccount, collatorData.delegationsTotal, isNotCandidate);
 
             if (!member.isMember || !member.active) {
                 unchecked {
@@ -956,7 +917,7 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
                 Types.DelegationsData calldata delegationData = collatorData
                     .topActiveDelegations[j];
 
-                uint256 delegationAmount = _getDelegationAmount(delegationData.ownerAccount, collatorData.collatorAccount, delegationData.amount, isCandidate);
+                uint256 delegationAmount = _getDelegationAmount(delegationData.ownerAccount, collatorData.collatorAccount, delegationData.amount, isNotCandidate);
                 uint256 toPay = delegationAmount > member.maxCoveredDelegation
                     ? (STAKE_UNIT_COVER *
                         member.maxCoveredDelegation) / 1 ether
@@ -1085,12 +1046,12 @@ contract InactivityCover is IPushable, ReentrancyGuard, Pausable  {
         return uint128(staking.round());
     }
 
-    function _getDelegationAmount(address _delegator, address _collator, uint256 _reportedAmount, bool _isCandidate) internal view virtual returns (uint256) {
-        return _isCandidate ? staking.delegationAmount(_delegator, _collator) : _reportedAmount;
+    function _getDelegationAmount(address _delegator, address _collator, uint256 _reportedAmount, bool _isNotCandidate) internal view virtual returns (uint256) {
+        return _isNotCandidate || !runtime2100  ? _reportedAmount : staking.delegationAmount(_delegator, _collator);
     }
 
-    function _getCandidateTotalCounted(address _collator, uint256 _reportedAmount, bool _isCandidate) internal view virtual returns (uint256) {
-        return _isCandidate ? staking.getCandidateTotalCounted(_collator) : _reportedAmount;
+    function _getCandidateTotalCounted(address _collator, uint256 _reportedAmount, bool _isNotCandidate) internal view virtual returns (uint256) {
+        return _isNotCandidate || !runtime2100 ? _reportedAmount : staking.getCandidateTotalCounted(_collator);
     }
 
     function _isLastCompletedEra(

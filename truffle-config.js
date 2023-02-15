@@ -86,7 +86,7 @@ module.exports = {
          provider: () => {
             return new HDWalletProvider({
                privateKeys: privateKeysMoonbeam,
-               providerOrUrl:  'https://moonbeam.public.blastapi.io' //'https://moonbeam.unitedbloc.com:3000'
+               providerOrUrl: 'https://moonbeam.unitedbloc.com:3000' //'https://moonbeam.unitedbloc.com:3000'
             });
          },
          network_id: 1284,
