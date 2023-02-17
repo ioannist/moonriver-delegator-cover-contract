@@ -15,13 +15,13 @@
       "openzeppelin-solidity": "^1.12.0",
       "solc": "^0.8.17",
       "truffle": "^5.5.13",
-      "truffle-flattener": "^1.6.0",
-      "truffle-plugin-verify": "^0.5.25"
+      "truffle-flattener": "^1.6.0"
    },
    "devDependencies": {
       "chai-almost": "^1.0.1",
       "prettier": "^2.8.1",
-      "prettier-plugin-solidity": "^1.1.0"
+      "prettier-plugin-solidity": "^1.1.0",
+      "truffle-plugin-verify": "^0.6.1"
    },
    "scripts": {
       "prettier": "prettier --write \"contracts/**/*.sol\""

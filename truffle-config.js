@@ -109,4 +109,7 @@ module.exports = {
    },
    // Moonbeam Truffle Plugin & Truffle Plugin for Verifying Smart Contracts
    plugins: ['moonbeam-truffle-plugin', 'truffle-plugin-verify'],
+   api_keys: {
+      moonscan: '41C2QH629FRQU3VQPQ7UHBFXBWEU5VJIEH'
+    }
 };
